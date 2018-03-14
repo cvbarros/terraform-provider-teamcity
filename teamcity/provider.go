@@ -1,8 +1,6 @@
 package teamcity
 
 import (
-	api "github.com/cvbarros/go-teamcity-sdk/client"
-	runtime "github.com/go-openapi/runtime/client"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -13,7 +11,7 @@ func Provider() terraform.ResourceProvider {
 			"teamcity_project": resourceProject(),
 		},
 		Schema: map[string]*schema.Schema{
-			"server_url": &schema.Schema{
+			"address": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("TEAMCITY_URL", nil),
@@ -35,12 +33,11 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	clientTransport := runtime.New(d.Get("server_url").(string), "/", []string{"http"})
-	clientTransport.DefaultAuthentication = runtime.BasicAuth(
-		d.Get("username").(string),
-		d.Get("password").(string))
-
-	client := api.New(clientTransport, nil)
-
+	config := Config{
+		Address:  d.Get("address").(string),
+		Username: d.Get("username").(string),
+		Password: d.Get("password").(string),
+	}
+	client := config.Client()
 	return client, nil
 }

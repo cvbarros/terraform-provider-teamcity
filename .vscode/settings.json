@@ -7,6 +7,6 @@
     },
 
     "go.testFlags": ["-v"],
-
+    "go.buildFlags": ["-v"],
     "editor.tabSize": 2
 }
