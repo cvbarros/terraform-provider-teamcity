@@ -1,8 +1,10 @@
-package teamcity
+package teamcity_test
 
 import (
 	"os"
 	"testing"
+
+	teamcity "github.com/cvbarros/terraform-provider-teamcity/teamcity"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -12,20 +14,20 @@ var testAccProviders map[string]terraform.ResourceProvider
 var testAccProvider *schema.Provider
 
 func init() {
-	testAccProvider = Provider().(*schema.Provider)
+	testAccProvider = teamcity.Provider().(*schema.Provider)
 	testAccProviders = map[string]terraform.ResourceProvider{
 		"teamcity": testAccProvider,
 	}
 }
 
 func TestProvider(t *testing.T) {
-	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
+	if err := teamcity.Provider().(*schema.Provider).InternalValidate(); err != nil {
 		t.Fatalf("Error: %s", err)
 	}
 }
 
 func TestProvider_impl(t *testing.T) {
-	var _ = Provider()
+	var _ = teamcity.Provider()
 }
 
 func testAccPreCheck(t *testing.T) {

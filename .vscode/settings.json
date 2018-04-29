@@ -1,12 +1,11 @@
 {
     "go.testEnvVars": {
-        "TEAMCITY_ADDRESS": "127.0.0.1:8111",
+        "TEAMCITY_ADDRESS": "http://192.168.99.100:8112",
         "TEAMCITY_USER": "admin",
         "TEAMCITY_PASSWORD": "admin",
         "TF_ACC": 1
     },
 
     "go.testFlags": ["-v"],
-    "go.buildFlags": ["-v"],
-    "editor.tabSize": 2
+    "go.buildFlags": ["-v"]
 }

@@ -1,11 +1,11 @@
-package teamcity
+package teamcity_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	api "github.com/cvbarros/go-teamcity-sdk/client"
+	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -59,18 +59,18 @@ func TestAccTeamcityProject_UpdateName(t *testing.T) {
 
 func testAccCheckTeamcityProjectExists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(*api.TeamCityREST)
+		client := testAccProvider.Meta().(*api.Client)
 		return teamcityProjectExistsHelper(s, client)
 	}
 }
 
-func teamcityProjectExistsHelper(s *terraform.State, client *api.TeamCityREST) error {
+func teamcityProjectExistsHelper(s *terraform.State, client *api.Client) error {
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "teamcity_project" {
 			continue
 		}
 
-		if _, err := GetProject(client, r.Primary.ID); err != nil {
+		if _, err := client.Projects.GetById(r.Primary.ID); err != nil {
 			return fmt.Errorf("Received an error retrieving project: %s", err)
 		}
 	}
@@ -79,20 +79,20 @@ func teamcityProjectExistsHelper(s *terraform.State, client *api.TeamCityREST) e
 }
 
 func testAccCheckTeamcityProjectDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*api.TeamCityREST)
+	client := testAccProvider.Meta().(*api.Client)
 	return teamcityProjectDestroyHelper(s, client)
 }
 
-func teamcityProjectDestroyHelper(s *terraform.State, client *api.TeamCityREST) error {
+func teamcityProjectDestroyHelper(s *terraform.State, client *api.Client) error {
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "teamcity_project" {
 			continue
 		}
 
-		_, err := GetProject(client, r.Primary.ID)
+		_, err := client.Projects.GetById(r.Primary.ID)
 
 		if err != nil {
-			if strings.Contains(err.Error(), "(status 404)") {
+			if strings.Contains(err.Error(), "404") {
 				continue
 			}
 			return fmt.Errorf("Received an error retrieving the project: %s", err)

@@ -14,4 +14,4 @@
 .glide/
 
 #Terraform
-.terraform/**
+.terraform/

@@ -30,12 +30,8 @@
   name = "github.com/cvbarros/go-teamcity-sdk"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/go-openapi/runtime"
-
-[[constraint]]
   name = "github.com/hashicorp/terraform"
-  version = "0.11.3"
+  version = "0.11.7"
 
 [prune]
   go-tests = true

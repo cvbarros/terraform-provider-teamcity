@@ -3,23 +3,9 @@ package teamcity
 import (
 	"log"
 
-	api "github.com/cvbarros/go-teamcity-sdk/client"
-	project "github.com/cvbarros/go-teamcity-sdk/client/project"
-	models "github.com/cvbarros/go-teamcity-sdk/models"
+	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
 )
-
-// GetProject Retrieves a project by id from the REST API
-func GetProject(c *api.TeamCityREST, id string) (*models.Project, error) {
-	getParams := project.NewServeProjectParams()
-	getParams.ProjectLocator = projectLocatorByID(id)
-	dt, err := c.Project.ServeProject(getParams)
-	if err != nil {
-		return nil, err
-	}
-
-	return dt.Payload, nil
-}
 
 func resourceProject() *schema.Resource {
 	return &schema.Resource{
@@ -41,29 +27,26 @@ func resourceProject() *schema.Resource {
 }
 
 func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*api.TeamCityREST)
-
-	params := project.NewCreateProjectParams()
-	params.WithBody(&models.NewProjectDescription{
+	client := meta.(*api.Client)
+	newProj := &api.Project{
 		Name: d.Get("name").(string),
-	})
+	}
 
-	resp, err := client.Project.CreateProject(params)
+	created, err := client.Projects.Create(newProj)
 	if err != nil {
 		return err
 	}
 
 	d.MarkNewResource()
-	d.SetId(resp.Payload.ID)
-	d.Set("name", resp.Payload.Name)
-
+	d.SetId(created.ID)
+	d.Set("name", created.Name)
 	return nil
 }
 
 func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*api.TeamCityREST)
+	client := meta.(*api.Client)
 
-	dt, err := GetProject(client, d.Id())
+	dt, err := getProject(client, d.Id())
 	if err != nil {
 		return err
 	}
@@ -72,36 +55,17 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	log.Printf("[DEBUG] project: %v", dt)
-
+	log.Printf("[DEBUG] Project: %v", dt)
 	return nil
 }
 
 func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*api.TeamCityREST).Project
-
-	if attr, ok := d.GetOk("name"); ok {
-		putParams := project.NewSetProjectFieldParams().
-			WithProjectLocator(d.Id()).
-			WithField("name").
-			WithBody(attr.(string))
-
-		if _, err := client.SetProjectField(putParams); err != nil {
-			return err
-		}
-	}
-
 	return resourceProjectRead(d, meta)
 }
 
 func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*api.TeamCityREST)
-	var id = projectLocatorByID(d.Id())
-
-	deleteParams := project.NewDeleteProjectParams().
-		WithProjectLocator(id)
-
-	return client.Project.DeleteProject(deleteParams)
+	client := meta.(*api.Client)
+	return client.Projects.Delete(d.Id())
 }
 
 func resourceProjectImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
@@ -111,6 +75,11 @@ func resourceProjectImport(d *schema.ResourceData, meta interface{}) ([]*schema.
 	return []*schema.ResourceData{d}, nil
 }
 
-func projectLocatorByID(projectID string) string {
-	return projectID
+func getProject(c *api.Client, id string) (*api.Project, error) {
+	dt, err := c.Projects.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return dt, nil
 }
