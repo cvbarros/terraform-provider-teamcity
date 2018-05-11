@@ -66,6 +66,7 @@ func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	return client.Projects.Delete(d.Id())
+	return nil
 }
 
 func resourceProjectImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {

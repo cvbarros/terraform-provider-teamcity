@@ -23,7 +23,32 @@ func TestAccVcsRootGit_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(
 						"teamcity_vcs_root_git.vcs_root_git_test", "name", "application",
 					),
+					resource.TestCheckResourceAttr(
+						"teamcity_vcs_root_git.vcs_root_git_test", "repo_url", "https://github.com/kelseyhightower/nocode",
+					),
+					resource.TestCheckResourceAttr(
+						"teamcity_vcs_root_git.vcs_root_git_test", "default_branch", "refs/head/master",
+					),
+					resource.TestCheckResourceAttr(
+						"teamcity_vcs_root_git.vcs_root_git_test", "project_id", "VcsRootProject",
+					),
 				),
+			},
+		},
+	})
+}
+
+func TestAccVcsRootGit_Delete(t *testing.T) {
+	resName := "teamcity_vcs_root_git.vcs_root_git_test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckVcsRootGitDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccVcsRootGitConfig("_Root"),
+				Check:  resource.TestCheckResourceAttr(resName, "project_id", "_Root"),
 			},
 		},
 	})
@@ -73,6 +98,25 @@ func vcsRootGitDestroyHelper(s *terraform.State, client *api.Client) error {
 		return fmt.Errorf("VCS Root still exists")
 	}
 	return nil
+}
+
+func testAccVcsRootGitConfig(projectId string) string {
+	return fmt.Sprintf(`
+resource "teamcity_vcs_root_git" "vcs_root_git_test" {
+	name = "application"
+	project_id = "%s"
+	repo_url = "https://github.com/kelseyhightower/nocode"
+	default_branch = "refs/head/master"
+}
+`, projectId)
+}
+
+func testAccSourceProjectConfig(resourceName string, projectName string) string {
+	return fmt.Sprintf(`
+resource "teamcity_project" "%s" {
+	name = "%s"
+	}
+`, resourceName, projectName)
 }
 
 const testAccVcsRootGitBasic = `
