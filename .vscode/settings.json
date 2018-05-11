@@ -1,6 +1,6 @@
 {
     "go.testEnvVars": {
-        "TEAMCITY_ADDRESS": "http://192.168.99.100:8112",
+        "TEAMCITY_URL": "http://192.168.99.100:8112",
         "TEAMCITY_USER": "admin",
         "TEAMCITY_PASSWORD": "admin",
         "TF_ACC": 1
