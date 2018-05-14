@@ -57,6 +57,41 @@ func TestAccBuildConfig_Parameters(t *testing.T) {
 	})
 }
 
+func TestAccBuildConfig_VcsRoot(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigVcsRoot,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					testAccCheckVcsRootAttached(&bc.VcsRootEntries, "application"),
+				),
+			},
+		},
+	})
+}
+
+func testAccCheckVcsRootAttached(vcs **api.VcsRootEntries, n string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if *vcs == nil {
+			return fmt.Errorf("VcsRootEntries must not be nil")
+		}
+
+		for _, v := range (*vcs).Items {
+			if v.VcsRoot.Name == n {
+				return nil
+			}
+		}
+
+		return fmt.Errorf("VCS Root %s was not found", n)
+	}
+}
+
 func testAccCheckBuildConfigExists(n string, out *api.BuildType) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(*api.Client)
@@ -165,6 +200,28 @@ resource "teamcity_build_config" "build_configuration_test" {
 
 	config_params {
 		github.repository = "nocode"
+	}
+}
+`
+
+const TestAccBuildConfigVcsRoot = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_vcs_root_git" "build_config_vcsroot_test" {
+	name = "application"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	repo_url = "https://github.com/kelseyhightower/nocode"
+	default_branch = "refs/head/master"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	
+	vcs_root {
+		id = "${teamcity_vcs_root_git.build_config_vcsroot_test.id}"
 	}
 }
 `

@@ -31,6 +31,24 @@ func resourceBuildConfiguration() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"vcs_root": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"checkout_rules": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+				Set: vcsRootHash,
+			},
 			"env_params": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -122,6 +140,25 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 	d.SetPartial("env_params")
 	d.SetPartial("config_params")
 	d.SetPartial("sys_params")
+
+	if v, ok := d.GetOk("vcs_root"); ok {
+		vcs := v.(*schema.Set).List()
+		for _, raw := range vcs {
+			localVcs := raw.(map[string]interface{})
+			toAttach := &api.VcsRootReference{
+				ID: localVcs["id"].(string),
+			}
+
+			err = client.BuildTypes.AttachVcsRoot(created.ID, toAttach)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		d.SetPartial("vcs_root")
+	}
+
 	d.Partial(false)
 
 	return resourceBuildConfigurationRead(d, meta)
@@ -163,6 +200,22 @@ func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
+	vcsRoots := dt.VcsRootEntries
+
+	if vcsRoots != nil && vcsRoots.Count > 0 {
+		var vcsToSave []map[string]interface{}
+		for i := range vcsRoots.Items {
+			m := make(map[string]interface{})
+			m["id"] = vcsRoots.Items[i].Id
+			m["checkout_rules"] = strings.Split(vcsRoots.Items[i].CheckoutRules, "\\n")
+			vcsToSave = append(vcsToSave, m)
+		}
+
+		if err := d.Set("vcs_root", vcsToSave); err != nil {
+			return err
+		}
+	}
+
 	if err := d.Set("env_params", envParams); err != nil {
 		return err
 	}
@@ -176,6 +229,11 @@ func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	return nil
+}
+
+func vcsRootHash(v interface{}) int {
+	raw := v.(map[string]interface{})
+	return schema.HashString(raw["id"].(string))
 }
 
 func resourceBuildConfigurationUpdate(d *schema.ResourceData, meta interface{}) error {

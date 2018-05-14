@@ -21,29 +21,27 @@ resource "teamcity_buildconfiguration" "canary_pullrequest" {
   name                = "Pull Request"
   description         = "Inspection Build with \"Pull-Request\" hook"
   build_number_format = "2.0.%build.counter%"
+  artifact_paths      = [""]
 
-  // How to set build counter?
-  //build_counter = 1
-  // 
-  artifact_paths = [""]
-
-  // schema.Resource, Computed: true
   options {
     status_widget         = false
     detect_hanging        = true
     allow_personal_builds = true
   }
 
-  //schema.TypeSet
   step {
     type = "powershell"
   }
 
-  // schema.TypeMap Default
-  params {}
+  vcs_root {
+    id             = "${teamcity_vcs_root_git.canary_vcs}"
+    checkout_rules = ["+:*"]
+  }
 
-  // schema.TypeSet
-  feature {}
+  env_params    = {}
+  sys_params    = {}
+  config_params = {}
+  feature       = {}
 }
 
 resource "teamcity_build_trigger" "canary_vcs_trigger" {
