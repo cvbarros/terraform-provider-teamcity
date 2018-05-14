@@ -11,6 +11,8 @@ import (
 )
 
 func TestAccBuildConfig_Basic(t *testing.T) {
+	var bc api.BuildType
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -19,7 +21,7 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: TestAccBuildConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBuildConfigExists("teamcity_build_config.build_configuration_test"),
+					testAccCheckBuildConfigExists("teamcity_build_config.build_configuration_test", &bc),
 					resource.TestCheckResourceAttr(
 						"teamcity_build_config.build_configuration_test", "name", "build config test",
 					),
@@ -35,39 +37,50 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 	})
 }
 
-// func TestAccBuildConfig_Delete(t *testing.T) {
-// 	resName := "teamcity_build_config.build_configuration_test"
+func TestAccBuildConfig_Parameters(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigParams,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					testAccCheckProperties(&bc.Parameters, "env.DEPLOY_SERVER", "server.com"),
+					testAccCheckProperties(&bc.Parameters, "env.some_variable", "hello"),
+				),
+			},
+		},
+	})
+}
 
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckBuildConfigDestroy,
-// 		Steps: []resource.TestStep{
-// 			resource.TestStep{
-// 				Config: TestAccBuildConfigConfig("_Root"),
-// 				Check:  resource.TestCheckResourceAttr(resName, "project_id", "_Root"),
-// 			},
-// 		},
-// 	})
-// }
-
-func testAccCheckBuildConfigExists(name string) resource.TestCheckFunc {
+func testAccCheckBuildConfigExists(n string, out *api.BuildType) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(*api.Client)
-		return buildConfigExistsHelper(s, client)
+		return buildConfigExistsHelper(n, s, client, out)
 	}
 }
 
-func buildConfigExistsHelper(s *terraform.State, client *api.Client) error {
-	for _, r := range s.RootModule().Resources {
-		if r.Type != "teamcity_build_config" {
-			continue
-		}
-
-		if _, err := client.BuildTypes.GetById(r.Primary.ID); err != nil {
-			return fmt.Errorf("Received an error retrieving Build Configurationt: %s", err)
-		}
+func buildConfigExistsHelper(n string, s *terraform.State, client *api.Client, out *api.BuildType) error {
+	rs, ok := s.RootModule().Resources[n]
+	if !ok {
+		return fmt.Errorf("Not found: %s", n)
 	}
+
+	if rs.Primary.ID == "" {
+		return fmt.Errorf("No id for %s is set", n)
+	}
+
+	resp, err := client.BuildTypes.GetById(rs.Primary.ID)
+
+	if err != nil {
+		return fmt.Errorf("Received an error retrieving Build Configurationt: %s", err)
+	}
+
+	*out = *resp
 
 	return nil
 }
@@ -97,6 +110,33 @@ func buildConfigDestroyHelper(s *terraform.State, client *api.Client) error {
 	return nil
 }
 
+// testAccCheckProperties can be used to check the property value for a resource
+func testAccCheckProperties(
+	props **api.Properties, key string, value string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if props == nil {
+			return fmt.Errorf("Properties must not be nil")
+		}
+
+		m := (*props).Map()
+		v, ok := m[key]
+		if value != "" && !ok {
+			return fmt.Errorf("Missing property: %s", key)
+		} else if value == "" && ok {
+			return fmt.Errorf("Extra property: %s", key)
+		}
+		if value == "" {
+			return nil
+		}
+
+		if v != value {
+			return fmt.Errorf("%s: bad value: %s", key, v)
+		}
+
+		return nil
+	}
+}
+
 const TestAccBuildConfigBasic = `
 resource "teamcity_project" "build_config_project_test" {
   name = "build_config_project_test"
@@ -106,5 +146,25 @@ resource "teamcity_build_config" "build_configuration_test" {
 	name = "build config test"
 	project_id = "${teamcity_project.build_config_project_test.id}"
 	description = "build config test desc"
+}
+`
+
+const TestAccBuildConfigParams = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	
+	env_params {
+		DEPLOY_SERVER = "server.com"
+		some_variable = "hello"
+	}
+
+	config_params {
+		github.repository = "nocode"
+	}
 }
 `

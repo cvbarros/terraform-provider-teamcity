@@ -1,8 +1,12 @@
 provider "teamcity" {
-  address = "192."
+  address  = "http://192.168.99.100:8112"
+  username = "admin"
+  password = "admin"
 }
 
-resource "teamcity_project" "canary" {}
+resource "teamcity_project" "canary" {
+  name = "Canary"
+}
 
 resource "teamcity_vcs_root_git" "canary_vcs" {
   name       = "Application"
@@ -35,18 +39,19 @@ resource "teamcity_buildconfiguration" "canary_pullrequest" {
     type = "powershell"
   }
 
-  // schema.TypeSet Elem: schema.Resource { Schema: ... }
-  trigger {
-    //schema.TypeString, validateFunc: validateTriggerType
-    type = "vcs"
-
-    //schema.TypeList
-    rules = ["+:*"]
-  }
-
   // schema.TypeMap Default
   params {}
 
   // schema.TypeSet
   feature {}
+}
+
+resource "teamcity_build_trigger" "canary_vcs_trigger" {
+  build_config_id = "${teamcity_buildconfiguration.canary_pullrequest}"
+
+  //schema.TypeString, validateFunc: validateTriggerType
+  type = "vcs"
+
+  //schema.TypeList
+  rules = ["+:*"]
 }

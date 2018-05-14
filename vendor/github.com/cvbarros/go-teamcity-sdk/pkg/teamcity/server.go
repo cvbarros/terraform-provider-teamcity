@@ -6,10 +6,10 @@ import "github.com/dghubble/sling"
 type Server struct {
 
 	// agent pools
-	AgentPools string `json:"agentPools,omitempty"`
+	// AgentPools string `json:"agentPools,omitempty"`
 
 	// agents
-	Agents string `json:"agents,omitempty"`
+	// Agents string `json:"agents,omitempty"`
 
 	// build date
 	BuildDate string `json:"buildDate,omitempty" xml:"buildDate"`
@@ -18,40 +18,16 @@ type Server struct {
 	BuildNumber string `json:"buildNumber,omitempty" xml:"buildNumber"`
 
 	// build queue
-	BuildQueue string `json:"buildQueue,omitempty"`
+	// BuildQueue string `json:"buildQueue,omitempty"`
 
 	// builds
-	Builds string `json:"builds,omitempty"`
+	// Builds string `json:"builds,omitempty"`
 
 	// current time
 	CurrentTime string `json:"currentTime,omitempty" xml:"currentTime"`
 
 	// internal Id
 	InternalID string `json:"internalId,omitempty" xml:"internalId"`
-
-	// investigations
-	Investigations string `json:"investigations,omitempty"`
-
-	// mutes
-	Mutes string `json:"mutes,omitempty"`
-
-	// projects
-	Projects string `json:"projects,omitempty"`
-
-	// role
-	Role string `json:"role,omitempty" xml:"role"`
-
-	// start time
-	StartTime string `json:"startTime,omitempty" xml:"startTime"`
-
-	// user groups
-	UserGroups string `json:"userGroups,omitempty"`
-
-	// users
-	Users string `json:"users,omitempty"`
-
-	// vcs roots
-	VcsRoots string `json:"vcsRoots,omitempty"`
 
 	// version
 	Version string `json:"version,omitempty" xml:"version"`
@@ -64,6 +40,30 @@ type Server struct {
 
 	// web Url
 	WebURL string `json:"webUrl,omitempty" xml:"webUrl"`
+
+	// // investigations
+	// Investigations string `json:"investigations,omitempty"`
+
+	// // mutes
+	// Mutes string `json:"mutes,omitempty"`
+
+	// // projects
+	// Projects string `json:"projects,omitempty"`
+
+	// // role
+	// Role string `json:"role,omitempty" xml:"role"`
+
+	// // start time
+	// StartTime string `json:"startTime,omitempty" xml:"startTime"`
+
+	// // user groups
+	// UserGroups string `json:"userGroups,omitempty"`
+
+	// // users
+	// Users string `json:"users,omitempty"`
+
+	// // vcs roots
+	// VcsRoots string `json:"vcsRoots,omitempty"`
 }
 
 // ServerService allows retrieving information about the server

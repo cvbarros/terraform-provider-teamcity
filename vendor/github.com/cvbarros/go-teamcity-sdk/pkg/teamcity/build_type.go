@@ -72,7 +72,7 @@ type BuildType struct {
 	TemplateFlag *bool `json:"templateFlag,omitempty" xml:"templateFlag"`
 
 	// triggers
-	// Triggers *Triggers `json:"triggers,omitempty"`
+	Triggers *Triggers `json:"triggers,omitempty"`
 
 	// type
 	Type string `json:"type,omitempty" xml:"type"`
@@ -106,6 +106,7 @@ type BuildTypeReference struct {
 	ProjectName string `json:"projectName,omitempty" xml:"projectName"`
 }
 
+// Reference converts a BuildType entity to a BuildType reference
 func (b *BuildType) Reference() *BuildTypeReference {
 	return &BuildTypeReference{
 		ID:          b.ID,

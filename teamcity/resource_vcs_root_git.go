@@ -79,5 +79,4 @@ func resourceVcsRootGitUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceVcsRootGitDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	return client.VcsRoots.Delete(d.Id())
-	return nil
 }

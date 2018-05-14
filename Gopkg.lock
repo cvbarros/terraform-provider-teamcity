@@ -81,7 +81,7 @@
   branch = "master"
   name = "github.com/cvbarros/go-teamcity-sdk"
   packages = ["pkg/teamcity"]
-  revision = "d985ab40bbb5af8d07edb96e49c5621cb54ed4c7"
+  revision = "79358e106abbdedf8b22cdf83ae9f703444ff658"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
