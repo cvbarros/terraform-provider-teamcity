@@ -11,6 +11,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"teamcity_project":      resourceProject(),
 			"teamcity_vcs_root_git": resourceVcsRootGit(),
+			"teamcity_build_config": resourceBuildConfiguration(),
 		},
 		Schema: map[string]*schema.Schema{
 			"address": &schema.Schema{

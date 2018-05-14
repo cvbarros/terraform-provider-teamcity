@@ -111,14 +111,6 @@ resource "teamcity_vcs_root_git" "vcs_root_git_test" {
 `, projectId)
 }
 
-func testAccSourceProjectConfig(resourceName string, projectName string) string {
-	return fmt.Sprintf(`
-resource "teamcity_project" "%s" {
-	name = "%s"
-	}
-`, resourceName, projectName)
-}
-
 const testAccVcsRootGitBasic = `
 resource "teamcity_project" "vcs_root_project" {
   name = "vcs_root_project"
