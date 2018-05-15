@@ -74,6 +74,21 @@ func (p *Properties) AddOrReplaceValue(prop *Property) {
 	p.Add(prop)
 }
 
+// GetOk returns the value of the propery and true if found, otherwise ""/false
+func (p *Properties) GetOk(key string) (string, bool) {
+	if len(p.Items) == 0 {
+		return "", false
+	}
+
+	for _, v := range p.Items {
+		if v.Name == key {
+			return v.Value, true
+		}
+	}
+
+	return "", false
+}
+
 // Map converts Properties to a key/value dictionary as map[string]string
 func (p *Properties) Map() map[string]string {
 	out := make(map[string]string)

@@ -37,6 +37,32 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 	})
 }
 
+func TestAccBuildConfig_Steps(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	expected := map[string]string{
+		"name": "build release",
+		"type": api.StepTypes.Powershell,
+		"file": "build.ps1",
+		"args": "-Target buildrelease",
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigSteps,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					testAccCheckStepExists(&bc.Steps, expected),
+				),
+			},
+		},
+	})
+}
+
 func TestAccBuildConfig_Parameters(t *testing.T) {
 	var bc api.BuildType
 	resName := "teamcity_build_config.build_configuration_test"
@@ -74,6 +100,63 @@ func TestAccBuildConfig_VcsRoot(t *testing.T) {
 			},
 		},
 	})
+}
+
+func testAccCheckStepExists(steps **api.Steps, stepExpected map[string]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if *steps == nil {
+			return fmt.Errorf("steps must not be nil")
+		}
+		for _, v := range (*steps).Items {
+			if v.Name == stepExpected["name"] {
+				return assertStepProperties(v, stepExpected)
+			}
+		}
+
+		return fmt.Errorf("Step named '%s' was not found", stepExpected["name"])
+	}
+}
+
+func assertStepProperties(actual *api.Step, expected map[string]string) error {
+	if actual.Type != expected["type"] {
+		return fmt.Errorf("Found step %s but types differ, actual: %s, expected: %s", expected["name"], actual.Type, expected["type"])
+	}
+
+	if p, ok := expected["file"]; ok {
+		if v, found := getPropertyOk(actual.Properties, "jetbrains_powershell_script_file"); found {
+			if v != p {
+				return fmt.Errorf("Property 'file' differs, actual: %s, expected: %s", v, p)
+			}
+		} else {
+			return fmt.Errorf("Expected property 'file' to be set as %s, but was not found.", p)
+		}
+	}
+
+	if p, ok := expected["args"]; ok {
+		if v, found := getPropertyOk(actual.Properties, "jetbrains_powershell_scriptArguments"); found {
+			if v != p {
+				return fmt.Errorf("Property 'args' differs, actual: %s, expected: %s", v, p)
+			}
+		} else {
+			return fmt.Errorf("Expected property 'args' to be set as %s, but was not found.", p)
+		}
+	}
+
+	return nil
+}
+
+func getPropertyOk(p *api.Properties, key string) (string, bool) {
+	if len(p.Items) == 0 {
+		return "", false
+	}
+
+	for _, v := range p.Items {
+		if v.Name == key {
+			return v.Value, true
+		}
+	}
+
+	return "", false
 }
 
 func testAccCheckVcsRootAttached(vcs **api.VcsRootEntries, n string, co string) resource.TestCheckFunc {
@@ -225,6 +308,29 @@ resource "teamcity_build_config" "build_configuration_test" {
 	vcs_root {
 		id = "${teamcity_vcs_root_git.build_config_vcsroot_test.id}"
 		checkout_rules = ["+:*", "-:README.MD"]
+	}
+}
+`
+
+const TestAccBuildConfigSteps = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	
+	step {
+		type = "powershell"
+		name = "build release"
+		file = "build.ps1"
+		args = "-Target buildrelease"
+	}
+
+	step {
+		type = "powershell"
+		file = "another.ps1"
 	}
 }
 `

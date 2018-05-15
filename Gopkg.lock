@@ -81,7 +81,7 @@
   branch = "master"
   name = "github.com/cvbarros/go-teamcity-sdk"
   packages = ["pkg/teamcity"]
-  revision = "62fc515ee43a281e51a3c2b20f85658ce42e0e7e"
+  revision = "b3f62597076cd98c437ae5e0f0139ee866ac49b2"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -243,6 +243,8 @@
     "helper/logging",
     "helper/resource",
     "helper/schema",
+    "helper/structure",
+    "helper/validation",
     "httpclient",
     "moduledeps",
     "plugin",
@@ -501,6 +503,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f3a7bc8d4bb4d34c0c270213da6e72162287d9ca2b4ba2aaf29c64201d1b4b43"
+  inputs-digest = "b75eb2433de1ad7146ccccf0bec68257f1a911ea6d64caa03ee759019f6e6a21"
   solver-name = "gps-cdcl"
   solver-version = 1

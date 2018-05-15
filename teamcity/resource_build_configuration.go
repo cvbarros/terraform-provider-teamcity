@@ -6,6 +6,7 @@ import (
 
 	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/helper/validation"
 )
 
 func resourceBuildConfiguration() *schema.Resource {
@@ -48,6 +49,32 @@ func resourceBuildConfiguration() *schema.Resource {
 					},
 				},
 				Set: vcsRootHash,
+			},
+			"step": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validateStepType(),
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"file": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"args": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
 			},
 			"env_params": {
 				Type:     schema.TypeMap,
@@ -151,9 +178,25 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 			if err != nil {
 				return err
 			}
+			d.SetPartial("vcs_root")
 		}
+	}
 
-		d.SetPartial("vcs_root")
+	if v, ok := d.GetOk("step"); ok {
+		steps := v.(*schema.Set).List()
+		for _, raw := range steps {
+
+			newStep, err := buildStep(raw)
+			if err != nil {
+				return err
+			}
+
+			err = client.BuildTypes.AddStep(created.ID, newStep)
+			if err != nil {
+				return err
+			}
+			d.SetPartial("step")
+		}
 	}
 
 	d.Partial(false)
@@ -197,22 +240,6 @@ func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	vcsRoots := dt.VcsRootEntries
-
-	if vcsRoots != nil && vcsRoots.Count > 0 {
-		var vcsToSave []map[string]interface{}
-		for i := range vcsRoots.Items {
-			m := make(map[string]interface{})
-			m["id"] = vcsRoots.Items[i].Id
-			m["checkout_rules"] = strings.Split(vcsRoots.Items[i].CheckoutRules, "\\n")
-			vcsToSave = append(vcsToSave, m)
-		}
-
-		if err := d.Set("vcs_root", vcsToSave); err != nil {
-			return err
-		}
-	}
-
 	if err := d.Set("env_params", envParams); err != nil {
 		return err
 	}
@@ -225,12 +252,66 @@ func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 
+	vcsRoots := dt.VcsRootEntries
+
+	if vcsRoots != nil && vcsRoots.Count > 0 {
+		var vcsToSave []map[string]interface{}
+		for _, el := range vcsRoots.Items {
+			m := make(map[string]interface{})
+			m["id"] = el.Id
+			m["checkout_rules"] = strings.Split(el.CheckoutRules, "\\n")
+			vcsToSave = append(vcsToSave, m)
+		}
+
+		if err := d.Set("vcs_root", vcsToSave); err != nil {
+			return err
+		}
+	}
+
+	steps := dt.Steps
+	if steps != nil && steps.Count > 0 {
+		var stepsToSave []map[string]interface{}
+		for _, el := range steps.Items {
+			l, err := resourceBuildStepPermGather(el)
+			if err != nil {
+				return err
+			}
+			stepsToSave = append(stepsToSave, l)
+		}
+	}
+
 	return nil
 }
 
-func vcsRootHash(v interface{}) int {
-	raw := v.(map[string]interface{})
-	return schema.HashString(raw["id"].(string))
+var stepTypeMap = map[string]string{
+	"jetbrains_powershell": "powershell",
+}
+
+func resourceBuildStepPermGather(s *api.Step) (map[string]interface{}, error) {
+	mapType := stepTypeMap[s.Type]
+
+	switch mapType {
+	case "powershell":
+		return resourceBuildStepPowershellGather(s), nil
+	default:
+		return nil, fmt.Errorf("Build step type '%s' not supported", s.Type)
+	}
+}
+
+func resourceBuildStepPowershellGather(s *api.Step) map[string]interface{} {
+	m := make(map[string]interface{})
+	if v, ok := s.Properties.GetOk("jetbrains_powershell_script_file"); ok {
+		m["file"] = v
+	}
+	if v, ok := s.Properties.GetOk("jetbrains_powershell_scriptArguments"); ok {
+		m["args"] = v
+	}
+	if s.Name != "" {
+		m["name"] = s.Name
+	}
+	m["type"] = "powershell"
+
+	return m
 }
 
 func resourceBuildConfigurationUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -251,6 +332,29 @@ func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
 	return dt, nil
 }
 
+func buildStep(raw interface{}) (*api.Step, error) {
+	localStep := raw.(map[string]interface{})
+	name := ""
+
+	t := localStep["type"].(string)
+	switch t {
+	case "powershell":
+		b := api.StepPowershellBuilder
+		if v, ok := localStep["file"]; ok {
+			b = b.ScriptFile(v.(string))
+		}
+		if v, ok := localStep["args"]; ok {
+			b = b.Args(v.(string))
+		}
+		if v, ok := localStep["name"]; ok {
+			name = v.(string)
+		}
+		return b.Build(name), nil
+	default:
+		return nil, fmt.Errorf("Unsupported step type '%s'", t)
+	}
+}
+
 func buildVcsRootEntry(raw interface{}) *api.VcsRootEntry {
 	localVcs := raw.(map[string]interface{})
 	rawRules := localVcs["checkout_rules"].([]interface{})
@@ -264,4 +368,15 @@ func buildVcsRootEntry(raw interface{}) *api.VcsRootEntry {
 	}
 
 	return api.NewVcsRootEntryWithRules(&api.VcsRootReference{ID: localVcs["id"].(string)}, toAttachRules)
+}
+
+func vcsRootHash(v interface{}) int {
+	raw := v.(map[string]interface{})
+	return schema.HashString(raw["id"].(string))
+}
+
+func validateStepType() schema.SchemaValidateFunc {
+	return validation.StringInSlice([]string{
+		"powershell",
+	}, true)
 }
