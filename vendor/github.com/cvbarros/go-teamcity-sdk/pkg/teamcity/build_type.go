@@ -184,10 +184,14 @@ func (s *BuildTypeService) Delete(id string) error {
 
 // AttachVcsRoot adds the VcsRoot reference to this build type
 func (s *BuildTypeService) AttachVcsRoot(id string, vcsRoot *VcsRootReference) error {
-	var created VcsRootEntry
 	var vcsEntry = NewVcsRootEntry(vcsRoot)
+	return s.AttachVcsRootEntry(id, vcsEntry)
+}
 
-	_, err := s.sling.New().Post(fmt.Sprintf("%s/vcs-root-entries/", LocatorId(id))).BodyJSON(vcsEntry).ReceiveSuccess(&created)
+// AttachVcsRootEntry adds the VcsRootEntry to this build type
+func (s *BuildTypeService) AttachVcsRootEntry(id string, entry *VcsRootEntry) error {
+	var created VcsRootEntry
+	_, err := s.sling.New().Post(fmt.Sprintf("%s/vcs-root-entries/", LocatorId(id))).BodyJSON(entry).ReceiveSuccess(&created)
 
 	if err != nil {
 		return err

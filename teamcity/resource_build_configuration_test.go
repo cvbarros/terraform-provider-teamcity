@@ -69,14 +69,14 @@ func TestAccBuildConfig_VcsRoot(t *testing.T) {
 				Config: TestAccBuildConfigVcsRoot,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
-					testAccCheckVcsRootAttached(&bc.VcsRootEntries, "application"),
+					testAccCheckVcsRootAttached(&bc.VcsRootEntries, "application", "+:*\\n-:README.MD"),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckVcsRootAttached(vcs **api.VcsRootEntries, n string) resource.TestCheckFunc {
+func testAccCheckVcsRootAttached(vcs **api.VcsRootEntries, n string, co string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if *vcs == nil {
 			return fmt.Errorf("VcsRootEntries must not be nil")
@@ -84,11 +84,13 @@ func testAccCheckVcsRootAttached(vcs **api.VcsRootEntries, n string) resource.Te
 
 		for _, v := range (*vcs).Items {
 			if v.VcsRoot.Name == n {
-				return nil
+				if v.CheckoutRules == co {
+					return nil
+				}
 			}
 		}
 
-		return fmt.Errorf("VCS Root %s was not found", n)
+		return fmt.Errorf("VCS Root with name '%s' and checkout rules '%s' was not found", n, co)
 	}
 }
 
@@ -222,6 +224,7 @@ resource "teamcity_build_config" "build_configuration_test" {
 	
 	vcs_root {
 		id = "${teamcity_vcs_root_git.build_config_vcsroot_test.id}"
+		checkout_rules = ["+:*", "-:README.MD"]
 	}
 }
 `

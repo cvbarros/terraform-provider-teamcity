@@ -43,7 +43,16 @@ func NewVcsRootEntries(items ...*VcsRootReference) *VcsRootEntries {
 
 // NewVcsRootEntry is a convenience function for attaching a VcsRootReference to a Build configuration, represented as a VcsRootEntry in Teamcity API
 func NewVcsRootEntry(vcsRef *VcsRootReference) *VcsRootEntry {
-	return &VcsRootEntry{
+	return NewVcsRootEntryWithRules(vcsRef, "")
+}
+
+// NewVcsRootEntryWithRules is a convenience function for attaching a VcsRootReference to a Build configuration, represented as a VcsRootEntry in Teamcity API
+func NewVcsRootEntryWithRules(vcsRef *VcsRootReference, checkoutRules string) *VcsRootEntry {
+	out := &VcsRootEntry{
 		VcsRoot: vcsRef,
 	}
+	if checkoutRules != "" {
+		out.CheckoutRules = checkoutRules
+	}
+	return out
 }

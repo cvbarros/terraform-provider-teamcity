@@ -144,12 +144,9 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("vcs_root"); ok {
 		vcs := v.(*schema.Set).List()
 		for _, raw := range vcs {
-			localVcs := raw.(map[string]interface{})
-			toAttach := &api.VcsRootReference{
-				ID: localVcs["id"].(string),
-			}
+			toAttach := buildVcsRootEntry(raw)
 
-			err = client.BuildTypes.AttachVcsRoot(created.ID, toAttach)
+			err = client.BuildTypes.AttachVcsRootEntry(created.ID, toAttach)
 
 			if err != nil {
 				return err
@@ -252,4 +249,19 @@ func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
 	}
 
 	return dt, nil
+}
+
+func buildVcsRootEntry(raw interface{}) *api.VcsRootEntry {
+	localVcs := raw.(map[string]interface{})
+	rawRules := localVcs["checkout_rules"].([]interface{})
+	var toAttachRules string
+	if len(rawRules) > 0 {
+		stringRules := make([]string, len(rawRules))
+		for i, el := range rawRules {
+			stringRules[i] = el.(string)
+		}
+		toAttachRules = strings.Join(stringRules, "\\n")
+	}
+
+	return api.NewVcsRootEntryWithRules(&api.VcsRootReference{ID: localVcs["id"].(string)}, toAttachRules)
 }
