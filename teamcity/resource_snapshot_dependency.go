@@ -1,0 +1,96 @@
+package teamcity
+
+import (
+	"fmt"
+
+	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
+	"github.com/hashicorp/terraform/helper/schema"
+)
+
+func resourceSnapshotDependency() *schema.Resource {
+	return &schema.Resource{
+		Create: resourceSnapshotDependencyCreate,
+		Read:   resourceSnapshotDependencyRead,
+		Update: resourceSnapshotDependencyUpdate,
+		Delete: resourceSnapshotDependencyDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+
+		Schema: map[string]*schema.Schema{
+			"build_config_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"source_build_config_id": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+		},
+	}
+}
+
+func resourceSnapshotDependencyCreate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*api.Client)
+	var build_config_id string
+
+	if v, ok := d.GetOk("build_config_id"); ok {
+		build_config_id = v.(string)
+	}
+	// validates the Build Configuration exists
+	if _, err := client.BuildTypes.GetById(build_config_id); err != nil {
+		return fmt.Errorf("invalid build_config_id '%s' - Build configuration does not exist", build_config_id)
+	}
+
+	depService := client.DependencyService(build_config_id)
+	dep := api.NewSnapshotDependency(d.Get("source_build_config_id").(string))
+
+	out, err := depService.AddSnapshotDependency(dep)
+
+	if err != nil {
+		return err
+	}
+
+	d.SetId(out.ID)
+
+	return resourceSnapshotDependencyRead(d, meta)
+}
+
+func resourceSnapshotDependencyRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*api.Client).DependencyService(d.Get("build_config_id").(string))
+
+	dt, err := getSnapshotDependency(client, d.Id())
+	if err != nil {
+		return err
+	}
+
+	if err := d.Set("build_config_id", dt.BuildTypeID); err != nil {
+		return err
+	}
+
+	if err := d.Set("source_build_config_id", dt.SourceBuildType.ID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func resourceSnapshotDependencyUpdate(d *schema.ResourceData, meta interface{}) error {
+	return nil
+}
+
+func resourceSnapshotDependencyDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*api.Client)
+	dep := client.DependencyService(d.Get("build_config_id").(string))
+
+	return dep.Delete(d.Id())
+}
+
+func getSnapshotDependency(c *api.DependencyService, id string) (*api.SnapshotDependency, error) {
+
+	dt, err := c.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return dt, nil
+}

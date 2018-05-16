@@ -9,9 +9,10 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"teamcity_project":      resourceProject(),
-			"teamcity_vcs_root_git": resourceVcsRootGit(),
-			"teamcity_build_config": resourceBuildConfiguration(),
+			"teamcity_project":             resourceProject(),
+			"teamcity_vcs_root_git":        resourceVcsRootGit(),
+			"teamcity_build_config":        resourceBuildConfiguration(),
+			"teamcity_snapshot_dependency": resourceSnapshotDependency(),
 		},
 		Schema: map[string]*schema.Schema{
 			"address": &schema.Schema{
