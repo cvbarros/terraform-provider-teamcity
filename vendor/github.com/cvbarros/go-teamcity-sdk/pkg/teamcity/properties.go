@@ -58,20 +58,25 @@ func (p *Properties) Add(prop *Property) {
 	p.Items = append(p.Items, prop)
 }
 
-// AddOrReplace will update a property value if it exists, or add if it doesnt
-func (p *Properties) AddOrReplaceValue(prop *Property) {
+// AddOrReplaceValue will update a property value if it exists, or add if it doesnt
+func (p *Properties) AddOrReplaceValue(n string, v string) {
 	for _, elem := range p.Items {
 		if elem == nil {
 			continue
 		}
 
-		if elem.Name == prop.Name {
-			elem.Value = prop.Value
+		if elem.Name == n {
+			elem.Value = v
 			return
 		}
 	}
 
-	p.Add(prop)
+	p.Add(&Property{Name: n, Value: v})
+}
+
+// AddOrReplaceProperty will update a property value if another property with the same name exists. It won't replace the Property struct within the Properties collection.
+func (p *Properties) AddOrReplaceProperty(prop *Property) {
+	p.AddOrReplaceValue(prop.Name, prop.Value)
 }
 
 // GetOk returns the value of the propery and true if found, otherwise ""/false

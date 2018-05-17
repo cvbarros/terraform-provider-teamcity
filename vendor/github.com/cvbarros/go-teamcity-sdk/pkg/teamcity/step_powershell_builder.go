@@ -44,7 +44,7 @@ func addOrReplaceProperty(b interface{}, name string, value string) interface{} 
 	}
 
 	props := ret.(*Properties)
-	props.AddOrReplaceValue(newProp)
+	props.AddOrReplaceProperty(newProp)
 	return builder.Set(b, "Properties", props)
 }
 

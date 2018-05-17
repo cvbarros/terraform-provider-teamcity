@@ -13,6 +13,7 @@ func Provider() terraform.ResourceProvider {
 			"teamcity_vcs_root_git":        resourceVcsRootGit(),
 			"teamcity_build_config":        resourceBuildConfiguration(),
 			"teamcity_snapshot_dependency": resourceSnapshotDependency(),
+			"teamcity_trigger":             resourceTrigger(),
 		},
 		Schema: map[string]*schema.Schema{
 			"address": &schema.Schema{
