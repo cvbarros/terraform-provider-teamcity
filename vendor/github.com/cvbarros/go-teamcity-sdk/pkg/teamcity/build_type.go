@@ -238,15 +238,3 @@ func (s *BuildTypeService) DeleteStep(id string, stepId string) error {
 
 	return nil
 }
-
-//AddAgentRequirement creates a new agent requirement for build type
-func (s *BuildTypeService) AddAgentRequirement(id string, req *AgentRequirement) error {
-	var created AgentRequirement
-	_, err := s.sling.New().Post(fmt.Sprintf("%s/agent-requirements/", LocatorId(id))).BodyJSON(req).ReceiveSuccess(&created)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}

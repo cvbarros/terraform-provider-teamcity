@@ -14,6 +14,7 @@ func Provider() terraform.ResourceProvider {
 			"teamcity_build_config":        resourceBuildConfiguration(),
 			"teamcity_snapshot_dependency": resourceSnapshotDependency(),
 			"teamcity_trigger":             resourceTrigger(),
+			"teamcity_agent_requirement":   resourceAgentRequirement(),
 		},
 		Schema: map[string]*schema.Schema{
 			"address": &schema.Schema{

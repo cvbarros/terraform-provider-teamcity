@@ -96,3 +96,10 @@ resource "teamcity_snapshot_dependency" "canary_release_testing" {
   build_config_id        = "${teamcity_buildconfiguration.canary_release_testing}"
   source_build_config_id = "${teamcity_buildconfiguration.canary_build_release}"
 }
+
+resource "teamcity_agent_requirement" "env_testing" {
+  build_config_id = "${teamcity_buildconfiguration.canary_release_testing.id}"
+  condition       = "equals"
+  name            = "environment"
+  value           = "testing"
+}

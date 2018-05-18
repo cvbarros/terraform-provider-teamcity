@@ -19,6 +19,7 @@ type Triggers struct {
 
 // Trigger represents a build trigger to be associated with a build configuration. Use the constructor methods to create new instances.
 type Trigger struct {
+	// build type id
 	BuildTypeID string `json:"-"`
 
 	// disabled
