@@ -35,6 +35,14 @@ type Properties struct {
 	Items []*Property `json:"property"`
 }
 
+// NewPropertiesEmpty returns an instance of Properties collection with no properties
+func NewPropertiesEmpty() *Properties {
+	return &Properties{
+		Count: 0,
+		Items: make([]*Property, 0),
+	}
+}
+
 // NewProperties returns an instance of Properties collection
 func NewProperties(items ...*Property) *Properties {
 	count := len(items)

@@ -83,6 +83,11 @@ func (c *Client) AgentRequirementService(id string) *AgentRequirementService {
 	return newAgentRequirementService(id, c.HTTPClient, c.commonBase.New())
 }
 
+//AgentRequirementService returns a service to manage agent requirements for a build configuration with given id
+func (c *Client) BuildFeatureService(id string) *BuildFeatureService {
+	return newBuildFeatureService(id, c.HTTPClient, c.commonBase.New())
+}
+
 //ProjectParameterService returns a parameter service that operates parameters for the project with given id
 func (c *Client) ProjectParameterService(id string) *ParameterService {
 	return &ParameterService{

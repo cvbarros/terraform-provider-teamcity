@@ -20,9 +20,6 @@ type BuildType struct {
 	// description
 	Description string `json:"description,omitempty" xml:"description"`
 
-	// features
-	// Features *Features `json:"features,omitempty"`
-
 	// href
 	Href string `json:"href,omitempty" xml:"href"`
 
