@@ -20,7 +20,7 @@ resource "teamcity_build_configuration" "build_release" {
 }
 ```
 
-#2018-05-22
+# 2018-05-22
 Build Features will be implemented as a separate resource per "Build Feature Type". So for each kind of feature, there will be a separate resource that can be linked to the build configuration. Example:
 
 ```hcl
