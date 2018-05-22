@@ -1,10 +1,12 @@
 package teamcity
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
 	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 )
@@ -75,6 +77,7 @@ func resourceBuildConfiguration() *schema.Resource {
 						},
 					},
 				},
+				Set: stepSetHash,
 			},
 			"env_params": {
 				Type:     schema.TypeMap,
@@ -178,8 +181,8 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 			if err != nil {
 				return err
 			}
-			d.SetPartial("vcs_root")
 		}
+		d.SetPartial("vcs_root")
 	}
 
 	if v, ok := d.GetOk("step"); ok {
@@ -195,8 +198,8 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 			if err != nil {
 				return err
 			}
-			d.SetPartial("step")
 		}
+		d.SetPartial("step")
 	}
 
 	d.Partial(false)
@@ -278,6 +281,10 @@ func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) er
 			}
 			stepsToSave = append(stepsToSave, l)
 		}
+
+		if err := d.Set("step", stepsToSave); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -339,12 +346,11 @@ func buildStep(raw interface{}) (*api.Step, error) {
 	t := localStep["type"].(string)
 	switch t {
 	case "powershell":
-		b := api.StepPowershellBuilder
-		if v, ok := localStep["file"]; ok {
-			b = b.ScriptFile(v.(string))
-		}
+		b := api.StepPowershellBuilder.ScriptFile(localStep["file"].(string))
 		if v, ok := localStep["args"]; ok {
-			b = b.Args(v.(string))
+			if args := v.(string); args != "" {
+				b = b.Args(v.(string))
+			}
 		}
 		if v, ok := localStep["name"]; ok {
 			name = v.(string)
@@ -373,6 +379,26 @@ func buildVcsRootEntry(raw interface{}) *api.VcsRootEntry {
 func vcsRootHash(v interface{}) int {
 	raw := v.(map[string]interface{})
 	return schema.HashString(raw["id"].(string))
+}
+
+func stepSetHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
+
+	if v, ok := m["name"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+
+	if v, ok := m["file"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+
+	if v, ok := m["args"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+
+	return hashcode.String(buf.String())
 }
 
 func validateStepType() schema.SchemaValidateFunc {

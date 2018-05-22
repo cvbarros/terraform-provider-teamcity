@@ -86,5 +86,12 @@ func (f *FeatureCommitStatusPublisher) UnmarshalJSON(data []byte) error {
 	f.disabled = *disabled
 	f.properties = NewProperties(aux.Properties.Items...)
 
+	opt, err := CommitStatusPublisherGithubOptionsFromProperties(f.properties)
+	if err != nil {
+		return err
+	}
+
+	f.Options = opt
+
 	return nil
 }

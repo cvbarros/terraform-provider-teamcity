@@ -18,7 +18,7 @@ func TestAccTeamcityFeatureCommitStatusPublisher_Github(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckBuildFeatureDestroy(func() string { return out.BuildTypeID() }),
+		CheckDestroy: testAccCheckBuildFeatureDestroy(&bc.ID),
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: TestAccBuildFeatureCommitStatusPublisher_GithubPassword,
@@ -31,20 +31,20 @@ func TestAccTeamcityFeatureCommitStatusPublisher_Github(t *testing.T) {
 	})
 }
 
-func testAccCheckBuildFeatureDestroy(bt func() string) resource.TestCheckFunc {
+func testAccCheckBuildFeatureDestroy(bt *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(*api.Client)
 		return buildFeatureDestroyHelper(s, bt, client)
 	}
 }
 
-func buildFeatureDestroyHelper(s *terraform.State, bt func() string, client *api.Client) error {
+func buildFeatureDestroyHelper(s *terraform.State, bt *string, client *api.Client) error {
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "teamcity_feature_commit_status_publisher" {
 			continue
 		}
 
-		srv := client.BuildFeatureService(bt())
+		srv := client.BuildFeatureService(*bt)
 		_, err := srv.GetByID(r.Primary.ID)
 
 		if err != nil {
@@ -102,8 +102,8 @@ resource "teamcity_feature_commit_status_publisher" "test" {
 	github {
 		auth_type = "password"
 		host = "https://api.github.com"
-		username = "username"
-		password = "password"
+		username = "bob"
+		password = "1234"
 	}
 }
 `

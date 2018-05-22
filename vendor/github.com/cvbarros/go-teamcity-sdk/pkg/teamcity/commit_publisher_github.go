@@ -88,3 +88,28 @@ func (s StatusPublisherGithubOptions) Properties() *Properties {
 
 	return props
 }
+
+//CommitStatusPublisherGithubOptionsFromProperties grabs a Properties collection and transforms back to a StatusPublisherGithubOptions
+func CommitStatusPublisherGithubOptionsFromProperties(p *Properties) (*StatusPublisherGithubOptions, error) {
+	var out StatusPublisherGithubOptions
+	if host, ok := p.GetOk("github_host"); ok {
+		out.Host = host
+	} else {
+		return nil, fmt.Errorf("Properties do not have 'github_host' key")
+	}
+
+	if authType, ok := p.GetOk("github_authentication_type"); ok {
+		out.AuthenticationType = authType
+		switch authType {
+		case "password":
+			u, _ := p.GetOk("github_username")
+			out.Username = u
+
+			//Password or AccessToken is never returned from properties, because it is secure. Once set, we cannot read it back
+		}
+	} else {
+		return nil, fmt.Errorf("Properties do not have 'github_authentication_type' key")
+	}
+
+	return &out, nil
+}

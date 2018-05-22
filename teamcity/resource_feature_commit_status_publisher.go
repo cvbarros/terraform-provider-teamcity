@@ -1,10 +1,12 @@
 package teamcity
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
 	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
+	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 )
@@ -50,15 +52,20 @@ func resourceFeatureCommitStatusPublisher() *schema.Resource {
 							Optional: true,
 						},
 						"password": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:      schema.TypeString,
+							Optional:  true,
+							Sensitive: true,
+							Computed:  true,
 						},
 						"access_token": {
-							Type:     schema.TypeString,
-							Optional: true,
+							Type:      schema.TypeString,
+							Optional:  true,
+							Sensitive: true,
+							Computed:  true,
 						},
 					},
 				},
+				Set: githubPublisherOptionsHash,
 			},
 		},
 	}
@@ -97,6 +104,38 @@ func resourceFeatureCommitStatusPublisherCreate(d *schema.ResourceData, meta int
 }
 
 func resourceFeatureCommitStatusPublisherRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*api.Client).BuildFeatureService(d.Get("build_config_id").(string))
+
+	dt, err := getBuildFeatureCommitPublisher(client, d.Id())
+	if err != nil {
+		return err
+	}
+
+	if err := d.Set("build_config_id", dt.BuildTypeID()); err != nil {
+		return err
+	}
+
+	//TODO: Implement other publishers
+	if err := d.Set("publisher", "github"); err != nil {
+		return err
+	}
+
+	opt := dt.Options.(*api.StatusPublisherGithubOptions)
+
+	var optsToSave []map[string]interface{}
+	m := make(map[string]interface{})
+	m["auth_type"] = opt.AuthenticationType
+	m["host"] = opt.Host
+
+	if opt.AuthenticationType == "password" {
+		m["username"] = opt.Username
+	}
+
+	optsToSave = append(optsToSave, m)
+	if err := d.Set("github", optsToSave); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -127,11 +166,25 @@ func buildGithubCommitStatusPublisher(d *schema.ResourceData) (api.BuildFeature,
 	return api.NewFeatureCommitStatusPublisherGithub(opt)
 }
 
-// func getBuildFeatureCommitPublisher(c *api.BuildFeatureService, id string) (*api.BuildFeature, error) {
-// 	dt, err := c.GetByID(id)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func getBuildFeatureCommitPublisher(c *api.BuildFeatureService, id string) (*api.FeatureCommitStatusPublisher, error) {
+	dt, err := c.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
 
-// 	return dt, nil
-// }
+	fcsp := dt.(*api.FeatureCommitStatusPublisher)
+	return fcsp, nil
+}
+
+func githubPublisherOptionsHash(v interface{}) int {
+	var buf bytes.Buffer
+	m := v.(map[string]interface{})
+	buf.WriteString(fmt.Sprintf("%s-", m["auth_type"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["host"].(string)))
+
+	if v, ok := m["username"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+
+	return hashcode.String(buf.String())
+}

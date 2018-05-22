@@ -32,7 +32,7 @@ resource "teamcity_feature_commit_status_publisher" "github_commit_update" {
    build_config_id = "${teamcity_build_configuration.pull_request.id}
    publisher = "github"
    
-   options {
+   github {
       auth_type = "password"
       host = "https://api.github.com"
       username = "username"
