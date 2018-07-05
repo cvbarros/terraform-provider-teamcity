@@ -1,0 +1,13 @@
+udo: required
+services:
+  - docker
+language: go
+go:
+ - "1.10.x"
+env:
+  - TEAMCITY_HOST=http://localhost:8112
+
+script:
+  # run acceptance tests
+ - start_teamcity.sh  # start and wait for TeamCity
+ - go test -v -timeout 30s ./...

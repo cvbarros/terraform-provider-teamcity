@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+docker-compose up -d
+
+until $(curl --output /dev/null --silent --head --fail http://localhost:8112/login.html); do
+    echo "Waiting for TeamCity to become available.."
+    sleep 5
+done
