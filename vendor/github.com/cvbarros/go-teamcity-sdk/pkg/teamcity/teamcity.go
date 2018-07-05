@@ -54,13 +54,25 @@ type Client struct {
 	Parameters *ParameterService
 }
 
-// New creates a new client for interating with TeamCity API
-func New(userName, password string) *Client {
-	address := os.Getenv("TEAMCITY_HOST")
+// New creates a new client for server address specified at TEAMCITY_ADDR environment variable
+func New(userName, password string) (*Client, error) {
+	address := os.Getenv("TEAMCITY_ADDR")
 	if address == "" {
-		address = "http://192.168.99.100:8112"
+		return nil, fmt.Errorf("TEAMCITY_ADDR environment variable not set, specify address explicit by setting the variable or using NewWithAddress constructor")
 	}
 
+	return newClientInstance(userName, password, address)
+}
+
+// NewWithAddress creates a new client by using the explicit server address from the parameter
+func NewWithAddress(userName, password, address string) (*Client, error) {
+	if address == "" {
+		return nil, fmt.Errorf("address is required")
+	}
+	return newClientInstance(userName, password, address)
+}
+
+func newClientInstance(userName, password, address string) (*Client, error) {
 	sharedClient := sling.New().Base(address+"/httpAuth/app/rest/").
 		SetBasicAuth(userName, password).
 		Set("Accept", "application/json")
@@ -75,7 +87,7 @@ func New(userName, password string) *Client {
 		BuildTypes: newBuildTypeService(sharedClient.New()),
 		Server:     newServerService(sharedClient.New()),
 		VcsRoots:   newVcsRootService(sharedClient.New()),
-	}
+	}, nil
 }
 
 //AgentRequirementService returns a service to manage agent requirements for a build configuration with given id
