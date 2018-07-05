@@ -8,10 +8,11 @@ language: go
 go:
  - "1.10.x"
 env:
-  - TEAMCITY_HOST=http://localhost:8112
-  - TF_ACC=1
-  - TEAMCITY_USER=admin
-  - TEAMCITY_PASSWORD=admin
+  global:
+    - TEAMCITY_HOST=http://localhost:8112
+    - TF_ACC=1
+    - TEAMCITY_USER=admin
+    - TEAMCITY_PASSWORD=admin
 
 script:
   # run acceptance tests
