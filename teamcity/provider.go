@@ -21,7 +21,7 @@ func Provider() terraform.ResourceProvider {
 			"address": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("TEAMCITY_URL", nil),
+				DefaultFunc: schema.EnvDefaultFunc("TEAMCITY_ADDR", nil),
 			},
 			"username": &schema.Schema{
 				Type:        schema.TypeString,
@@ -45,6 +45,5 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		Username: d.Get("username").(string),
 		Password: d.Get("password").(string),
 	}
-	client := config.Client()
-	return client, nil
+	return config.Client()
 }
