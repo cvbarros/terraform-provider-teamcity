@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE auth-preset SYSTEM "auth-preset.dtd">
+
+<auth-preset name="Active Directory (LDAP with NTLM)">
+  <description>LDAP authentication (basic HTTP and NTLM)</description>
+  <auth-modules>
+    <auth-module type="LDAP"/>
+    <auth-module type="HTTP-Basic"/>
+    <auth-module type="HTTP-NTLM">
+      <property key="allowCreatingNewUsersByLogin">false</property>
+    </auth-module>
+  </auth-modules>
+</auth-preset>

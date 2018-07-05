@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+  <param name="queue-enabled" value="true" />
+  <param name="state-changed-reason" value="" />
+  <param name="state-changed-actor" value="USER" />
+  <param name="state-changed-by" value="" />
+  <param name="state-changed-on" value="1357945200000" />
+</settings>
+

@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+
+<!ELEMENT roles (role*)>
+
+<!ELEMENT permission EMPTY>
+<!ATTLIST permission
+  id NMTOKEN #REQUIRED
+>
+
+<!ELEMENT permissions (include|permission)*>
+
+<!ELEMENT include EMPTY>
+<!ATTLIST include
+  role-id IDREF #REQUIRED
+>
+
+<!ELEMENT role (permissions)>
+<!ATTLIST role
+  id ID #REQUIRED
+  name CDATA #REQUIRED
+  orderNum NMTOKEN #IMPLIED
+  project-association-disabled (true|false|yes|no) #IMPLIED
+>

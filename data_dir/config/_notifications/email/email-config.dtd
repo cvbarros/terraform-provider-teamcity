@@ -1,0 +1,8 @@
+<!ELEMENT email EMPTY>
+<!ATTLIST email
+  email-server CDATA #REQUIRED
+  email-server-port NMTOKEN #IMPLIED
+  email-login CDATA #IMPLIED
+  email-password CDATA #IMPLIED
+  securityMode CDATA #IMPLIED
+>

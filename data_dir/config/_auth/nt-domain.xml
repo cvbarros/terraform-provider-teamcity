@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE auth-preset SYSTEM "auth-preset.dtd">
+
+<auth-preset name="Microsoft Windows Domain">
+  <description>Microsoft Windows domain authentication (basic HTTP and NTLM)</description>
+  <auth-modules>
+    <auth-module type="NT-Domain"/>
+    <auth-module type="HTTP-Basic"/>
+    <auth-module type="HTTP-NTLM"/>
+  </auth-modules>
+</auth-preset>

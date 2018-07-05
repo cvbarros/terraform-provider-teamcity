@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<backup-settings>
+  <general>
+    <backup-dir path='backup' />
+  </general>
+</backup-settings>

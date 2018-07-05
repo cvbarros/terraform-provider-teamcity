@@ -1,0 +1,6 @@
+<!DOCTYPE mapping SYSTEM "ldap-mapping.dtd">
+<mapping>
+  <!-- Example mapping entry:
+  <group-mapping teamcityGroupKey="GROUP" ldapGroupDn="CN=Group,DC=Example,DC=Com"/>
+  -->
+</mapping>

@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+
+<!ELEMENT auth-config (auth-modules?, login-description?, guest-login?)>
+
+<!ELEMENT auth-modules (auth-module*)>
+
+<!ELEMENT auth-module (property*)>
+<!ATTLIST auth-module
+     type CDATA #REQUIRED
+>
+
+<!ELEMENT property (#PCDATA)>
+<!ATTLIST property
+     key CDATA #REQUIRED
+>
+
+<!ELEMENT login-description (#PCDATA)>
+
+<!ELEMENT guest-login EMPTY>
+<!ATTLIST guest-login
+    allowed (true|false|yes|no) #REQUIRED
+    guest-username CDATA #IMPLIED
+>

@@ -16,5 +16,8 @@
 # VSCode
 .vscode/
 
+#TeamCity docker mounts
+log_dir/
+
 #Terraform
 .terraform/

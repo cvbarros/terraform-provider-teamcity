@@ -1,0 +1,44 @@
+# This is a sample configuration file for TeamCity external change viewers
+# To make it effective, copy it to change-viewers.properties file
+# This file is overwritten with default content on each server startup.
+
+# Once configured, it adds the following links into TeamCity web UI for the matching VCS roots:
+# - link to the changelist in external viewer (see type "changeSetUrl" below)
+# - link to the file diff view in external viewer (see types "fileDiffUrl" and "newFileUrl" below)
+
+
+# General format is:
+#  *.<type>=<external tool link>             - a link to be used for all the VCS roots
+#  <VCS type>.<type>=<external tool link>    - a link to be used for all the VCS roots of <VCS type> type
+#  <rootId>.<type>=<external tool link>      - a link to be used for VCS root with id <rootId>
+# Where <type> is one of the following: "changeSetUrl", "fileDiffUrl", or "newFileUrl"
+
+# The list of supported meta-variables that can be referenced in the <link> part:
+#   ${changeSetDisplayRevision} - change set revision as seen in the TeamCity web UI
+#   ${changeSetInternalRevision} - internal change set revision
+#   ${user} - VCS username of user who performed the commit
+# For each changed file (for fileDiffUrl, newFileUrl, and removedFileUrl types):
+#   ${relativePath} - the relative VCS path of the changed file
+#   ${absolutePath} - the absolute VCS path (includes the VCS root URL)
+#   ${fileRevisionBefore} - file revision before the change
+#   ${fileRevisionAfter} - file revision after the change
+#   ${<VCS root property>} - (experimental!) property of the VCS root of the change. The names can be looked up in parameters of a build
+#      with names like vcsroot.<VCS root name>.<VCS root property>
+
+# Other available formats
+# The url for all VCS roots:
+# *.changeSetUrl=http://external-tool-url/?cs=${changeSetDisplayRevision}
+# The url for all roots of type 'svn':
+# svn.changeSetUrl=http://external-tool-url/?cs=${changeSetDisplayRevision}
+
+# Backwards compatibility: you can omit the link type in the key,
+# in this case 'changeSetUrl' type will be used.
+
+# EXAMPLE
+# Provided 'AntRepo' is the VCS root id of 'Apache Ant' project
+# the following properties configure three types of links:
+# change set link, file diff link and new file link.
+# Internal VCS root id is also supported.
+# AntRepo.changeSetUrl=http://fisheye6.atlassian.com/changelog/ant/?cs=${changeSetDisplayRevision}
+# AntRepo.fileDiffUrl=http://fisheye6.atlassian.com/browse/ant/core/trunk/${relativePath}?r1=${fileRevisionBefore}&r2=${fileRevisionAfter}
+# AntRepo.newFileUrl=http://fisheye6.atlassian.com/browse/ant/core/trunk/${relativePath}?&r=${fileRevisionAfter}

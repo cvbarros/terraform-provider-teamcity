@@ -1,0 +1,200 @@
+# This is a sample configuration file for TeamCity LDAP integration
+# To make it effective, copy it to ldap-config.properties file
+# This file is overwritten with default content on each server startup.
+# See documentation at https://confluence.jetbrains.com/display/TCD18/LDAP+Integration
+# Note that all the values in the file should be property-file-escaped. Most importantly, backslash ("\") should be replaced with two backslashes ("\\")
+
+### MANDATORY SETTINGS ###
+
+# The url(s) of LDAP server.
+# Example:  java.naming.provider.url=ldap://example.com:389/DC=Example%20Inc,DC=Com
+# Note that the value should be url-escaped (e.g. all whitespaces should be "%20").
+#java.naming.provider.url=ldap://<server>:389/<distinguished name>
+
+# The credentials to use when browsing LDAP during the login and synchronization.
+# Note that many LDAP server require a full DN in "principal" (e.g. CN=Administrator,CN=Users,DC=example inc,DC=com), and this value should not be url-escaped.
+# For Active Directory you can include full DN or full login name with domain (e.g. DOMAIN\\Username )
+# The user must have read access to all LDAP entries under 'teamcity.users.base' and 'teamcity.groups.base' (see below).
+# To store the password value not in clear text, refer to https://confluence.jetbrains.com/display/TCD18/LDAP+Integration#LDAPIntegration-scrambledPassword
+#java.naming.security.principal=<username>
+#java.naming.security.credentials=<password>
+
+
+# General user login description:
+# Based on the user-entered login name and configuration settings,
+# TeamCity determines what login name to use for LDAP bind operation and what TeamCity username to use.
+# The settings for these operations are described below.
+
+# The users base DN. If defined, users are retrieved only from the LDAP subtree denoted by this DN.
+# This DN should be "relative" to the root specified by "java.naming.provider.url".
+# If omitted, it is assumed empty and user searches are performed under the entry denoted by "java.naming.provider.url".
+#teamcity.users.base=CN=users
+
+# LDAP filter string to search for LDAP user entry during TeamCity login.
+# The search is performed inside the LDAP entry denoted by "java.naming.provider.url" and "teamcity.users.base" combined.
+# Use $capturedLogin$ string to reference the name that user entered on login page and that was optionally modified via
+#   "teamcity.users.login.capture" property (see below).
+# Use $login$ string to reference raw user-entered value not affected by "teamcity.users.login.capture".
+# The user found is then used to perform the actual login operation (LDAP bind). LDAP entry DN is used for the bind.
+# Active Directory:
+#teamcity.users.login.filter=(sAMAccountName=$capturedLogin$)
+# Other frequent options:
+#teamcity.users.login.filter=(cn=$capturedLogin$)
+#teamcity.users.login.filter=(uid=$capturedLogin$)
+
+# The name of LDAP attribute that will be used to match LDAP entries with TeamCity users.
+# The value of the attribute will be used as TeamCity user's username.
+# Active Directory:
+#teamcity.users.username=sAMAccountName
+# Other frequent options:
+#teamcity.users.username=cn
+#teamcity.users.username=uid
+
+# Optional additional Java Naming options for advanced usages,
+#   see http://docs.oracle.com/javase/6/docs/api/javax/naming/Context.html#field_detail
+# Ignore referrals returned by LDAP server ("follow" by default). See also https://youtrack.jetbrains.com/issue/TW-35264
+#java.naming.referral=ignore
+# Authentication options, not all options might work
+#java.naming.security.authentication=simple
+
+### USERNAME TRANSFORMATION SETTINGS ###
+
+# Regular expression that all user-entered login names should match. Login will be denied if user enters non-matching name on login form.
+# Do not forget to escape the value: http://java.sun.com/j2se/1.5.0/docs/api/java/util/Properties.html#load(java.io.InputStream)
+# default rejects all names that contain "\" or "@".
+#teamcity.auth.loginFilter=[^/\\\\@]+
+# to allow any name, use
+#teamcity.auth.loginFilter=.*
+
+# A pattern that can be used to extract part of user-entered login name.
+# The extracted part can then be used via "$capturedLogin$" substitution.
+# If "teamcity.users.username" is not defined, $capturedLogin$ is also used as TeamCity username.
+# If not specified, $capturedLogin$ is equal to the raw user-entered string (also available as $login$).
+# The pattern is a regular expression. The first matched group of the pattern will be used as value of $capturedLogin$.
+# Example: store "JSmith" if user entered EXAMPLE\JSmith
+#teamcity.users.login.capture=EXAMPLE\\\\(.*)
+
+# (Only actual if you change LDAP settings and want to transform user's TeamCity usernames)
+# A transformation that will be used to get previous TeamCity username of the user that is logging in.
+# If defined, on successful user login, TeamCity searches for the existing user by previous username
+#   and if found, updates the username of the found user to the new one.
+# Supports "$login$" and "$capturedLogin$" (see teamcity.users.login.capture) substitutions.
+# New user username can be referenced by "$username$"
+#teamcity.users.previousUsername=EXAMPLE\\$login$
+
+####################################################################################################
+# LDAP SYNCHRONIZATION
+####################################################################################################
+
+### USERS SETTINGS ###
+
+# Set to "true" to enable the synchronization for existing users' properties.
+# For users creation and deletion, see teamcity.options.groups.synchronize and consider mapping "All Users" group
+teamcity.options.users.synchronize=false
+
+# The user search LDAP filter used to retrieve users to synchronize.
+# The search is performed inside the LDAP entry denoted by "teamcity.users.base".
+# Note: during the process of user authentication the "teamcity.users.login.filter" filter is used, not this one.
+#teamcity.users.filter=(objectClass=user)
+
+### GROUPS SETTINGS ###
+# These settings are mandatory if groups synchronization is turned on
+
+# Set to "true" to enable the synchronization for groups listed in ldap-mapping.xml file.
+# This syncs user group membership in TeamCity based on that in LDAP.
+# The users affected should be matched by 'teamcity.users.base'/'teamcity.users.filter'. The groups affected should be matched by 'teamcity.groups.base'/'teamcity.groups.filter'
+# IMPORTANT NOTE: The set of groups processed by TeamCity is fixed: the groups should be created manually in TeamCity and listed in ldap-mapping.xml file.
+# Unless 'teamcity.groups.retrieveUsersFromNestedGroups' is set to true, only direct members of LDAP groups are processed
+teamcity.options.groups.synchronize=false
+
+# The groups base DN. If defined, groups are retrieved only from the LDAP subtree denoted by this DN.
+# This DN should be "relative" to the root specified by "java.naming.provider.url".
+# If omitted, it is assumed empty and group searches are performed under the entry denoted by "java.naming.provider.url".
+#teamcity.groups.base=CN=users
+
+# The group search LDAP filter used to retrieve groups to synchronize.
+# The search is performed inside the LDAP entry denoted by "teamcity.groups.base". The result should include all the groups configured in the ldap-mapping.xml file.
+#teamcity.groups.filter=(objectClass=group)
+
+# Set to "true" to enable automatic user creation and deletion during group synchronization.
+# Creates users in TeamCity if they are found in one of the mapped groups
+teamcity.options.createUsers=false
+# Deleted users in TeamCity if they are not found in any of the mapped groups
+teamcity.options.deleteUsers=false
+
+### OPTIONAL SETTINGS ###
+
+# The time interval between synchronizations (in milliseconds). By default, it is one hour.
+teamcity.options.syncTimeout=3600000
+
+# The LDAP attribute of a group storing it's members.
+# Note: LDAP attribute should contain the full DN of the member, one attribute per member. See also "teamcity.users.property.memberId".
+teamcity.groups.property.member=member
+
+# The name of LDAP attribute containing the DN. By default, 'distinguishedName' is used.
+#teamcity.property.distinguishedName=distinguishedName
+
+# The name of LDAP attribute containing the id used in the "member" attribute of a group (defined by "teamcity.groups.property.member").
+# By default, the "member" attribute of a group is expected to contain full DN of user LDAP entry.
+#teamcity.users.property.memberId=uid
+
+# "teamcity.users.property.*" properties below are used to update user's details on performing LDAP synchronization.
+# LDAP synchronization for a user occurs on new user creation and in background when "teamcity.options.users.synchronize" property is set to "true"
+
+# The name of LDAP attribute to retrieve user's full name
+teamcity.users.property.displayName=displayName
+
+# The name of LDAP attribute to retrieve user's email
+teamcity.users.property.email=mail
+
+# The names of LDAP attribute to set user's properties
+#teamcity.users.property.<teamcity-user-property-name>=<LDAP attribute>
+# e.g. to retrieve user's Jabber account from LDAP attribute "jabberAccount", use:
+#teamcity.users.property.plugin\:notificator\:jabber\:jabber-account=jabberAccount
+# to retrieve user's VCS username from LDAP attribute, use:
+#teamcity.users.property.plugin\:vcs\:anyVcs\:anyVcsRoot=<LDAP attribute>
+#teamcity.users.property.plugin\:vcs\:svn\:anyVcsRoot=<LDAP attribute>
+#teamcity.users.property.plugin\:vcs\:jetbrains.git\:anyVcsRoot=<LDAP attribute>
+#teamcity.users.property.plugin\:vcs\:mercurial\:anyVcsRoot=<LDAP attribute>
+#teamcity.users.property.plugin\:vcs\:perforce\:anyVcsRoot=<LDAP attribute>
+#teamcity.users.property.plugin\:vcs\:cvs\:anyVcsRoot=<LDAP attribute>
+#teamcity.users.property.plugin\:vcs\:tfs\:anyVcsRoot=<LDAP attribute>
+#teamcity.users.property.plugin\:vcs\:vss\:anyVcsRoot=<LDAP attribute>
+#teamcity.users.property.plugin\:vcs\:clearcase\:anyVcsRoot=<LDAP attribute>
+#teamcity.users.property.plugin\:vcs\:starteam\:anyVcsRoot=<LDAP attribute>
+#teamcity.users.property.plugin\:vcs\:vault-vcs\:anyVcsRoot=<LDAP attribute>
+
+# Allow LDAP attribute parameter-like resolution in the value of "teamcity.users.property.*" options
+# With the option set, one can reference LDAP attributes via "%ldap.userEntry.<LDAP attribute>%" syntax in "teamcity.users.property.*" properties
+# instead of specifying single LDAP attribute name.
+# e.g. teamcity.users.property.email=%ldap.userEntry.sAMAccountName%@domain.com
+#teamcity.users.properties.resolve=true
+
+### OTHER ###
+# The properties below were added to workaround the limitations of particular LDAP servers,
+# usually caused by performance issues or changes of the environment.
+# Unless you're experiencing described problems, it is not recommended to uncomment them:
+# - LDAP integration may become slower, not faster
+# - certain existing features may not be applicable
+
+# By default user's properties are updated from LDAP only if not changed by user.
+# When this property is set to 'true', any changes made in web UI to user's synchronized properties are overriden by LDAP-provided values on the next LDAP sync
+#teamcity.users.forceUpdatePropertiesDuringSync=true
+
+# The following properties can be used when only TeamCity users should be requested during users sync.
+# Useful when the number of LDAP users greatly exceeds the number of TeamCity users.
+# See the details in http://youtrack.jetbrains.net/issue/TW-17332
+# IMPORTANT: turning on this property suppresses the effect of "teamcity.options.createUsers".
+#teamcity.users.syncOnlyTeamcityUsers=true
+#teamcity.users.filterPackSize=100
+
+# When set to 'true', TeamCity processes nested LDAP groups to get members of a the mapped groups and treats the found users as if they are direct members of the group.
+# Note: when using this option make sure that all the groups in the hierarchy are matched by 'teamcity.groups.base'/'teamcity.groups.filter'
+#teamcity.groups.retrieveUsersFromNestedGroups=true
+
+# The following property can be used when only groups mentioned in a mapping file should be fetched from LDAP.
+# Useful when the number of LDAP groups greatly exceeds the number of mapped groups.
+# IMPORTANT: for this property it is essential that "teamcity.property.distinguishedName" is set right,
+# otherwise TeamCity won't be able to find the groups.
+# See the details in http://youtrack.jetbrains.net/issue/TW-21301
+#teamcity.groups.fetchOnlyMappedGroups=true

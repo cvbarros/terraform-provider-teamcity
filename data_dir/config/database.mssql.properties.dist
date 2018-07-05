@@ -1,0 +1,32 @@
+# This is a sample file for configuring TeamCity to use an external database.
+# To make it effective, copy it to the "database.properties" file and modify the settings
+# according to your environment.
+# Do not modify this file, it will be overwritten on the TeamCity server start-up.
+# See documentation at https://confluence.jetbrains.com/display/TCD18/Setting+up+an+External+Database
+
+# Database: Microsoft SQL server (via native driver)
+connectionUrl=jdbc:sqlserver://<hostname>:1433;databaseName=<dbname>
+
+# If you use a named instance, specify the instance name in the connection URL:
+# connectionUrl=jdbc:sqlserver://<host>\\<instance_name>:1433;databaseName=<database_name>
+
+
+connectionProperties.user=<username>
+connectionProperties.password=<password>
+# Note: the two properties above are *not* used in case of Integrated Authentication.
+
+
+# If you prefer to use MS SQL integrated security (Windows authentication), see the documentation at 
+# https://confluence.jetbrains.com/display/TCD18/Setting+up+an+External+Database#SettingupanExternalDatabase-MSSQLIntegratedSecurity
+# The connection URL to use MS SQL integrated security: 
+# connectionUrl=jdbc:sqlserver://<host>:1433;databaseName=<database name>;integratedSecurity=true
+# Note: No user names or passwords should be specified.
+
+# The maximum number of connections TeamCity can open on the database server.
+maxConnections=50
+
+# Specifies whether TeamCity should check each jdbc connection before use.
+# It reduces the system performance but avoids cases when the system uses
+# a connection that was closed by the database server due to a time-out or this
+# connection was broken during the previous operation.
+testOnBorrow=true

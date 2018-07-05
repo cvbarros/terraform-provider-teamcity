@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE email SYSTEM "email-config.dtd">
+
+<email email-server="mail" email-server-port="25" email-from="TeamCity"/>

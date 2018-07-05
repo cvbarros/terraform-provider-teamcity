@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+
+<!--
+     This is a DTD for Jetbrains BuildServer configuration file,
+     placed at $HOME/.BuildServer/config/main-config.xml
+-->
+
+<!-- Server root - set of Build Types and User Groups -->
+<!ELEMENT server (version|db-compact|backup|artifacts|comment-transformation|permissions|build-metrics|build-settings|vcs-settings)*>
+<!ATTLIST server
+    rootURL CDATA #IMPLIED
+>
+
+<!ELEMENT version EMPTY>
+<!ATTLIST version
+    number CDATA #REQUIRED
+>
+
+<!ELEMENT db-compact (scheduler)*>
+<!ATTLIST db-compact
+    enabled (true|false|yes|no) #REQUIRED
+    max-execution-time CDATA #IMPLIED
+>
+
+<!ELEMENT scheduler (#PCDATA)>
+<!ATTLIST scheduler
+    hour CDATA #IMPLIED
+    minute CDATA #IMPLIED
+    day-of-week (monday|tuesday|wednesday|thursday|friday|saturday|sunday) #IMPLIED
+>
+
+<!ELEMENT backup (backup-dir?)>
+
+<!ELEMENT backup-dir EMPTY>
+<!ATTLIST backup-dir
+    path CDATA #REQUIRED
+>
+
+<!ELEMENT comment-transformation (transformation-pattern)*>
+<!ELEMENT transformation-pattern EMPTY>
+<!ATTLIST transformation-pattern
+    search CDATA #REQUIRED
+    replace CDATA #REQUIRED
+    description CDATA #IMPLIED
+>
+
+<!ELEMENT artifacts EMPTY>
+<!ATTLIST artifacts
+    maxArtifactSize CDATA #IMPLIED
+    artifact-paths CDATA #REQUIRED
+>
+
+<!ELEMENT build-settings EMPTY>
+<!ATTLIST build-settings
+    executionTimeout CDATA #IMPLIED
+>
+
+<!ELEMENT vcs-settings EMPTY>
+<!ATTLIST vcs-settings
+    modification-check-interval CDATA #IMPLIED
+    quiet-period CDATA #IMPLIED
+>
+
+<!ELEMENT permissions EMPTY>
+<!ATTLIST permissions
+    perProjectPermissions (true|false|yes|no) #REQUIRED
+>
+
+<!ELEMENT build-metrics (statisticValue)*>
+<!ELEMENT statisticValue EMPTY>
+<!ATTLIST statisticValue
+    key CDATA #REQUIRED
+    description CDATA #REQUIRED
+>

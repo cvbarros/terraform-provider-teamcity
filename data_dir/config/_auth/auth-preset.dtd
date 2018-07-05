@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+
+<!--<!ENTITY % auth-config SYSTEM "../../../db/resources/auth-config.dtd">-->
+<!ENTITY % auth-config SYSTEM "../auth-config.dtd">
+%auth-config;
+
+<!--
+     This is a DTD for Jetbrains BuildServer authentication presets files,
+     placed at $HOME/.BuildServer/config/_auth/*.xml
+-->
+
+<!ELEMENT auth-preset (description?, auth-modules)>
+<!ATTLIST auth-preset
+    name CDATA #REQUIRED
+>
+
+<!ELEMENT description (#PCDATA)>
+<!ATTLIST description EMPTY>

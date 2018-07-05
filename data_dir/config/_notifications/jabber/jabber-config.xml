@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE jabber SYSTEM "jabber-config.dtd">
+
+<jabber server-host="jabber.some.domain" server-user="user" server-user-password="password"/>

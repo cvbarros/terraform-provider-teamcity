@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE auth-preset SYSTEM "auth-preset.dtd">
+
+<auth-preset name="Default">
+  <description>Built-in authentication (basic HTTP)</description>
+  <auth-modules>
+    <auth-module type="Default">
+      <property key="freeRegistrationAllowed">true</property>
+    </auth-module>
+    <auth-module type="HTTP-Basic"/>
+  </auth-modules>
+</auth-preset>

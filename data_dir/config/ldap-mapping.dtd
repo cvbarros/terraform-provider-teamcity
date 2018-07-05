@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='ISO-8859-1' ?>
+
+<!ELEMENT mapping (group-mapping*)>
+
+<!ELEMENT group-mapping EMPTY>
+<!ATTLIST group-mapping
+  teamcityGroupKey CDATA #REQUIRED
+  ldapGroupDn CDATA #REQUIRED
+>

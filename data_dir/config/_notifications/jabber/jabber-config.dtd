@@ -1,0 +1,7 @@
+<!ELEMENT jabber EMPTY>
+<!ATTLIST jabber
+  server-host CDATA #REQUIRED
+  server-port NMTOKEN #IMPLIED
+  server-user CDATA #REQUIRED
+  server-user-password CDATA #REQUIRED
+>

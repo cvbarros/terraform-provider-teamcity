@@ -1,0 +1,167 @@
+<!DOCTYPE roles SYSTEM "roles-config.dtd">
+
+<!--
+Available permission ids are:
+
+  // permissions that can be associated with a project
+  RUN_BUILD("Run build"),
+  CANCEL_BUILD("Stop build / remove from queue"),
+  CANCEL_ANY_PERSONAL_BUILD("Stop / remove from queue any personal build"),
+  PIN_UNPIN_BUILD("Pin / unpin build"),
+  TAG_BUILD("Tag build"),
+  PAUSE_ACTIVATE_BUILD_CONFIGURATION("Pause / activate build configuration"),
+  COMMENT_BUILD("Comment build"),
+  CLEAN_BUILD_CONFIGURATION_SOURCES("Clean build configuration sources"),
+  ASSIGN_INVESTIGATION("Assign / unassign investigation"),
+  VIEW_PROJECT("View project and all parent projects"),
+  VIEW_BUILD_CONFIGURATION_SETTINGS("View build configuration settings"),
+  VIEW_FILE_CONTENT("View VCS file content"),
+  EDIT_VCS_MODIFICATION("Edit VCS change description"),
+  EDIT_PROJECT("Edit project"),
+  CHANGE_CLEANUP_RULES("Change cleanup rules"),
+  CUSTOMIZE_BUILD_PARAMETERS("Customize build parameters"),
+  CUSTOMIZE_BUILD_REVISIONS("Customize build revisions"),
+  CHANGE_USER_ROLES_IN_PROJECT("Change user roles in project"),
+  LABEL_BUILD("Manually label / merge build sources"),
+  ARCHIVE_PROJECT("Archive / dearchive project"),
+  MANAGE_BUILD_PROBLEMS("Mute / unmute problems in project"),
+  MANAGE_BUILD_PROBLEM_INSTANCES("Change build status"),
+  VIEW_BUILD_RUNTIME_DATA("View build runtime parameters and data"),
+  CREATE_SUB_PROJECT("Create subproject"),
+  DELETE_SUB_PROJECT("Delete subproject"),
+  CREATE_DELETE_VCS_ROOT("Create / delete VCS root"),
+  MANAGE_AGENT_POOLS_FOR_PROJECT("Change agent pools associated with project"),
+  REMOVE_BUILD("Remove finished build"),
+  EDIT_VERSIONED_SETTINGS("Enable / disable versioned settings"),
+  EDIT_ENFORCED_SETTINGS("Enable / disable enforced settings in project"),
+  ENABLE_DISABLE_AGENT_FOR_PROJECT("Enable / disable agents associated with project"),
+  START_STOP_CLOUD_AGENT("Start / Stop cloud agent"),
+  VIEW_AGENT_CLOUDS("View cloud images and instances"),
+  MANAGE_AGENT_CLOUDS("Manage project's agent cloud profiles"),
+  ///VIEW_AGENT_USAGE_STATISTICS_FOR_PROJECT("View project agent usage statistics"),
+  CHANGE_AGENT_RUN_CONFIGURATION_POLICY_FOR_PROJECT("Change agent run configuration policy for project"),
+  ADMINISTER_AGENT_FOR_PROJECT("Administer project agent machines (e.g. reboot, view agent logs, etc.)"),
+  REMOVE_AGENT_FOR_PROJECT("Remove project agent"),
+  AUTHORIZE_AGENT_FOR_PROJECT("Authorize project agent"),
+  VIEW_AGENT_DETAILS_FOR_PROJECT("View project agents details"),
+
+  // project related permissions that cannot be associated with any particular project
+  REORDER_BUILD_QUEUE("Reorder builds in queue"),
+
+  // non project related permissions
+  CREATE_USER("Create user account"),
+  DELETE_USER("Delete user account"),
+  CHANGE_USER("Modify user profile and roles"),
+  CHANGE_USER_NOTIFICATIONS("Change user / group notification rules"),
+  MANAGE_SERVER_LICENSES("Manage server licenses"),
+  CHANGE_SERVER_SETTINGS("Change server settings"),
+  CHANGE_AGENT_RUN_CONFIGURATION_POLICY("Change agent run configuration policy"),
+  CLEAN_AGENT_SOURCES("Clean sources on agent"),
+  ENABLE_DISABLE_AGENT("Enable / disable agent"),
+  AUTHORIZE_AGENT("Authorize agent"),
+  VIEW_AGENT_DETAILS("View agent details"),
+  CONFIGURE_SERVER_DATA_CLEANUP("Configure server data cleanup"),
+  CHANGE_OWN_PROFILE("Change own profile"),
+  VIEW_AGENT_USAGE_STATISTICS("View agent usage statistics"),
+  REMOVE_AGENT("Remove agent"),
+  CREATE_USERGROUP("Create user group"),
+  DELETE_USERGROUP("Delete user group"),
+  CHANGE_USERGROUP("Modify user group (name, description and roles)"),
+  ASSIGN_USERS_ADD_SUBGROUPS("Assign / unassign users to groups or change groups hierarchy"),
+  MANAGE_ROLES("Manage roles (create, delete, change permissions)"),
+  ADMINISTER_AGENT("Administer build agent machines (e.g. reboot, view agent logs, etc.)"),
+  VIEW_AUDIT_LOG("View audit log"),
+  VIEW_SERVER_ERRORS("View server errors"),
+  VIEW_USAGE_STATISTICS("View usage statistics"),
+  BACKUP("Change backup settings and control backup process"),
+  IMPORT_PROJECTS("Import projects"),
+  MANAGE_AGENT_POOLS("Manage agent pools"),
+  VIEW_USER_PROFILE("View user profile"),
+  VIEW_ALL_USERS("View all registered users"),
+  MANAGE_SERVER_INSTALLATION("Manage server installation: view logs, restart, etc."),
+  VIEW_SERVER_SETTINGS("View server settings")
+
+Note: SYSTEM_ADMIN role id is preserved, role with such id must not occur in this config file.
+-->
+
+
+<roles>
+  <role id="PROJECT_VIEWER" orderNum="10" name="Project viewer">
+    <permissions>
+      <permission id="VIEW_PROJECT"/>
+    </permissions>
+  </role>
+  <role id="PROJECT_DEVELOPER" orderNum="20" name="Project developer">
+    <permissions>
+      <include role-id="PROJECT_VIEWER"/>
+      <permission id="RUN_BUILD"/>
+      <permission id="CUSTOMIZE_BUILD_PARAMETERS"/>
+      <permission id="CUSTOMIZE_BUILD_REVISIONS"/>
+      <permission id="CANCEL_BUILD"/>
+      <permission id="CLEAN_BUILD_CONFIGURATION_SOURCES"/>
+      <permission id="PAUSE_ACTIVATE_BUILD_CONFIGURATION"/>
+      <permission id="PIN_UNPIN_BUILD"/>
+      <permission id="TAG_BUILD"/>
+      <permission id="COMMENT_BUILD"/>
+      <permission id="LABEL_BUILD"/>
+      <permission id="ASSIGN_INVESTIGATION"/>
+      <permission id="VIEW_BUILD_CONFIGURATION_SETTINGS"/>
+      <permission id="VIEW_FILE_CONTENT"/>
+      <permission id="REORDER_BUILD_QUEUE"/>
+      <permission id="VIEW_AGENT_DETAILS"/>
+      <permission id="VIEW_AGENT_USAGE_STATISTICS"/>
+      <permission id="VIEW_BUILD_RUNTIME_DATA"/>
+      <permission id="VIEW_ALL_USERS" />
+      <permission id="VIEW_AGENT_CLOUDS" />
+    </permissions>
+  </role>
+  <role id="PROJECT_ADMIN" orderNum="30" name="Project administrator">
+    <permissions>
+      <include role-id="PROJECT_DEVELOPER"/>
+      <permission id="CHANGE_CLEANUP_RULES"/>
+      <permission id="EDIT_PROJECT"/>
+      <permission id="MANAGE_AGENT_POOLS_FOR_PROJECT"/>
+      <permission id="CANCEL_ANY_PERSONAL_BUILD"/>
+      <permission id="VIEW_AUDIT_LOG"/>
+      <permission id="ARCHIVE_PROJECT"/>
+      <permission id="MANAGE_BUILD_PROBLEMS"/>
+      <permission id="MANAGE_BUILD_PROBLEM_INSTANCES"/>
+      <permission id="VIEW_USER_PROFILE"/>
+      <permission id="CHANGE_USER_ROLES_IN_PROJECT"/>
+      <permission id="REMOVE_BUILD"/>
+      <permission id="CREATE_SUB_PROJECT"/>
+      <permission id="DELETE_SUB_PROJECT"/>
+      <permission id="CREATE_DELETE_VCS_ROOT"/>
+      <permission id="ENABLE_DISABLE_AGENT_FOR_PROJECT" />
+      <permission id="REMOVE_AGENT_FOR_PROJECT" />
+      <permission id="ADMINISTER_AGENT_FOR_PROJECT" />
+      <permission id="CHANGE_AGENT_RUN_CONFIGURATION_POLICY_FOR_PROJECT" />
+      <permission id="VIEW_AGENT_USAGE_STATISTICS"/>
+      <permission id="START_STOP_CLOUD_AGENT" />
+      <permission id="MANAGE_AGENT_CLOUDS"/>
+      <permission id="AUTHORIZE_AGENT_FOR_PROJECT" />
+      <permission id="EDIT_VCS_MODIFICATION" />
+    </permissions>
+  </role>
+  <role id="AGENT_MANAGER" orderNum="40" name="Agent manager">
+    <permissions>
+      <permission id="VIEW_AGENT_DETAILS"/>
+      <permission id="VIEW_AGENT_USAGE_STATISTICS"/>
+      <permission id="ENABLE_DISABLE_AGENT"/>
+      <permission id="CHANGE_AGENT_RUN_CONFIGURATION_POLICY"/>
+      <permission id="REMOVE_AGENT"/>
+      <permission id="VIEW_AGENT_CLOUDS"/>
+      <permission id="START_STOP_CLOUD_AGENT"/>
+      <permission id="VIEW_SERVER_ERRORS"/>
+      <permission id="MANAGE_AGENT_POOLS"/>
+      <permission id="ADMINISTER_AGENT"/>
+      <permission id="MANAGE_AGENT_CLOUDS"/>
+    </permissions>
+  </role>
+  <role id="TOOLS_INTEGRATION" orderNum="50" name="Tools integration (browse)">
+    <permissions>
+      <permission id="VIEW_PROJECT"/>
+      <permission id="VIEW_USER_PROFILE"/>
+    </permissions>
+  </role>
+</roles>

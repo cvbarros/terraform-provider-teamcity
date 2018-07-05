@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE auth-preset SYSTEM "auth-preset.dtd">
+
+<auth-preset name="LDAP">
+  <description>LDAP authentication (basic HTTP)</description>
+  <auth-modules>
+    <auth-module type="LDAP"/>
+    <auth-module type="HTTP-Basic"/>
+  </auth-modules>
+</auth-preset>
