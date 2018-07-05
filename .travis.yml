@@ -9,7 +9,7 @@ go:
  - "1.10.x"
 env:
   global:
-    - TEAMCITY_URL=http://localhost:8112
+    - TEAMCITY_ADDR=http://localhost:8112
     - TF_ACC=1
     - TEAMCITY_USER=admin
     - TEAMCITY_PASSWORD=admin

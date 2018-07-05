@@ -31,8 +31,8 @@ func TestProvider_impl(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	if v := os.Getenv("TEAMCITY_URL"); v == "" {
-		t.Fatal("TEAMCITY_URL must be set for acceptance tests")
+	if v := os.Getenv("TEAMCITY_ADDR"); v == "" {
+		t.Fatal("TEAMCITY_ADDR must be set for acceptance tests")
 	}
 	if v := os.Getenv("TEAMCITY_USER"); v == "" {
 		t.Fatal("TEAMCITY_USER must be set for acceptance tests")

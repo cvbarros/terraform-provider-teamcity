@@ -12,6 +12,6 @@ type Config struct {
 }
 
 // Client Returns a new TeamCity api client configured with this instance parameters
-func (c *Config) Client() *api.Client {
+func (c *Config) Client() (*api.Client, error) {
 	return api.New(c.Username, c.Password)
 }
