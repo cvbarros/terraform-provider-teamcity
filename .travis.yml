@@ -1,4 +1,7 @@
-udo: required
+sudo: required
+branches:
+  only:
+    - master
 services:
   - docker
 language: go
