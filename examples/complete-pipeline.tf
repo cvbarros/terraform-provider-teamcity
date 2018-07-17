@@ -1,26 +1,27 @@
+#This sample illustrates a simple complete deployment pipeline using Powershell steps
 provider "teamcity" {
-  address  = "http://192.168.99.100:8112"
+  address  = "http://localhost:8112"
   username = "admin"
   password = "admin"
 }
 
-resource "teamcity_project" "canary" {
-  name = "Canary"
+resource "teamcity_project" "nocode" {
+  name = "No Code"
 }
 
-resource "teamcity_vcs_root_git" "canary_vcs" {
+resource "teamcity_vcs_root_git" "nocode_vcs" {
   name       = "Application"
-  project_id = "${teamcity_project.canary.id}"
+  project_id = "${teamcity_project.nocode.id}"
 
   url    = "https://github.com/kelseyhightower/nocode"
   branch = "refs/head/master"
 }
 
-resource "teamcity_buildconfiguration" "canary_pullrequest" {
-  project_id          = "${teamcity_project.canary.id}"
+resource "teamcity_buildconfiguration" "nocode_pullrequest" {
+  project_id          = "${teamcity_project.nocode.id}"
   name                = "Pull Request"
   description         = "Inspection Build with \"Pull-Request\" hook"
-  build_number_format = "2.0.%build.counter%"
+  build_number_format = "0.0.%build.counter%"
   artifact_paths      = [""]
 
   options {
@@ -34,7 +35,7 @@ resource "teamcity_buildconfiguration" "canary_pullrequest" {
   }
 
   vcs_root {
-    id             = "${teamcity_vcs_root_git.canary_vcs}"
+    id             = "${teamcity_vcs_root_git.nocode_vcs}"
     checkout_rules = ["+:*"]
   }
 
@@ -44,11 +45,11 @@ resource "teamcity_buildconfiguration" "canary_pullrequest" {
   feature       = {}
 }
 
-resource "teamcity_buildconfiguration" "canary_build_release" {
-  project_id          = "${teamcity_project.canary.id}"
+resource "teamcity_buildconfiguration" "nocode_build_release" {
+  project_id          = "${teamcity_project.nocode.id}"
   name                = "Build Release"
   description         = "Master build with \"BuildRelease\" hook"
-  build_number_format = "2.0.%build.counter%"
+  build_number_format = "0.0.%build.counter%"
   artifact_paths      = [""]
 
   options {
@@ -64,16 +65,16 @@ resource "teamcity_buildconfiguration" "canary_build_release" {
   }
 
   vcs_root {
-    id             = "${teamcity_vcs_root_git.canary_vcs}"
+    id             = "${teamcity_vcs_root_git.nocode_vcs}"
     checkout_rules = ["+:*"]
   }
 }
 
-resource "teamcity_buildconfiguration" "canary_release_testing" {
-  project_id          = "${teamcity_project.canary.id}"
-  name                = "Release To Tesring"
+resource "teamcity_buildconfiguration" "nocode_release_testing" {
+  project_id          = "${teamcity_project.nocode.id}"
+  name                = "Deploy To Testing"
   description         = "Perform a deployment to Testing environment"
-  build_number_format = "2.0.%build.counter%"
+  build_number_format = "0.0.%build.counter%"
 
   step {
     type = "powershell"
@@ -82,23 +83,21 @@ resource "teamcity_buildconfiguration" "canary_release_testing" {
   }
 }
 
-resource "teamcity_build_trigger" "canary_vcs_trigger" {
-  build_config_id = "${teamcity_buildconfiguration.canary_pullrequest}"
+resource "teamcity_build_trigger" "nocode_vcs_trigger" {
+  build_config_id = "${teamcity_buildconfiguration.nocode_pullrequest}"
 
-  //schema.TypeString, validateFunc: validateTriggerType
   type = "vcs"
 
-  //schema.TypeList
   rules = ["+:*"]
 }
 
-resource "teamcity_snapshot_dependency" "canary_release_testing" {
-  build_config_id        = "${teamcity_buildconfiguration.canary_release_testing}"
-  source_build_config_id = "${teamcity_buildconfiguration.canary_build_release}"
+resource "teamcity_snapshot_dependency" "nocode_release_testing" {
+  build_config_id        = "${teamcity_buildconfiguration.nocode_release_testing}"
+  source_build_config_id = "${teamcity_buildconfiguration.nocode_build_release}"
 }
 
 resource "teamcity_agent_requirement" "env_testing" {
-  build_config_id = "${teamcity_buildconfiguration.canary_release_testing.id}"
+  build_config_id = "${teamcity_buildconfiguration.nocode_release_testing.id}"
   condition       = "equals"
   name            = "environment"
   value           = "testing"
