@@ -46,12 +46,14 @@ To run tests:
 go test -v -timeout 30s ./...
 ```
 
-If using an editor such as **Visual Studio Code** with `Go` integration, make sure to configure your workspace settings, such as:
+If using an editor such as **Visual Studio Code** with `Go` integration, you can make your development easier by configuring your workspace settings:
 
 ```json
 {
     "go.testEnvVars": {
         "TEAMCITY_ADDR":"http://localhost:8112",
+        "TEAMCITY_USER":"admin",
+        "TEAMCITY_PASSWORD":"admin",
         "TF_ACC":"1"
     },
     
