@@ -1,4 +1,4 @@
-#This sample illustrates a simple complete deployment pipeline using Powershell steps
+#This sample illustrates a simple complete deployment pipeline using Powershell
 provider "teamcity" {
   address  = "http://localhost:8112"
   username = "admin"

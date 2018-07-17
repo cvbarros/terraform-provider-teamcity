@@ -18,7 +18,6 @@
 
 #TeamCity docker mounts
 log_dir/
-data_dir/
 
 #Terraform
 .terraform/
