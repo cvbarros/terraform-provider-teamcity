@@ -46,7 +46,7 @@ func resourceAgentRequirementCreate(d *schema.ResourceData, meta interface{}) er
 		buildConfigID = v.(string)
 	}
 	// validates the Build Configuration exists
-	if _, err := client.BuildTypes.GetById(buildConfigID); err != nil {
+	if _, err := client.BuildTypes.GetByID(buildConfigID); err != nil {
 		return fmt.Errorf("invalid build_config_id '%s' - Build configuration does not exist", buildConfigID)
 	}
 

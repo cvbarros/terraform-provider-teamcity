@@ -67,7 +67,7 @@ func vcsRootGitExistsHelper(s *terraform.State, client *api.Client) error {
 			continue
 		}
 
-		if _, err := client.VcsRoots.GetById(r.Primary.ID); err != nil {
+		if _, err := client.VcsRoots.GetByID(r.Primary.ID); err != nil {
 			return fmt.Errorf("Received an error retrieving VCS Root: %s", err)
 		}
 	}
@@ -86,7 +86,7 @@ func vcsRootGitDestroyHelper(s *terraform.State, client *api.Client) error {
 			continue
 		}
 
-		_, err := client.VcsRoots.GetById(r.Primary.ID)
+		_, err := client.VcsRoots.GetByID(r.Primary.ID)
 
 		if err != nil {
 			if strings.Contains(err.Error(), "404") {

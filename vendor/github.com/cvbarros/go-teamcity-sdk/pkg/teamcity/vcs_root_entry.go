@@ -15,7 +15,7 @@ type VcsRootEntries struct {
 // VcsRootEntry represents a single VCS Root attached to a resource
 type VcsRootEntry struct {
 	// id
-	Id string `json:"id,omitempty" xmld:"id"`
+	ID string `json:"id,omitempty" xmld:"id"`
 
 	// inherited
 	Inherited *bool `json:"inherited,omitempty" xml:"inherited"`

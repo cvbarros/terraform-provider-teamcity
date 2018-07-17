@@ -6,8 +6,8 @@ import "net/url"
 //These are used in GET requests within the URL so must be properly escaped
 type Locator string
 
-//LocatorId creates a locator for a Project by Id
-func LocatorId(id string) Locator {
+//LocatorID creates a locator for a Project by Id
+func LocatorID(id string) Locator {
 	return Locator("id:" + id)
 }
 

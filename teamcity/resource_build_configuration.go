@@ -101,13 +101,13 @@ func resourceBuildConfiguration() *schema.Resource {
 func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	bt := &api.BuildType{}
-	var projectId string
+	var projectID string
 
 	props := api.NewProperties()
 
 	if v, ok := d.GetOk("project_id"); ok {
-		projectId = v.(string)
-		bt.ProjectID = projectId
+		projectID = v.(string)
+		bt.ProjectID = projectID
 	}
 
 	if v, ok := d.GetOk("name"); ok {
@@ -151,7 +151,7 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	created, err := client.BuildTypes.Create(projectId, bt)
+	created, err := client.BuildTypes.Create(projectID, bt)
 
 	if err != nil {
 		return err
@@ -261,7 +261,7 @@ func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) er
 		var vcsToSave []map[string]interface{}
 		for _, el := range vcsRoots.Items {
 			m := make(map[string]interface{})
-			m["id"] = el.Id
+			m["id"] = el.ID
 			m["checkout_rules"] = strings.Split(el.CheckoutRules, "\\n")
 			vcsToSave = append(vcsToSave, m)
 		}
@@ -331,7 +331,7 @@ func resourceBuildConfigurationDelete(d *schema.ResourceData, meta interface{}) 
 }
 
 func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
-	dt, err := c.BuildTypes.GetById(id)
+	dt, err := c.BuildTypes.GetByID(id)
 	if err != nil {
 		return nil, err
 	}

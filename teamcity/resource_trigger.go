@@ -36,17 +36,17 @@ func resourceTrigger() *schema.Resource {
 
 func resourceTriggerCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
-	var build_config_id string
+	var buildConfigID string
 
 	if v, ok := d.GetOk("build_config_id"); ok {
-		build_config_id = v.(string)
+		buildConfigID = v.(string)
 	}
 	// validates the Build Configuration exists
-	if _, err := client.BuildTypes.GetById(build_config_id); err != nil {
-		return fmt.Errorf("invalid build_config_id '%s' - Build configuration does not exist", build_config_id)
+	if _, err := client.BuildTypes.GetByID(buildConfigID); err != nil {
+		return fmt.Errorf("invalid build_config_id '%s' - Build configuration does not exist", buildConfigID)
 	}
 
-	ts := client.TriggerService(build_config_id)
+	ts := client.TriggerService(buildConfigID)
 	var dt *api.Trigger
 	if v, ok := d.GetOk("rules"); ok {
 		dt = api.NewVcsTrigger(v.(string), "")
@@ -107,7 +107,7 @@ func resourceTriggerDelete(d *schema.ResourceData, meta interface{}) error {
 
 func getTrigger(c *api.TriggerService, id string) (*api.Trigger, error) {
 
-	dt, err := c.GetById(id)
+	dt, err := c.GetByID(id)
 	if err != nil {
 		return nil, err
 	}

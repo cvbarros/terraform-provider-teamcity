@@ -18,12 +18,12 @@ type DependencyService struct {
 }
 
 //NewDependencyService constructs and instance of DependencyService scoped to a given buildTypeId
-func NewDependencyService(buildTypeId string, c *http.Client, base *sling.Sling) *DependencyService {
+func NewDependencyService(buildTypeID string, c *http.Client, base *sling.Sling) *DependencyService {
 	return &DependencyService{
-		BuildTypeID:   buildTypeId,
+		BuildTypeID:   buildTypeID,
 		httpClient:    c,
-		artifactSling: base.New().Path(fmt.Sprintf("buildTypes/%s/artifact-dependencies/", buildTypeId)),
-		snapshotSling: base.New().Path(fmt.Sprintf("buildTypes/%s/snapshot-dependencies/", buildTypeId)),
+		artifactSling: base.New().Path(fmt.Sprintf("buildTypes/%s/artifact-dependencies/", buildTypeID)),
+		snapshotSling: base.New().Path(fmt.Sprintf("buildTypes/%s/snapshot-dependencies/", buildTypeID)),
 	}
 }
 
@@ -47,13 +47,13 @@ func (s *DependencyService) AddSnapshotDependency(dep *SnapshotDependency) (*Sna
 	return &out, nil
 }
 
-//GetById returns a dependency by its id
-func (s *DependencyService) GetById(depId string) (*SnapshotDependency, error) {
+//GetByID returns a dependency by its id
+func (s *DependencyService) GetByID(depID string) (*SnapshotDependency, error) {
 	var out SnapshotDependency
-	resp, err := s.snapshotSling.New().Get(depId).ReceiveSuccess(&out)
+	resp, err := s.snapshotSling.New().Get(depID).ReceiveSuccess(&out)
 
 	if resp.StatusCode == 404 {
-		return nil, fmt.Errorf("404 Not Found - Snapshot dependency (id: %s) for buildTypeId (id: %s) was not found", depId, s.BuildTypeID)
+		return nil, fmt.Errorf("404 Not Found - Snapshot dependency (id: %s) for buildTypeId (id: %s) was not found", depID, s.BuildTypeID)
 	}
 
 	if err != nil {
@@ -64,9 +64,9 @@ func (s *DependencyService) GetById(depId string) (*SnapshotDependency, error) {
 }
 
 //Delete removes a snapshot dependency from the build configuration by its id
-func (s *DependencyService) Delete(depId string) error {
-	request, _ := s.snapshotSling.New().Delete(depId).Request()
-	response, err := http.DefaultClient.Do(request)
+func (s *DependencyService) Delete(depID string) error {
+	request, _ := s.snapshotSling.New().Delete(depID).Request()
+	response, err := s.httpClient.Do(request)
 	if err != nil {
 		return err
 	}

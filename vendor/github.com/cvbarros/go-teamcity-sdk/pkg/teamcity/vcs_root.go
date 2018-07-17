@@ -64,20 +64,22 @@ type VcsRootReference struct {
 
 // VcsRootService has operations for handling vcs roots
 type VcsRootService struct {
-	sling *sling.Sling
+	sling      *sling.Sling
+	httpClient *http.Client
 }
 
-func newVcsRootService(base *sling.Sling) *VcsRootService {
+func newVcsRootService(base *sling.Sling, httpClient *http.Client) *VcsRootService {
 	return &VcsRootService{
-		sling: base.Path("vcs-roots/"),
+		sling:      base.Path("vcs-roots/"),
+		httpClient: httpClient,
 	}
 }
 
 // Create creates a new vcs root
-func (s *VcsRootService) Create(projectId string, vcsRoot *VcsRoot) (*VcsRootReference, error) {
+func (s *VcsRootService) Create(projectID string, vcsRoot *VcsRoot) (*VcsRootReference, error) {
 	var created VcsRootReference
 
-	success, err := s.Validate(projectId, vcsRoot)
+	success, err := s.Validate(projectID, vcsRoot)
 	if success == false {
 		return nil, err
 	}
@@ -91,8 +93,8 @@ func (s *VcsRootService) Create(projectId string, vcsRoot *VcsRoot) (*VcsRootRef
 	return &created, nil
 }
 
-// GetById Retrieves a vcs root by id using the id: locator
-func (s *VcsRootService) GetById(id string) (*VcsRoot, error) {
+// GetByID Retrieves a vcs root by id using the id: locator
+func (s *VcsRootService) GetByID(id string) (*VcsRoot, error) {
 	var out VcsRoot
 
 	resp, err := s.sling.New().Get(id).ReceiveSuccess(&out)
@@ -113,7 +115,7 @@ func (s *VcsRootService) Delete(id string) error {
 	request, _ := s.sling.New().Delete(id).Request()
 
 	//TODO: Expose the same httpClient used by sling
-	response, err := http.DefaultClient.Do(request)
+	response, err := s.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -135,7 +137,7 @@ func (s *VcsRootService) Delete(id string) error {
 }
 
 // Validate verifies if a VcsRoot model is valid for updating/creation before sending to upstream API.
-func (s *VcsRootService) Validate(projectId string, vcsRoot *VcsRoot) (bool, error) {
+func (s *VcsRootService) Validate(projectID string, vcsRoot *VcsRoot) (bool, error) {
 	if vcsRoot == nil {
 		return false, errors.New("vcsRoot must not be nil")
 	}

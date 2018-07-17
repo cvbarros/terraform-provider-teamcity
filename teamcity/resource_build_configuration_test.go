@@ -194,7 +194,7 @@ func buildConfigExistsHelper(n string, s *terraform.State, client *api.Client, o
 		return fmt.Errorf("No id for %s is set", n)
 	}
 
-	resp, err := client.BuildTypes.GetById(rs.Primary.ID)
+	resp, err := client.BuildTypes.GetByID(rs.Primary.ID)
 
 	if err != nil {
 		return fmt.Errorf("Received an error retrieving Build Configurationt: %s", err)
@@ -216,7 +216,7 @@ func buildConfigDestroyHelper(s *terraform.State, client *api.Client) error {
 			continue
 		}
 
-		_, err := client.BuildTypes.GetById(r.Primary.ID)
+		_, err := client.BuildTypes.GetByID(r.Primary.ID)
 
 		if err != nil {
 			if strings.Contains(err.Error(), "404") {

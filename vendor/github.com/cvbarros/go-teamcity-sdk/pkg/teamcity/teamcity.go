@@ -55,24 +55,24 @@ type Client struct {
 }
 
 // New creates a new client for server address specified at TEAMCITY_ADDR environment variable
-func New(userName, password string) (*Client, error) {
+func New(userName, password string, httpClient *http.Client) (*Client, error) {
 	address := os.Getenv("TEAMCITY_ADDR")
 	if address == "" {
 		return nil, fmt.Errorf("TEAMCITY_ADDR environment variable not set, specify address explicit by setting the variable or using NewWithAddress constructor")
 	}
 
-	return newClientInstance(userName, password, address)
+	return newClientInstance(userName, password, address, httpClient)
 }
 
 // NewWithAddress creates a new client by using the explicit server address from the parameter
-func NewWithAddress(userName, password, address string) (*Client, error) {
+func NewWithAddress(userName, password, address string, httpClient *http.Client) (*Client, error) {
 	if address == "" {
 		return nil, fmt.Errorf("address is required")
 	}
-	return newClientInstance(userName, password, address)
+	return newClientInstance(userName, password, address, httpClient)
 }
 
-func newClientInstance(userName, password, address string) (*Client, error) {
+func newClientInstance(userName, password, address string, httpClient *http.Client) (*Client, error) {
 	sharedClient := sling.New().Base(address+"/httpAuth/app/rest/").
 		SetBasicAuth(userName, password).
 		Set("Accept", "application/json")
@@ -81,12 +81,12 @@ func newClientInstance(userName, password, address string) (*Client, error) {
 		userName:   userName,
 		password:   password,
 		address:    address,
-		HTTPClient: http.DefaultClient,
+		HTTPClient: httpClient,
 		commonBase: sharedClient,
-		Projects:   newProjectService(sharedClient.New()),
-		BuildTypes: newBuildTypeService(sharedClient.New()),
+		Projects:   newProjectService(sharedClient.New(), httpClient),
+		BuildTypes: newBuildTypeService(sharedClient.New(), httpClient),
 		Server:     newServerService(sharedClient.New()),
-		VcsRoots:   newVcsRootService(sharedClient.New()),
+		VcsRoots:   newVcsRootService(sharedClient.New(), httpClient),
 	}, nil
 }
 
@@ -95,7 +95,7 @@ func (c *Client) AgentRequirementService(id string) *AgentRequirementService {
 	return newAgentRequirementService(id, c.HTTPClient, c.commonBase.New())
 }
 
-//AgentRequirementService returns a service to manage agent requirements for a build configuration with given id
+//BuildFeatureService returns a service to manage agent requirements for a build configuration with given id
 func (c *Client) BuildFeatureService(id string) *BuildFeatureService {
 	return newBuildFeatureService(id, c.HTTPClient, c.commonBase.New())
 }
@@ -103,14 +103,14 @@ func (c *Client) BuildFeatureService(id string) *BuildFeatureService {
 //ProjectParameterService returns a parameter service that operates parameters for the project with given id
 func (c *Client) ProjectParameterService(id string) *ParameterService {
 	return &ParameterService{
-		base: c.commonBase.New().Path(fmt.Sprintf("projects/%s/", LocatorId(id))),
+		base: c.commonBase.New().Path(fmt.Sprintf("projects/%s/", LocatorID(id))),
 	}
 }
 
 //BuildTypeParameterService returns a parameter service that operates parameters for the build configuration with given id
 func (c *Client) BuildTypeParameterService(id string) *ParameterService {
 	return &ParameterService{
-		base: c.commonBase.New().Path(fmt.Sprintf("buildTypes/%s/", LocatorId(id))),
+		base: c.commonBase.New().Path(fmt.Sprintf("buildTypes/%s/", LocatorID(id))),
 	}
 }
 
@@ -120,8 +120,8 @@ func (c *Client) DependencyService(id string) *DependencyService {
 }
 
 //TriggerService returns a service to manage build triggers for a build configuration with given id
-func (c *Client) TriggerService(buildTypeId string) *TriggerService {
-	return newTriggerService(buildTypeId, c.HTTPClient, c.commonBase.New())
+func (c *Client) TriggerService(buildTypeID string) *TriggerService {
+	return newTriggerService(buildTypeID, c.HTTPClient, c.commonBase.New())
 }
 
 // Validate tests if the client is properly configured and can be used

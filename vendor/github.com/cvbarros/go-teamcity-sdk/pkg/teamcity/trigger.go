@@ -9,6 +9,7 @@ import (
 	"github.com/dghubble/sling"
 )
 
+//Triggers represents a typed, serializable collection of Trigger
 type Triggers struct {
 	// count
 	Count int32 `json:"count,omitempty" xml:"count"`
@@ -43,20 +44,28 @@ type Trigger struct {
 
 // NewVcsTrigger returns a VCS trigger type with the triggerRules specified. triggerRules is required, but branchFilter can be optional if the VCS root uses multiple branches.
 func NewVcsTrigger(triggerRules string, branchFilter string) *Trigger {
+	opt := NewVcsTriggerOptions()
+	i, _ := NewVcsTriggerWithOptions(triggerRules, branchFilter, opt)
+	return i
+}
+
+// NewVcsTriggerWithOptions returns a VCS trigger type with VcsTriggerOptions. See also NewVcsTrigger for other parameters.
+func NewVcsTriggerWithOptions(triggerRules string, branchFilter string, opt *VcsTriggerOptions) (*Trigger, error) {
+	if opt == nil {
+		return nil, fmt.Errorf("opt parameter must be valid VcsTriggerOptions, not nil")
+	}
+
 	props := NewProperties(
 		&Property{
 			Name:  "triggerRules",
 			Value: triggerRules,
 		},
-		&Property{
-			Name:  "enableQueueOptimization",
-			Value: "true",
-		},
-		&Property{
-			Name:  "quietPeriodMode",
-			Value: "DO_NOT_USE",
-		},
 	)
+
+	optProps := opt.vcsTriggerProperties()
+	for _, p := range optProps.Items {
+		props.AddOrReplaceProperty(p)
+	}
 
 	if branchFilter != "" {
 		props.Add(&Property{
@@ -69,7 +78,7 @@ func NewVcsTrigger(triggerRules string, branchFilter string) *Trigger {
 		Disabled:   NewFalse(),
 		Type:       TriggerTypes.Vcs,
 		Properties: props,
-	}
+	}, nil
 }
 
 //Rules is a getter for triggerRules read-only property. No check performed since it's a required property.
@@ -102,11 +111,11 @@ type TriggerService struct {
 	base        *sling.Sling
 }
 
-func newTriggerService(buildTypeId string, c *http.Client, base *sling.Sling) *TriggerService {
+func newTriggerService(buildTypeID string, c *http.Client, base *sling.Sling) *TriggerService {
 	return &TriggerService{
-		BuildTypeID: buildTypeId,
+		BuildTypeID: buildTypeID,
 		httpClient:  c,
-		base:        base.Path(fmt.Sprintf("buildTypes/%s/triggers/", Locator(buildTypeId).String())),
+		base:        base.Path(fmt.Sprintf("buildTypes/%s/triggers/", Locator(buildTypeID).String())),
 	}
 }
 
@@ -128,8 +137,8 @@ func (s *TriggerService) AddTrigger(t *Trigger) (*Trigger, error) {
 	return &out, nil
 }
 
-//GetById returns a dependency by its id
-func (s *TriggerService) GetById(id string) (*Trigger, error) {
+//GetByID returns a dependency by its id
+func (s *TriggerService) GetByID(id string) (*Trigger, error) {
 	var out Trigger
 	resp, err := s.base.New().Get(id).ReceiveSuccess(&out)
 
@@ -147,7 +156,7 @@ func (s *TriggerService) GetById(id string) (*Trigger, error) {
 //Delete removes a snapshot dependency from the build configuration by its id
 func (s *TriggerService) Delete(id string) error {
 	request, _ := s.base.New().Delete(id).Request()
-	response, err := http.DefaultClient.Do(request)
+	response, err := s.httpClient.Do(request)
 	if err != nil {
 		return err
 	}

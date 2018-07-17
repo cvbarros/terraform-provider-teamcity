@@ -1,6 +1,8 @@
 package teamcity
 
 import (
+	"net/http"
+
 	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
 )
 
@@ -13,5 +15,5 @@ type Config struct {
 
 // Client Returns a new TeamCity api client configured with this instance parameters
 func (c *Config) Client() (*api.Client, error) {
-	return api.New(c.Username, c.Password)
+	return api.New(c.Username, c.Password, http.DefaultClient)
 }

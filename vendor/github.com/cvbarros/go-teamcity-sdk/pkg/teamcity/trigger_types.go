@@ -3,9 +3,9 @@ package teamcity
 type triggerType = string
 
 const (
-	//VCS Trigger type
+	//Vcs trigger type
 	Vcs triggerType = "vcsTrigger"
-	//Wait for build to finish trigger type
+	//Dependency is "Wait for build to finish trigger type"
 	Dependency triggerType = "buildDependencyTrigger"
 	//Schedule trigger type
 	Schedule triggerType = "schedulingTrigger"

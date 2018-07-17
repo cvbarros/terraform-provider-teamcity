@@ -93,12 +93,14 @@ type ProjectReference struct {
 
 // ProjectService has operations for handling projects
 type ProjectService struct {
-	sling *sling.Sling
+	sling      *sling.Sling
+	httpClient *http.Client
 }
 
-func newProjectService(base *sling.Sling) *ProjectService {
+func newProjectService(base *sling.Sling, client *http.Client) *ProjectService {
 	return &ProjectService{
-		sling: base.Path("projects/"),
+		sling:      base.Path("projects/"),
+		httpClient: client,
 	}
 }
 
@@ -122,11 +124,11 @@ func (s *ProjectService) Create(project *Project) (*ProjectReference, error) {
 	return &created, nil
 }
 
-// GetById Retrieves a project resource by ID
-func (s *ProjectService) GetById(id string) (*Project, error) {
+// GetByID Retrieves a project resource by ID
+func (s *ProjectService) GetByID(id string) (*Project, error) {
 	var out Project
 
-	resp, err := s.sling.New().Get(LocatorId(id).String()).ReceiveSuccess(&out)
+	resp, err := s.sling.New().Get(LocatorID(id).String()).ReceiveSuccess(&out)
 
 	if err != nil {
 		return nil, err

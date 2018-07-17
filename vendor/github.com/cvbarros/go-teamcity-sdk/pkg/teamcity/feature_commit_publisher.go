@@ -20,46 +20,57 @@ type FeatureCommitStatusPublisher struct {
 	properties *Properties
 }
 
+//ID returns the ID for this instance.
 func (f *FeatureCommitStatusPublisher) ID() string {
 	return f.id
 }
 
+//SetID sets the ID for this instance.
 func (f *FeatureCommitStatusPublisher) SetID(value string) {
 	f.id = value
 }
 
+//Type returns the "commit-status-publisher", the keyed-type for this build feature instance
 func (f *FeatureCommitStatusPublisher) Type() string {
 	return "commit-status-publisher"
 }
 
+//VcsRootID returns the ID that this build feature is associated with.
 func (f *FeatureCommitStatusPublisher) VcsRootID() string {
 	return f.vcsRootID
 }
 
+//SetVcsRootID sets the ID that this build feature is associated with.
 func (f *FeatureCommitStatusPublisher) SetVcsRootID(value string) {
 	f.vcsRootID = value
 }
 
+//Disabled returns whether this build feature is disabled or not.
 func (f *FeatureCommitStatusPublisher) Disabled() bool {
 	return f.disabled
 }
 
+//SetDisabled sets whether this build feature is disabled or not.
 func (f *FeatureCommitStatusPublisher) SetDisabled(value bool) {
 	f.disabled = value
 }
 
+//BuildTypeID is a getter for the Build Type ID associated with this build feature.
 func (f *FeatureCommitStatusPublisher) BuildTypeID() string {
 	return f.buildTypeID
 }
 
+//SetBuildTypeID is a setter for the Build Type ID associated with this build feature.
 func (f *FeatureCommitStatusPublisher) SetBuildTypeID(value string) {
 	f.buildTypeID = value
 }
 
+//Properties returns a *Properties instance representing a serializable collection to be used.
 func (f *FeatureCommitStatusPublisher) Properties() *Properties {
 	return f.properties
 }
 
+//MarshalJSON implements JSON serialization for FeatureCommitStatusPublisher
 func (f *FeatureCommitStatusPublisher) MarshalJSON() ([]byte, error) {
 	out := &buildFeatureJSON{
 		ID:         f.id,
@@ -72,6 +83,7 @@ func (f *FeatureCommitStatusPublisher) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
+//UnmarshalJSON implements JSON deserialization for FeatureCommitStatusPublisher
 func (f *FeatureCommitStatusPublisher) UnmarshalJSON(data []byte) error {
 	var aux buildFeatureJSON
 	if err := json.Unmarshal(data, &aux); err != nil {

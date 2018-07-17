@@ -80,7 +80,7 @@ func resourceFeatureCommitStatusPublisherCreate(d *schema.ResourceData, meta int
 	}
 
 	// validates the Build Configuration exists
-	if _, err := client.BuildTypes.GetById(buildConfigID); err != nil {
+	if _, err := client.BuildTypes.GetByID(buildConfigID); err != nil {
 		return fmt.Errorf("invalid build_config_id '%s' - Build configuration does not exist", buildConfigID)
 	}
 
@@ -132,11 +132,7 @@ func resourceFeatureCommitStatusPublisherRead(d *schema.ResourceData, meta inter
 	}
 
 	optsToSave = append(optsToSave, m)
-	if err := d.Set("github", optsToSave); err != nil {
-		return err
-	}
-
-	return nil
+	return d.Set("github", optsToSave)
 }
 
 func resourceFeatureCommitStatusPublisherUpdate(d *schema.ResourceData, meta interface{}) error {

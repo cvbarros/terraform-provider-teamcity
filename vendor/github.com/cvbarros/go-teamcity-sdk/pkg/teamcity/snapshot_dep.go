@@ -60,13 +60,13 @@ var DefaultSnapshotDependencyOptions = &SnapshotDependencyOptions{
 }
 
 // NewSnapshotDependency created a SnapshotDependency struct with default SnapshotDependencyOptions
-func NewSnapshotDependency(sourceBuildTypeId string) *SnapshotDependency {
-	return NewSnapshotDependencyWithOptions(sourceBuildTypeId, DefaultSnapshotDependencyOptions)
+func NewSnapshotDependency(sourceBuildTypeID string) *SnapshotDependency {
+	return NewSnapshotDependencyWithOptions(sourceBuildTypeID, DefaultSnapshotDependencyOptions)
 }
 
 // NewSnapshotDependencyWithOptions creates a SnapshotDependency struct with the provided options
-func NewSnapshotDependencyWithOptions(sourceBuildTypeId string, opt *SnapshotDependencyOptions) *SnapshotDependency {
-	sourceBuild := &BuildTypeReference{ID: sourceBuildTypeId}
+func NewSnapshotDependencyWithOptions(sourceBuildTypeID string, opt *SnapshotDependencyOptions) *SnapshotDependency {
+	sourceBuild := &BuildTypeReference{ID: sourceBuildTypeID}
 	return &SnapshotDependency{
 		SourceBuildType: sourceBuild,
 		Properties:      opt.properties(),

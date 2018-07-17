@@ -76,7 +76,7 @@ func resourceProjectImport(d *schema.ResourceData, meta interface{}) ([]*schema.
 }
 
 func getProject(c *api.Client, id string) (*api.Project, error) {
-	dt, err := c.Projects.GetById(id)
+	dt, err := c.Projects.GetByID(id)
 	if err != nil {
 		return nil, err
 	}

@@ -32,17 +32,17 @@ func resourceSnapshotDependency() *schema.Resource {
 
 func resourceSnapshotDependencyCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
-	var build_config_id string
+	var buildConfigID string
 
 	if v, ok := d.GetOk("build_config_id"); ok {
-		build_config_id = v.(string)
+		buildConfigID = v.(string)
 	}
 	// validates the Build Configuration exists
-	if _, err := client.BuildTypes.GetById(build_config_id); err != nil {
-		return fmt.Errorf("invalid build_config_id '%s' - Build configuration does not exist", build_config_id)
+	if _, err := client.BuildTypes.GetByID(buildConfigID); err != nil {
+		return fmt.Errorf("invalid build_config_id '%s' - Build configuration does not exist", buildConfigID)
 	}
 
-	depService := client.DependencyService(build_config_id)
+	depService := client.DependencyService(buildConfigID)
 	dep := api.NewSnapshotDependency(d.Get("source_build_config_id").(string))
 
 	out, err := depService.AddSnapshotDependency(dep)
@@ -68,10 +68,7 @@ func resourceSnapshotDependencyRead(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 
-	if err := d.Set("source_build_config_id", dt.SourceBuildType.ID); err != nil {
-		return err
-	}
-	return nil
+	return d.Set("source_build_config_id", dt.SourceBuildType.ID)
 }
 
 func resourceSnapshotDependencyUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -87,7 +84,7 @@ func resourceSnapshotDependencyDelete(d *schema.ResourceData, meta interface{}) 
 
 func getSnapshotDependency(c *api.DependencyService, id string) (*api.SnapshotDependency, error) {
 
-	dt, err := c.GetById(id)
+	dt, err := c.GetByID(id)
 	if err != nil {
 		return nil, err
 	}

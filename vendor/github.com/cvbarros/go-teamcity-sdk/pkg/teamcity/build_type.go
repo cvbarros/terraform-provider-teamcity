@@ -116,17 +116,19 @@ func (b *BuildType) Reference() *BuildTypeReference {
 
 // BuildTypeService has operations for handling build configurations and templates
 type BuildTypeService struct {
-	sling *sling.Sling
+	sling      *sling.Sling
+	httpClient *http.Client
 }
 
-func newBuildTypeService(base *sling.Sling) *BuildTypeService {
+func newBuildTypeService(base *sling.Sling, httpClient *http.Client) *BuildTypeService {
 	return &BuildTypeService{
-		sling: base.Path("buildTypes/"),
+		httpClient: httpClient,
+		sling:      base.Path("buildTypes/"),
 	}
 }
 
 // Create Creates a new build type under a project
-func (s *BuildTypeService) Create(projectId string, buildType *BuildType) (*BuildTypeReference, error) {
+func (s *BuildTypeService) Create(projectID string, buildType *BuildType) (*BuildTypeReference, error) {
 	var created BuildTypeReference
 
 	_, err := s.sling.New().Post("").BodyJSON(buildType).ReceiveSuccess(&created)
@@ -138,8 +140,8 @@ func (s *BuildTypeService) Create(projectId string, buildType *BuildType) (*Buil
 	return &created, nil
 }
 
-// GetById Retrieves a build type resource by ID
-func (s *BuildTypeService) GetById(id string) (*BuildType, error) {
+// GetByID Retrieves a build type resource by ID
+func (s *BuildTypeService) GetByID(id string) (*BuildType, error) {
 	var out BuildType
 
 	resp, err := s.sling.New().Get(id).ReceiveSuccess(&out)
@@ -158,7 +160,7 @@ func (s *BuildTypeService) GetById(id string) (*BuildType, error) {
 //Delete a build type resource
 func (s *BuildTypeService) Delete(id string) error {
 	request, _ := s.sling.New().Delete(id).Request()
-	response, err := http.DefaultClient.Do(request)
+	response, err := s.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -188,7 +190,7 @@ func (s *BuildTypeService) AttachVcsRoot(id string, vcsRoot *VcsRootReference) e
 // AttachVcsRootEntry adds the VcsRootEntry to this build type
 func (s *BuildTypeService) AttachVcsRootEntry(id string, entry *VcsRootEntry) error {
 	var created VcsRootEntry
-	_, err := s.sling.New().Post(fmt.Sprintf("%s/vcs-root-entries/", LocatorId(id))).BodyJSON(entry).ReceiveSuccess(&created)
+	_, err := s.sling.New().Post(fmt.Sprintf("%s/vcs-root-entries/", LocatorID(id))).BodyJSON(entry).ReceiveSuccess(&created)
 
 	if err != nil {
 		return err
@@ -200,7 +202,7 @@ func (s *BuildTypeService) AttachVcsRootEntry(id string, entry *VcsRootEntry) er
 // AddStep creates a new build steo for this build type
 func (s *BuildTypeService) AddStep(id string, step *Step) error {
 	var created Step
-	_, err := s.sling.New().Post(fmt.Sprintf("%s/steps/", LocatorId(id))).BodyJSON(step).ReceiveSuccess(&created)
+	_, err := s.sling.New().Post(fmt.Sprintf("%s/steps/", LocatorID(id))).BodyJSON(step).ReceiveSuccess(&created)
 
 	if err != nil {
 		return err
@@ -214,8 +216,8 @@ func (s *BuildTypeService) AddStep(id string, step *Step) error {
 func (s *BuildTypeService) UpdateSettings(id string, settings *Properties) error {
 	for _, item := range settings.Items {
 		bodyProvider := textPlainBodyProvider{payload: item.Value}
-		req, err := s.sling.New().Put(fmt.Sprintf("%s/settings/%s", LocatorId(id), item.Name)).BodyProvider(bodyProvider).Add("Accept", "text/plain").Request()
-		response, err := http.DefaultClient.Do(req)
+		req, err := s.sling.New().Put(fmt.Sprintf("%s/settings/%s", LocatorID(id), item.Name)).BodyProvider(bodyProvider).Add("Accept", "text/plain").Request()
+		response, err := s.httpClient.Do(req)
 		response.Body.Close()
 		if err != nil {
 			return fmt.Errorf("error updating buildType id: '%s' setting '%s': %s", id, item.Name, err)
@@ -226,8 +228,8 @@ func (s *BuildTypeService) UpdateSettings(id string, settings *Properties) error
 }
 
 //DeleteStep removes a build step from this build type by its id
-func (s *BuildTypeService) DeleteStep(id string, stepId string) error {
-	_, err := s.sling.New().Delete(fmt.Sprintf("%s/steps/%s", LocatorId(id), stepId)).ReceiveSuccess(nil)
+func (s *BuildTypeService) DeleteStep(id string, stepID string) error {
+	_, err := s.sling.New().Delete(fmt.Sprintf("%s/steps/%s", LocatorID(id), stepID)).ReceiveSuccess(nil)
 
 	if err != nil {
 		return err

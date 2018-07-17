@@ -77,7 +77,7 @@ func teamcityProjectExistsHelper(n string, s *terraform.State, client *api.Clien
 		return fmt.Errorf("No ID is set")
 	}
 
-	proj, err := client.Projects.GetById(rs.Primary.ID)
+	proj, err := client.Projects.GetByID(rs.Primary.ID)
 	if err != nil {
 		return fmt.Errorf("Received an error retrieving project: %s", err)
 	}
@@ -97,7 +97,7 @@ func teamcityProjectDestroyHelper(s *terraform.State, client *api.Client) error 
 			continue
 		}
 
-		_, err := client.Projects.GetById(r.Primary.ID)
+		_, err := client.Projects.GetByID(r.Primary.ID)
 
 		if err != nil {
 			if strings.Contains(err.Error(), "404") {

@@ -46,7 +46,7 @@ func triggerDestroyHelper(s *terraform.State, bt *string, client *api.Client) er
 		}
 
 		ts := client.TriggerService(*bt)
-		_, err := ts.GetById(r.Primary.ID)
+		_, err := ts.GetByID(r.Primary.ID)
 
 		if err != nil {
 			if strings.Contains(err.Error(), "404") {
@@ -78,7 +78,7 @@ func teamcityTriggerExistsHelper(n string, bt *string, s *terraform.State, clien
 	}
 
 	ts := client.TriggerService(*bt)
-	out, err := ts.GetById(rs.Primary.ID)
+	out, err := ts.GetByID(rs.Primary.ID)
 	if err != nil {
 		return fmt.Errorf("Received an error retrieving Trigger: %s", err)
 	}

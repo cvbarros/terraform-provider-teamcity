@@ -126,7 +126,7 @@ func (s *BuildFeatureService) GetByID(id string) (BuildFeature, error) {
 //Delete removes a snapshot dependency from the build configuration by its id
 func (s *BuildFeatureService) Delete(id string) error {
 	request, _ := s.base.New().Delete(id).Request()
-	response, err := http.DefaultClient.Do(request)
+	response, err := s.httpClient.Do(request)
 	if err != nil {
 		return err
 	}

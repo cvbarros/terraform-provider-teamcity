@@ -38,13 +38,13 @@ func resourceVcsRootGit() *schema.Resource {
 
 func resourceVcsRootGitCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
-	projectId := d.Get("project_id").(string)
+	projectID := d.Get("project_id").(string)
 
 	newVcsRoot := &api.VcsRoot{
 		Name:    d.Get("name").(string),
 		VcsName: api.VcsNames.Git,
 		Project: &api.ProjectReference{
-			ID: projectId,
+			ID: projectID,
 		},
 		Properties: api.NewProperties(
 			&api.Property{
@@ -58,7 +58,7 @@ func resourceVcsRootGitCreate(d *schema.ResourceData, meta interface{}) error {
 		),
 	}
 
-	created, err := client.VcsRoots.Create(projectId, newVcsRoot)
+	created, err := client.VcsRoots.Create(projectID, newVcsRoot)
 	if err != nil {
 		return err
 	}

@@ -164,10 +164,10 @@ type AgentRequirementService struct {
 	base        *sling.Sling
 }
 
-func newAgentRequirementService(buildTypeID string, c *http.Client, base *sling.Sling) *AgentRequirementService {
+func newAgentRequirementService(buildTypeID string, client *http.Client, base *sling.Sling) *AgentRequirementService {
 	return &AgentRequirementService{
 		BuildTypeID: buildTypeID,
-		httpClient:  c,
+		httpClient:  client,
 		base:        base.Path(fmt.Sprintf("buildTypes/%s/agent-requirements/", Locator(buildTypeID).String())),
 	}
 }
@@ -204,7 +204,7 @@ func (s *AgentRequirementService) GetByID(id string) (*AgentRequirement, error) 
 //Delete removes an agent requirement from the build configuration by its id
 func (s *AgentRequirementService) Delete(id string) error {
 	request, _ := s.base.New().Delete(id).Request()
-	response, err := http.DefaultClient.Do(request)
+	response, err := s.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
