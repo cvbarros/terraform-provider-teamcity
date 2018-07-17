@@ -18,6 +18,10 @@
 
 #TeamCity docker mounts
 log_dir/
+data_dir/
 
 #Terraform
 .terraform/
+
+#Local Testing environment
+.test.env
