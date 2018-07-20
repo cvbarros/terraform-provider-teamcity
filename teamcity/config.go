@@ -15,5 +15,5 @@ type Config struct {
 
 // Client Returns a new TeamCity api client configured with this instance parameters
 func (c *Config) Client() (*api.Client, error) {
-	return api.New(c.Username, c.Password, http.DefaultClient)
+	return api.NewWithAddress(c.Username, c.Password, c.Address, http.DefaultClient)
 }
