@@ -1,7 +1,7 @@
 package teamcity
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -9,22 +9,27 @@ import (
 	"github.com/dghubble/sling"
 )
 
-// VcsRoot represents a detailed VCS Root entity
-type VcsRoot struct {
+//VcsRoot interface represents a base type of VCSRoot
+type VcsRoot interface {
+	//GetID returns the ID of this VCS Root
+	GetID() string
 
-	// href
-	Href string `json:"href,omitempty" xml:"href"`
+	//VcsName returns the type of VCS Root. See VcsNames for possible values returned.
+	//In addition, this can be used to type assert to the appropriate concrete VCS Root type.
+	VcsName() string
 
+	//Properties returns the Properties collection for this VCS Root. This should be used for querying only.
+	Properties() *Properties
+}
+
+type vcsRootJSON struct {
 	// id
 	ID string `json:"id,omitempty" xml:"id"`
 
 	// internal Id
 	InternalID string `json:"internalId,omitempty" xml:"internalId"`
 
-	// locator
-	Locator string `json:"locator,omitempty" xml:"locator"`
-
-	// modification check interval
+	// ModificationCheckInterval value in seconds to override the global server setting.
 	ModificationCheckInterval int32 `json:"modificationCheckInterval,omitempty" xml:"modificationCheckInterval"`
 
 	// name
@@ -33,16 +38,11 @@ type VcsRoot struct {
 	// project
 	Project *ProjectReference `json:"project,omitempty"`
 
-	// project locator
-	ProjectLocator string `json:"projectLocator,omitempty" xml:"projectLocator"`
-
-	// properties
+	// Properties for the VCS Root. Do not set directly, instead use NewVcsRoot... constructors.
 	Properties *Properties `json:"properties,omitempty"`
 
-	// uuid
-	UUID string `json:"uuid,omitempty" xml:"uuid"`
-
-	// vcs name
+	// VcsName is the VCS Type used for this VCS Root. See VcsNames for allowed values.
+	// Use NewVcsRoot... constructors to avoid setting this directly.
 	VcsName string `json:"vcsName,omitempty" xml:"vcsName"`
 }
 
@@ -66,25 +66,22 @@ type VcsRootReference struct {
 type VcsRootService struct {
 	sling      *sling.Sling
 	httpClient *http.Client
+	restHelper *restHelper
 }
 
 func newVcsRootService(base *sling.Sling, httpClient *http.Client) *VcsRootService {
 	return &VcsRootService{
 		sling:      base.Path("vcs-roots/"),
 		httpClient: httpClient,
+		restHelper: newRestHelper(httpClient),
 	}
 }
 
 // Create creates a new vcs root
-func (s *VcsRootService) Create(projectID string, vcsRoot *VcsRoot) (*VcsRootReference, error) {
+func (s *VcsRootService) Create(projectID string, vcsRoot VcsRoot) (*VcsRootReference, error) {
 	var created VcsRootReference
 
-	success, err := s.Validate(projectID, vcsRoot)
-	if success == false {
-		return nil, err
-	}
-
-	_, err = s.sling.New().Post("").BodyJSON(vcsRoot).ReceiveSuccess(&created)
+	err := s.restHelper.postJSONWithSling("", s.sling, vcsRoot, &created, "VcsRoot")
 
 	if err != nil {
 		return nil, err
@@ -94,20 +91,26 @@ func (s *VcsRootService) Create(projectID string, vcsRoot *VcsRoot) (*VcsRootRef
 }
 
 // GetByID Retrieves a vcs root by id using the id: locator
-func (s *VcsRootService) GetByID(id string) (*VcsRoot, error) {
-	var out VcsRoot
-
-	resp, err := s.sling.New().Get(id).ReceiveSuccess(&out)
+func (s *VcsRootService) GetByID(id string) (VcsRoot, error) {
+	req, err := s.sling.New().Get(id).Request()
 
 	if err != nil {
 		return nil, err
 	}
 
+	resp, err := s.httpClient.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("Error when retrieving VcsRoot id = '%s', status: %d", id, resp.StatusCode)
 	}
 
-	return &out, err
+	return s.readVcsRootResponse(resp)
 }
 
 //Delete a VCS Root resource using id: locator
@@ -136,25 +139,28 @@ func (s *VcsRootService) Delete(id string) error {
 	return nil
 }
 
-// Validate verifies if a VcsRoot model is valid for updating/creation before sending to upstream API.
-func (s *VcsRootService) Validate(projectID string, vcsRoot *VcsRoot) (bool, error) {
-	if vcsRoot == nil {
-		return false, errors.New("vcsRoot must not be nil")
-	}
-	if vcsRoot.Project == nil {
-		return false, errors.New("vcsRoot.Project must not be nil")
-	}
-	if vcsRoot.VcsName == "" {
-		return false, errors.New("vcsRoot.VcsName must be defined")
+func (s *VcsRootService) readVcsRootResponse(resp *http.Response) (VcsRoot, error) {
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
 	}
 
-	props := vcsRoot.Properties.Map()
-	if _, ok := props["url"]; !ok {
-		return false, errors.New("'url' property must be defined in VcsRoot.Properties")
+	var payload vcsRootJSON
+	if err := json.Unmarshal(bodyBytes, &payload); err != nil {
+		return nil, err
 	}
 
-	if _, ok := props["branch"]; !ok {
-		return false, errors.New("'branch' property must be defined in VcsRoot.Properties")
+	var out VcsRoot
+	switch payload.VcsName {
+	case VcsNames.Git:
+		var git GitVcsRoot
+		if err := git.UnmarshalJSON(bodyBytes); err != nil {
+			return nil, err
+		}
+		out = &git
+	default:
+		return nil, fmt.Errorf("Unsupported VCS Root type: '%s' (id:'%s') for projectID: %s", payload.VcsName, payload.ID, payload.Project.ID)
 	}
-	return true, nil
+
+	return out, nil
 }

@@ -297,7 +297,7 @@ resource "teamcity_project" "build_config_project_test" {
 resource "teamcity_vcs_root_git" "build_config_vcsroot_test" {
 	name = "application"
 	project_id = "${teamcity_project.build_config_project_test.id}"
-	repo_url = "https://github.com/kelseyhightower/nocode"
+	fetch_url = "https://github.com/kelseyhightower/nocode"
 	default_branch = "refs/head/master"
 }
 

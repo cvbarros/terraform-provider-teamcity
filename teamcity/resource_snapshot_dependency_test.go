@@ -72,7 +72,7 @@ func snapshotDependencyDestroyHelper(s *terraform.State, bt *string, client *api
 		}
 
 		dep := client.DependencyService(*bt)
-		_, err := dep.GetByID(r.Primary.ID)
+		_, err := dep.GetSnapshotByID(r.Primary.ID)
 
 		if err != nil {
 			if strings.Contains(err.Error(), "404") {
@@ -104,7 +104,7 @@ func teamcitySnapshotDependencyExistsHelper(n string, bt *string, s *terraform.S
 	}
 
 	dep := client.DependencyService(*bt)
-	out, err := dep.GetByID(rs.Primary.ID)
+	out, err := dep.GetSnapshotByID(rs.Primary.ID)
 	if err != nil {
 		return fmt.Errorf("Received an error retrieving snapshot dependency: %s", err)
 	}
