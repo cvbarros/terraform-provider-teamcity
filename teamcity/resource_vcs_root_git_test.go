@@ -80,6 +80,29 @@ func TestAccVcsRootGit_SshUploadedKeyAuth(t *testing.T) {
 	})
 }
 
+func TestAccVcsRootGit_AgentSettings(t *testing.T) {
+	var vcs api.GitVcsRoot
+	resourceName := "teamcity_vcs_root_git.git_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckVcsRootGitDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccVcsRootGitAgentSettings,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVcsRootGitExists(resourceName, &vcs),
+					resource.TestCheckResourceAttr(resourceName, "agent.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "agent.2650242794.git_path", "/usr/bin/git"),
+					resource.TestCheckResourceAttr(resourceName, "agent.2650242794.clean_policy", "always"),
+					resource.TestCheckResourceAttr(resourceName, "agent.2650242794.clean_files_policy", "ignored_only"),
+					resource.TestCheckResourceAttr(resourceName, "agent.2650242794.use_mirrors", "true"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccVcsRootGit_Delete(t *testing.T) {
 	resName := "teamcity_vcs_root_git.git_test"
 
@@ -209,6 +232,26 @@ resource "teamcity_vcs_root_git" "git_test" {
 		ssh_type = "uploadedKey"
 		key_spec = "myKey"
 		password = "key_password"
+	}
+}
+`
+
+const testAccVcsRootGitAgentSettings = `
+resource "teamcity_project" "vcs_root_project" {
+  name = "vcs_root_project"
+}
+
+resource "teamcity_vcs_root_git" "git_test" {
+	name = "application"
+	project_id = "${teamcity_project.vcs_root_project.id}"
+	fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
+	default_branch = "refs/head/master"
+
+	agent {
+		git_path = "/usr/bin/git"
+		clean_policy = "always"
+		clean_files_policy = "ignored_only"
+		use_mirrors = true
 	}
 }
 `

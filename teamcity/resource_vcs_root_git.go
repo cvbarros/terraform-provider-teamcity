@@ -111,6 +111,35 @@ func resourceVcsRootGit() *schema.Resource {
 				},
 				Set: gitVcsAuthHash,
 			},
+			"agent": {
+				Type:        schema.TypeSet,
+				MaxItems:    1,
+				Optional:    true,
+				Description: "Agent settings for the VCS Root",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"git_path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"clean_policy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"branch_change", "always", "never"}, false),
+						},
+						"clean_files_policy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"untracked", "ignored_only", "non_ignored_only"}, false),
+						},
+						"use_mirrors": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -124,12 +153,29 @@ var expandUsernameStyleMap = map[string]string{
 
 var flattenUsernameStyleMap = reverseMap(expandUsernameStyleMap)
 
+var expandCleanPolicyMap = map[string]string{
+	"branch_change": string(api.CleanPolicyBranchChange),
+	"always":        string(api.CleanPolicyAlways),
+	"never":         string(api.CleanPolicyNever),
+}
+
+var flattenCleanPolicyMap = reverseMap(expandCleanPolicyMap)
+
+var expandCleanFilesPolicyMap = map[string]string{
+	"untracked":        string(api.CleanFilesPolicyAllUntracked),
+	"ignored_only":     string(api.CleanFilesPolicyIgnoredOnly),
+	"non_ignored_only": string(api.CleanFilesPolicyIgnoredUntracked),
+}
+
+var flattenCleanFilesPolicyMap = reverseMap(expandCleanFilesPolicyMap)
+
 func resourceVcsRootGitCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	projectID := d.Get("project_id").(string)
 	var gitVcs *api.GitVcsRoot
 
 	vcsOpts, err := expandGitVcsRootOptions(d)
+
 	if err != nil {
 		return err
 	}
@@ -210,6 +256,12 @@ func resourceVcsRootGitRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
+	if agent, err := flattenGitAgentSettings(d, dt.Options.AgentSettings); err != nil {
+		if err := d.Set("agent", agent); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -248,7 +300,12 @@ func expandGitVcsRootOptions(d *schema.ResourceData) (*api.GitVcsRootOptions, er
 		password = auth["password"].(string)
 	}
 
-	opt, err := api.NewGitVcsRootOptions(d.Get("default_branch").(string), fetchURL, pushURL, authType, username, password)
+	agent, err := expandGitVcsAgentSettings(d)
+	if err != nil {
+		return nil, err
+	}
+
+	opt, err := api.NewGitVcsRootOptionsWithAgentSettings(d.Get("default_branch").(string), fetchURL, pushURL, authType, username, password, agent)
 	if err != nil {
 		return nil, err
 	}
@@ -256,6 +313,64 @@ func expandGitVcsRootOptions(d *schema.ResourceData) (*api.GitVcsRootOptions, er
 		opt.PrivateKeySource = v.(string)
 	}
 	return opt, nil
+}
+
+func expandGitVcsAgentSettings(d *schema.ResourceData) (*api.GitAgentSettings, error) {
+	var gitPath, cleanPolicy, cleanFilesPolicy string
+	var useMirrors bool
+
+	v, ok := d.GetOk("agent")
+	if !ok {
+		return nil, nil
+	}
+
+	agent := v.(*schema.Set).List()[0].(map[string]interface{})
+
+	if v, ok = agent["git_path"]; ok {
+		gitPath = v.(string)
+	}
+
+	if v, ok = agent["clean_policy"]; ok {
+		cleanPolicy = v.(string)
+	}
+
+	if v, ok = agent["clean_files_policy"]; ok {
+		cleanFilesPolicy = v.(string)
+	}
+
+	if v, ok = agent["use_mirrors"]; ok {
+		useMirrors = v.(bool)
+	}
+
+	return &api.GitAgentSettings{
+		GitPath:          gitPath,
+		CleanFilesPolicy: api.GitAgentCleanFilesPolicy(cleanFilesPolicy),
+		CleanPolicy:      api.GitAgentCleanPolicy(cleanPolicy),
+		UseMirrors:       useMirrors,
+	}, nil
+}
+
+func flattenGitAgentSettings(d *schema.ResourceData, dt *api.GitAgentSettings) ([]map[string]interface{}, error) {
+	if dt == nil {
+		return nil, nil
+	}
+	var optsToSave []map[string]interface{}
+	m := make(map[string]interface{})
+
+	if dt.GitPath != "" {
+		m["git_path"] = dt.GitPath
+	}
+	if dt.CleanPolicy != "" {
+		m["clean_policy"] = flattenCleanPolicyMap[string(dt.CleanPolicy)]
+	}
+	if dt.CleanFilesPolicy != "" {
+		m["clean_files_policy"] = flattenCleanFilesPolicyMap[string(dt.CleanFilesPolicy)]
+	}
+
+	m["use_mirrors"] = dt.UseMirrors
+
+	optsToSave = append(optsToSave, m)
+	return optsToSave, nil
 }
 
 func flattenGitVcsRootAuth(d *schema.ResourceData, dt *api.GitVcsRootOptions) ([]map[string]interface{}, error) {
