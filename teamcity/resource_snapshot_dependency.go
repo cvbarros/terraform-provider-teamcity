@@ -79,12 +79,12 @@ func resourceSnapshotDependencyDelete(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*api.Client)
 	dep := client.DependencyService(d.Get("build_config_id").(string))
 
-	return dep.Delete(d.Id())
+	return dep.DeleteSnapshot(d.Id())
 }
 
 func getSnapshotDependency(c *api.DependencyService, id string) (*api.SnapshotDependency, error) {
 
-	dt, err := c.GetByID(id)
+	dt, err := c.GetSnapshotByID(id)
 	if err != nil {
 		return nil, err
 	}
