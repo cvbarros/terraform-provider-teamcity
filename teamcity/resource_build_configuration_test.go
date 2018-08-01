@@ -37,14 +37,20 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 	})
 }
 
-func TestAccBuildConfig_Steps(t *testing.T) {
+func TestAccBuildConfig_StepsPowershell(t *testing.T) {
 	var bc api.BuildType
 	resName := "teamcity_build_config.build_configuration_test"
-	expected := map[string]string{
-		"name": "build release",
+	scriptStep := map[string]string{
+		"name": "build_script",
 		"type": api.StepTypePowershell,
 		"file": "build.ps1",
 		"args": "-Target buildrelease",
+	}
+
+	codeStep := map[string]string{
+		"type": api.StepTypePowershell,
+		"name": "build_code",
+		"code": "Get-Date",
 	}
 
 	resource.Test(t, resource.TestCase{
@@ -53,10 +59,45 @@ func TestAccBuildConfig_Steps(t *testing.T) {
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: TestAccBuildConfigSteps,
+				Config: TestAccBuildConfigStepsPowershell,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
-					testAccCheckStepExists(&bc.ID, expected),
+					testAccCheckStepExists(&bc.ID, scriptStep),
+					testAccCheckStepExists(&bc.ID, codeStep),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_StepsCmdLine(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+
+	codeStep := map[string]string{
+		"type": api.StepTypeCommandLine,
+		"name": "build_script",
+		"code": "echo \"Hello World\"",
+	}
+
+	exeStep := map[string]string{
+		"type": api.StepTypeCommandLine,
+		"name": "build_executable",
+		"file": "./build.sh",
+		"args": "default_target --verbose",
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigStepsCmdLine,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					testAccCheckStepExists(&bc.ID, codeStep),
+					testAccCheckStepExists(&bc.ID, exeStep),
 				),
 			},
 		},
@@ -126,22 +167,51 @@ func assertStepProperties(actual api.Step, expected map[string]string) error {
 		return fmt.Errorf("Found step %s but types differ, actual: %s, expected: %s", expected["name"], actual.Type(), expected["type"])
 	}
 
-	if stepType == "powershell" {
-		psStep := actual.(*api.StepPowershell)
+	if stepType == string(api.StepTypePowershell) {
+		dt := actual.(*api.StepPowershell)
 		if p, ok := expected["file"]; ok {
-			if p != psStep.ScriptFile {
-				return fmt.Errorf("Property 'file' differs, actual: %s, expected: %s", psStep.ScriptFile, p)
+			if p != dt.ScriptFile {
+				return fmt.Errorf("Property 'file' differs, actual: %s, expected: %s", dt.ScriptFile, p)
 			}
 		}
 
 		if p, ok := expected["args"]; ok {
-			if p != psStep.ScriptArgs {
-				return fmt.Errorf("Property 'args' differs, actual: %s, expected: %s", psStep.ScriptArgs, p)
+			if p != dt.ScriptArgs {
+				return fmt.Errorf("Property 'args' differs, actual: %s, expected: %s", dt.ScriptArgs, p)
 			}
 		}
+
+		if p, ok := expected["code"]; ok {
+			if p != dt.Code {
+				return fmt.Errorf("Property 'code' differs, actual: %s, expected: %s", dt.Code, p)
+			}
+		}
+		return nil
 	}
 
-	return nil
+	if stepType == string(api.StepTypeCommandLine) {
+		dt := actual.(*api.StepCommandLine)
+		if p, ok := expected["file"]; ok {
+			if p != dt.CommandExecutable {
+				return fmt.Errorf("Property 'file' differs, actual: %s, expected: %s", dt.CommandExecutable, p)
+			}
+		}
+
+		if p, ok := expected["args"]; ok {
+			if p != dt.CommandParameters {
+				return fmt.Errorf("Property 'args' differs, actual: %s, expected: %s", dt.CommandParameters, p)
+			}
+		}
+
+		if p, ok := expected["code"]; ok {
+			if p != dt.CustomScript {
+				return fmt.Errorf("Property 'code' differs, actual: %s, expected: %s", dt.CustomScript, p)
+			}
+		}
+		return nil
+	}
+
+	return fmt.Errorf("Unexpected step type found: %s", stepType)
 }
 
 func getPropertyOk(p *api.Properties, key string) (string, bool) {
@@ -311,7 +381,7 @@ resource "teamcity_build_config" "build_configuration_test" {
 }
 `
 
-const TestAccBuildConfigSteps = `
+const TestAccBuildConfigStepsPowershell = `
 resource "teamcity_project" "build_config_project_test" {
   name = "build_config_project_test"
 }
@@ -322,14 +392,39 @@ resource "teamcity_build_config" "build_configuration_test" {
 	
 	step {
 		type = "powershell"
-		name = "build release"
+		name = "build_script"
 		file = "build.ps1"
 		args = "-Target buildrelease"
 	}
 
 	step {
 		type = "powershell"
-		file = "another.ps1"
+		name = "build_code"
+		code = "Get-Date"
+	}
+}
+`
+
+const TestAccBuildConfigStepsCmdLine = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	
+	step {
+		type = "cmd_line"
+		name = "build_script"
+		code = "echo \"Hello World\""
+	}
+
+	step {
+		type = "cmd_line"
+		name = "build_executable"
+		file = "./build.sh"
+		args = "default_target --verbose"
 	}
 }
 `
