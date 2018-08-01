@@ -1,36 +1,98 @@
 package teamcity
 
-// Step is a build configuration/template build step. Use constructor functions NewStep* to create those
-type Step struct {
+import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+)
 
-	// disabled
-	Disabled *bool `json:"disabled,omitempty" xml:"disabled"`
+// BuildStepType represents most common step types for build steps
+type BuildStepType = string
 
-	// href
-	Href string `json:"href,omitempty" xml:"href"`
+const (
+	//StepTypePowershell step type
+	StepTypePowershell BuildStepType = "jetbrains_powershell"
+	//StepTypeDotnetCli step type
+	StepTypeDotnetCli BuildStepType = "dotnet.cli"
+	//StepTypeCommandLine (shell/cmd) step type
+	StepTypeCommandLine BuildStepType = "simpleRunner"
+)
 
-	// id
-	ID string `json:"id,omitempty" xml:"id"`
+//StepExecuteMode represents how a build configuration step will execute regarding others.
+type StepExecuteMode = string
 
-	// inherited
-	Inherited *bool `json:"inherited,omitempty" xml:"inherited"`
+const (
+	//StepExecuteModeDefault executes the step only if all previous steps finished successfully.
+	StepExecuteModeDefault = "default"
+	//StepExecuteModeOnlyIfBuildIsSuccessful executes the step only if the whole build is successful.
+	StepExecuteModeOnlyIfBuildIsSuccessful = "execute_if_success"
+	//StepExecuteModeEvenWhenFailed executes the step even if previous steps failed.
+	StepExecuteModeEvenWhenFailed = "execute_if_failed"
+	//StepExecuteAlways executes even if build stop command was issued.
+	StepExecuteAlways = "execute_always"
+)
 
-	// name
-	Name string `json:"name,omitempty" xml:"name"`
-
-	// properties
-	Properties *Properties `json:"properties,omitempty"`
-
-	// type
-	Type string `json:"type,omitempty" xml:"type"`
+// Step interface represents a a build configuration/template build step. To intereact with concrete step types, see the Step* types.
+type Step interface {
+	ID() string
+	Type() string
+	Name() string
 }
 
-// Steps represents a collection of Steps
-type Steps struct {
+type stepJSON struct {
+	Disabled   *bool       `json:"disabled,omitempty" xml:"disabled"`
+	Href       string      `json:"href,omitempty" xml:"href"`
+	ID         string      `json:"id,omitempty" xml:"id"`
+	Inherited  *bool       `json:"inherited,omitempty" xml:"inherited"`
+	Name       string      `json:"name,omitempty" xml:"name"`
+	Properties *Properties `json:"properties,omitempty"`
+	Type       string      `json:"type,omitempty" xml:"type"`
+}
 
-	// count
-	Count int32 `json:"count,omitempty" xml:"count"`
+type stepsJSON struct {
+	Count int32       `json:"count,omitempty" xml:"count"`
+	Items []*stepJSON `json:"step"`
+}
 
-	// step
-	Items []*Step `json:"step"`
+var stepReadingFunc = func(dt []byte, out interface{}) error {
+	var payload stepJSON
+	if err := json.Unmarshal(dt, &payload); err != nil {
+		return err
+	}
+
+	var step Step
+	switch payload.Type {
+	case string(StepTypePowershell):
+		var ps StepPowershell
+		if err := ps.UnmarshalJSON(dt); err != nil {
+			return err
+		}
+		step = &ps
+	case string(StepTypeCommandLine):
+		var cmd StepCommandLine
+		if err := cmd.UnmarshalJSON(dt); err != nil {
+			return err
+		}
+		step = &cmd
+	default:
+		return fmt.Errorf("Unsupported step type: '%s' (id:'%s')", payload.Type, payload.ID)
+	}
+
+	replaceValue(out, &step)
+	return nil
+}
+
+func replaceValue(i, v interface{}) {
+	val := reflect.ValueOf(i)
+	if val.Kind() != reflect.Ptr {
+		panic("not a pointer")
+	}
+	val = val.Elem()
+
+	newVal := reflect.Indirect(reflect.ValueOf(v))
+	if !val.Type().AssignableTo(newVal.Type()) {
+		panic("mismatched types")
+	}
+
+	val.Set(newVal)
 }

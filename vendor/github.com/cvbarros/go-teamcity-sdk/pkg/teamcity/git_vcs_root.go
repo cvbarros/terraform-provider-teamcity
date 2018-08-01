@@ -13,9 +13,6 @@ type GitVcsRoot struct {
 	// id
 	ID string `json:"id,omitempty" xml:"id"`
 
-	// internal Id
-	InternalID string `json:"internalId,omitempty" xml:"internalId"`
-
 	// ModificationCheckInterval value in seconds to override the global server setting.
 	ModificationCheckInterval int32 `json:"modificationCheckInterval,omitempty" xml:"modificationCheckInterval"`
 

@@ -42,7 +42,7 @@ func TestAccBuildConfig_Steps(t *testing.T) {
 	resName := "teamcity_build_config.build_configuration_test"
 	expected := map[string]string{
 		"name": "build release",
-		"type": api.StepTypes.Powershell,
+		"type": api.StepTypePowershell,
 		"file": "build.ps1",
 		"args": "-Target buildrelease",
 	}
@@ -56,7 +56,7 @@ func TestAccBuildConfig_Steps(t *testing.T) {
 				Config: TestAccBuildConfigSteps,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
-					testAccCheckStepExists(&bc.Steps, expected),
+					testAccCheckStepExists(&bc.ID, expected),
 				),
 			},
 		},
@@ -102,13 +102,16 @@ func TestAccBuildConfig_VcsRoot(t *testing.T) {
 	})
 }
 
-func testAccCheckStepExists(steps **api.Steps, stepExpected map[string]string) resource.TestCheckFunc {
+func testAccCheckStepExists(buildTypeID *string, stepExpected map[string]string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		if *steps == nil {
-			return fmt.Errorf("steps must not be nil")
+		client := testAccProvider.Meta().(*api.Client)
+		steps, err := client.BuildTypes.GetSteps(*buildTypeID)
+		if err != nil {
+			return fmt.Errorf("error when checking steps: %s", err)
 		}
-		for _, v := range (*steps).Items {
-			if v.Name == stepExpected["name"] {
+
+		for _, v := range steps {
+			if v.Name() == stepExpected["name"] {
 				return assertStepProperties(v, stepExpected)
 			}
 		}
@@ -117,28 +120,24 @@ func testAccCheckStepExists(steps **api.Steps, stepExpected map[string]string) r
 	}
 }
 
-func assertStepProperties(actual *api.Step, expected map[string]string) error {
-	if actual.Type != expected["type"] {
-		return fmt.Errorf("Found step %s but types differ, actual: %s, expected: %s", expected["name"], actual.Type, expected["type"])
+func assertStepProperties(actual api.Step, expected map[string]string) error {
+	stepType := actual.Type()
+	if actual.Type() != expected["type"] {
+		return fmt.Errorf("Found step %s but types differ, actual: %s, expected: %s", expected["name"], actual.Type(), expected["type"])
 	}
 
-	if p, ok := expected["file"]; ok {
-		if v, found := getPropertyOk(actual.Properties, "jetbrains_powershell_script_file"); found {
-			if v != p {
-				return fmt.Errorf("Property 'file' differs, actual: %s, expected: %s", v, p)
+	if stepType == "powershell" {
+		psStep := actual.(*api.StepPowershell)
+		if p, ok := expected["file"]; ok {
+			if p != psStep.ScriptFile {
+				return fmt.Errorf("Property 'file' differs, actual: %s, expected: %s", psStep.ScriptFile, p)
 			}
-		} else {
-			return fmt.Errorf("Expected property 'file' to be set as %s, but was not found.", p)
 		}
-	}
 
-	if p, ok := expected["args"]; ok {
-		if v, found := getPropertyOk(actual.Properties, "jetbrains_powershell_scriptArguments"); found {
-			if v != p {
-				return fmt.Errorf("Property 'args' differs, actual: %s, expected: %s", v, p)
+		if p, ok := expected["args"]; ok {
+			if p != psStep.ScriptArgs {
+				return fmt.Errorf("Property 'args' differs, actual: %s, expected: %s", psStep.ScriptArgs, p)
 			}
-		} else {
-			return fmt.Errorf("Expected property 'args' to be set as %s, but was not found.", p)
 		}
 	}
 

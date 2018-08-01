@@ -194,7 +194,7 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 				return err
 			}
 
-			err = client.BuildTypes.AddStep(created.ID, newStep)
+			_, err = client.BuildTypes.AddStep(created.ID, newStep)
 			if err != nil {
 				return err
 			}
@@ -271,10 +271,13 @@ func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
-	steps := dt.Steps
-	if steps != nil && steps.Count > 0 {
+	steps, err := client.BuildTypes.GetSteps(d.Id())
+	if err != nil {
+		return err
+	}
+	if steps != nil && len(steps) > 0 {
 		var stepsToSave []map[string]interface{}
-		for _, el := range steps.Items {
+		for _, el := range steps {
 			l, err := resourceBuildStepPermGather(el)
 			if err != nil {
 				return err
@@ -294,27 +297,27 @@ var stepTypeMap = map[string]string{
 	"jetbrains_powershell": "powershell",
 }
 
-func resourceBuildStepPermGather(s *api.Step) (map[string]interface{}, error) {
-	mapType := stepTypeMap[s.Type]
+func resourceBuildStepPermGather(s api.Step) (map[string]interface{}, error) {
+	mapType := stepTypeMap[s.Type()]
 
 	switch mapType {
 	case "powershell":
-		return resourceBuildStepPowershellGather(s), nil
+		return resourceBuildStepPowershellGather(s.(*api.StepPowershell)), nil
 	default:
-		return nil, fmt.Errorf("Build step type '%s' not supported", s.Type)
+		return nil, fmt.Errorf("Build step type '%s' not supported", s.Type())
 	}
 }
 
-func resourceBuildStepPowershellGather(s *api.Step) map[string]interface{} {
+func resourceBuildStepPowershellGather(s *api.StepPowershell) map[string]interface{} {
 	m := make(map[string]interface{})
-	if v, ok := s.Properties.GetOk("jetbrains_powershell_script_file"); ok {
-		m["file"] = v
+	if s.ScriptFile != "" {
+		m["file"] = s.ScriptFile
+		if s.ScriptArgs != "" {
+			m["args"] = s.ScriptArgs
+		}
 	}
-	if v, ok := s.Properties.GetOk("jetbrains_powershell_scriptArguments"); ok {
-		m["args"] = v
-	}
-	if s.Name != "" {
-		m["name"] = s.Name
+	if s.Name() != "" {
+		m["name"] = s.Name()
 	}
 	m["type"] = "powershell"
 
@@ -339,26 +342,32 @@ func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
 	return dt, nil
 }
 
-func buildStep(raw interface{}) (*api.Step, error) {
+func buildStep(raw interface{}) (api.Step, error) {
 	localStep := raw.(map[string]interface{})
-	name := ""
 
 	t := localStep["type"].(string)
 	switch t {
 	case "powershell":
-		b := api.StepPowershellBuilder.ScriptFile(localStep["file"].(string))
-		if v, ok := localStep["args"]; ok {
-			if args := v.(string); args != "" {
-				b = b.Args(v.(string))
-			}
-		}
-		if v, ok := localStep["name"]; ok {
-			name = v.(string)
-		}
-		return b.Build(name), nil
+		return expandStepPowershell(localStep)
 	default:
 		return nil, fmt.Errorf("Unsupported step type '%s'", t)
 	}
+}
+
+func expandStepPowershell(dt map[string]interface{}) (*api.StepPowershell, error) {
+	var file, args, name string
+
+	if v, ok := dt["file"]; ok {
+		file = v.(string)
+	}
+	if v, ok := dt["args"]; ok {
+		args = v.(string)
+	}
+	if v, ok := dt["name"]; ok {
+		name = v.(string)
+	}
+
+	return api.NewStepPowershellScriptFile(name, file, args)
 }
 
 func buildVcsRootEntry(raw interface{}) *api.VcsRootEntry {
