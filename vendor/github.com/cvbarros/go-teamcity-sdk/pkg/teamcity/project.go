@@ -18,12 +18,6 @@ type Project struct {
 	// archived
 	Archived *bool `json:"archived,omitempty" xml:"archived"`
 
-	// build types
-	// BuildTypes *BuildTypes `json:"buildTypes,omitempty"`
-
-	// // default template
-	// DefaultTemplate *BuildType `json:"defaultTemplate,omitempty"`
-
 	// description
 	Description string `json:"description,omitempty" xml:"description"`
 
@@ -35,9 +29,6 @@ type Project struct {
 
 	// internal Id
 	InternalID string `json:"internalId,omitempty" xml:"internalId"`
-
-	// links
-	// Links *Links `json:"links,omitempty"`
 
 	// locator
 	Locator string `json:"locator,omitempty" xml:"locator"`
@@ -60,23 +51,8 @@ type Project struct {
 	// parent project name
 	ParentProjectName string `json:"parentProjectName,omitempty" xml:"parentProjectName"`
 
-	// project features
-	// ProjectFeatures *ProjectFeatures `json:"projectFeatures,omitempty"`
-
-	// projects
-	// Projects *Projects `json:"projects,omitempty"`
-
-	// // read only UI
-	// ReadOnlyUI *StateField `json:"readOnlyUI,omitempty"`
-
-	// // templates
-	// Templates *BuildTypes `json:"templates,omitempty"`
-
 	// uuid
 	UUID string `json:"uuid,omitempty" xml:"uuid"`
-
-	// vcs roots
-	// VcsRoots *VcsRoots `json:"vcsRoots,omitempty"`
 
 	// web Url
 	WebURL string `json:"webUrl,omitempty" xml:"webUrl"`
@@ -95,32 +71,25 @@ type ProjectReference struct {
 type ProjectService struct {
 	sling      *sling.Sling
 	httpClient *http.Client
+	restHelper *restHelper
 }
 
 func newProjectService(base *sling.Sling, client *http.Client) *ProjectService {
+	sling := base.Path("projects/")
 	return &ProjectService{
-		sling:      base.Path("projects/"),
+		sling:      sling,
 		httpClient: client,
+		restHelper: newRestHelperWithSling(client, sling),
 	}
 }
 
 // Create creates a new project at root project level
 func (s *ProjectService) Create(project *Project) (*ProjectReference, error) {
 	var created ProjectReference
-	if err := project.Validate(); err != nil {
-		return nil, err
-	}
-
-	response, err := s.sling.New().BodyJSON(project).Post("").ReceiveSuccess(&created)
-
+	err := s.restHelper.post("", project, &created, "project")
 	if err != nil {
 		return nil, err
 	}
-
-	if response.StatusCode == 400 {
-		return nil, fmt.Errorf("A project with name '%s' already exists", project.Name)
-	}
-
 	return &created, nil
 }
 

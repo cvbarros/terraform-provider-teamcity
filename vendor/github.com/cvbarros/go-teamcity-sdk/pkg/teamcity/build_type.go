@@ -1,6 +1,7 @@
 package teamcity
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -65,9 +66,6 @@ type BuildType struct {
 	// artifact dependencies
 	ArtifactDependencies *ArtifactDependencies `json:"artifact-dependencies,omitempty"`
 
-	// steps
-	Steps *Steps `json:"steps,omitempty"`
-
 	// template flag
 	TemplateFlag *bool `json:"templateFlag,omitempty" xml:"templateFlag"`
 
@@ -90,9 +88,6 @@ type BuildType struct {
 // BuildTypeReference represents a subset detail of a Build Type
 type BuildTypeReference struct {
 
-	// href
-	Href string `json:"href,omitempty" xml:"href"`
-
 	// id
 	ID string `json:"id,omitempty" xml:"id"`
 
@@ -112,7 +107,6 @@ func (b *BuildType) Reference() *BuildTypeReference {
 		ID:          b.ID,
 		Name:        b.Name,
 		ProjectID:   b.ProjectID,
-		Href:        b.Href,
 		ProjectName: b.ProjectName,
 	}
 }
@@ -121,12 +115,15 @@ func (b *BuildType) Reference() *BuildTypeReference {
 type BuildTypeService struct {
 	sling      *sling.Sling
 	httpClient *http.Client
+	restHelper *restHelper
 }
 
 func newBuildTypeService(base *sling.Sling, httpClient *http.Client) *BuildTypeService {
+	sling := base.Path("buildTypes/")
 	return &BuildTypeService{
 		httpClient: httpClient,
-		sling:      base.Path("buildTypes/"),
+		sling:      sling,
+		restHelper: newRestHelperWithSling(httpClient, sling),
 	}
 }
 
@@ -202,16 +199,37 @@ func (s *BuildTypeService) AttachVcsRootEntry(id string, entry *VcsRootEntry) er
 	return nil
 }
 
-// AddStep creates a new build steo for this build type
-func (s *BuildTypeService) AddStep(id string, step *Step) error {
+// AddStep creates a new build step for the build configuration with given id.
+func (s *BuildTypeService) AddStep(id string, step Step) (Step, error) {
 	var created Step
-	_, err := s.sling.New().Post(fmt.Sprintf("%s/steps/", LocatorID(id))).BodyJSON(step).ReceiveSuccess(&created)
+	path := fmt.Sprintf("%s/steps/", LocatorID(id))
 
+	err := s.restHelper.postCustom(path, step, &created, "build step", stepReadingFunc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return created, nil
+}
+
+//GetSteps return the list of steps for a Build configuration with given id.
+func (s *BuildTypeService) GetSteps(id string) ([]Step, error) {
+	var aux stepsJSON
+	path := fmt.Sprintf("%s/steps/", LocatorID(id))
+	err := s.restHelper.get(path, &aux, "build steps")
+	if err != nil {
+		return nil, err
+	}
+	steps := make([]Step, aux.Count)
+	for i := range aux.Items {
+		dt, err := json.Marshal(aux.Items[i])
+		if err != nil {
+			return nil, err
+		}
+		stepReadingFunc(dt, &steps[i])
+	}
+
+	return steps, nil
 }
 
 // UpdateSettings will do a remote call for each setting being updated. Operation is not atomic, and the list of settings is processed in the order sent.

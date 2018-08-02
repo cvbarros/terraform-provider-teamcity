@@ -100,7 +100,7 @@ func (s *BuildFeatureService) Create(bf BuildFeature) (BuildFeature, error) {
 	return s.readBuildFeatureResponse(resp)
 }
 
-//GetByID returns a dependency by its id
+//GetByID returns a build feature by its id
 func (s *BuildFeatureService) GetByID(id string) (BuildFeature, error) {
 	req, err := s.base.New().Get(id).Request()
 
@@ -123,7 +123,7 @@ func (s *BuildFeatureService) GetByID(id string) (BuildFeature, error) {
 	return s.readBuildFeatureResponse(resp)
 }
 
-//Delete removes a snapshot dependency from the build configuration by its id
+//Delete removes a build feature from the build configuration by its id.
 func (s *BuildFeatureService) Delete(id string) error {
 	request, _ := s.base.New().Delete(id).Request()
 	response, err := s.httpClient.Do(request)
