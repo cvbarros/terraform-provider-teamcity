@@ -83,10 +83,8 @@ resource "teamcity_buildconfiguration" "nocode_release_testing" {
   }
 }
 
-resource "teamcity_build_trigger" "nocode_vcs_trigger" {
+resource "teamcity_build_trigger_vcs" "nocode_vcs_trigger" {
   build_config_id = "${teamcity_buildconfiguration.nocode_pullrequest}"
-
-  type = "vcs"
 
   rules = ["+:*"]
 }

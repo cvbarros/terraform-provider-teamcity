@@ -13,7 +13,7 @@ func Provider() terraform.ResourceProvider {
 			"teamcity_vcs_root_git":                    resourceVcsRootGit(),
 			"teamcity_build_config":                    resourceBuildConfiguration(),
 			"teamcity_snapshot_dependency":             resourceSnapshotDependency(),
-			"teamcity_trigger":                         resourceTrigger(),
+			"teamcity_build_trigger_vcs":               resourceBuildTriggerVcs(),
 			"teamcity_agent_requirement":               resourceAgentRequirement(),
 			"teamcity_feature_commit_status_publisher": resourceFeatureCommitStatusPublisher(),
 		},
