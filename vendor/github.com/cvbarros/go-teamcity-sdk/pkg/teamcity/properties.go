@@ -144,8 +144,11 @@ func fillStructFromProperties(data interface{}, p *Properties) {
 				case reflect.String:
 					sf.SetString(pv)
 				case reflect.Slice:
-					sep := "\\r\\n" // Use default
-					sep, _ = f.Tag.Lookup("separator")
+					var sep string
+					sep, ok = f.Tag.Lookup("separator")
+					if !ok {
+						sep = "\\r\\n" // Use default
+					}
 					sVal := reflect.ValueOf(strings.Split(pv, sep))
 					sf.Set(sVal)
 				default:

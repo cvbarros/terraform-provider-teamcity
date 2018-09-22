@@ -5,10 +5,10 @@ import (
 	"strings"
 )
 
-// TriggerBuildFinishOptions represents optional settings for a VCS Trigger type.
+// TriggerBuildFinishOptions represents optional settings for a 'Finish Build' Trigger type.
 type TriggerBuildFinishOptions struct {
 	AfterSuccessfulBuildOnly bool     `prop:"afterSucessfulBuildOnly"`
-	BranchFilter             []string `prop:"branchFilter"`
+	BranchFilter             []string `prop:"branchFilter" separator:"\n"`
 }
 
 // NewTriggerBuildFinishOptions initialize a NewTriggerBuildFinishOptions

@@ -1,3 +1,12 @@
+# 2018-09-22
+Breaking change on `teamcity_build_trigger` resource. I've decided to create separate resource types for different types of build triggers, since the configuration complexity of these resources will greatly increase if kept on a single "build trigger" resource type.
+
+Thus, three new resources will be created:
+- `teamcity_build_trigger_vcs`: Corresponding to Build Triggers of type `VCS`
+- `teamcity_build_trigger_build_finish`: Corresponding to Build Triggers of type `Finish Build`
+- `teamcity_build_trigger_schedule`: Correspondong to Build Triggers of type `Schedule`
+
+
 # 2018-05-15
 When implementing `steps` for build configurations, I decided to make them an _embedded resource_ rather than a separate resource. Example:
 

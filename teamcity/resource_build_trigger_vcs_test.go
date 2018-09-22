@@ -10,37 +10,37 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-func TestAccTeamcityTrigger_Basic(t *testing.T) {
-	resName := "teamcity_trigger.test"
+func TestAccTeamcityBuildTriggerVcs_Basic(t *testing.T) {
+	resName := "teamcity_build_trigger_vcs.test"
 	var out api.Trigger
 	var bc api.BuildType
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckteamcityTriggerDestroy(&bc.ID),
+		CheckDestroy: testAccCheckTeamcityBuildTriggerDestroy(&bc.ID, "teamcity_build_trigger_vcs"),
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: TestAccTriggerBasic,
+				Config: TestAccBuildTriggerVcsBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
-					testAccCheckteamcityTriggerExists(resName, &bc.ID, &out),
+					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckteamcityTriggerDestroy(bt *string) resource.TestCheckFunc {
+func testAccCheckTeamcityBuildTriggerDestroy(bt *string, resourceType string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(*api.Client)
-		return triggerDestroyHelper(s, bt, client)
+		return buildTriggerDestroyHelper(s, bt, client, resourceType)
 	}
 }
 
-func triggerDestroyHelper(s *terraform.State, bt *string, client *api.Client) error {
+func buildTriggerDestroyHelper(s *terraform.State, bt *string, client *api.Client, resourceType string) error {
 	for _, r := range s.RootModule().Resources {
-		if r.Type != "teamcity_trigger" {
+		if r.Type != resourceType {
 			continue
 		}
 
@@ -59,14 +59,14 @@ func triggerDestroyHelper(s *terraform.State, bt *string, client *api.Client) er
 	return nil
 }
 
-func testAccCheckteamcityTriggerExists(n string, bt *string, snap *api.Trigger) resource.TestCheckFunc {
+func testAccCheckTeamcityBuildTriggerExists(n string, bt *string, snap *api.Trigger) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(*api.Client)
-		return teamcityTriggerExistsHelper(n, bt, s, client, snap)
+		return teamcityBuildTriggerExistsHelper(n, bt, s, client, snap)
 	}
 }
 
-func teamcityTriggerExistsHelper(n string, bt *string, s *terraform.State, client *api.Client, snap *api.Trigger) error {
+func teamcityBuildTriggerExistsHelper(n string, bt *string, s *terraform.State, client *api.Client, snap *api.Trigger) error {
 	rs, ok := s.RootModule().Resources[n]
 	if !ok {
 		return fmt.Errorf("Not found: %s", n)
@@ -86,7 +86,7 @@ func teamcityTriggerExistsHelper(n string, bt *string, s *terraform.State, clien
 	return nil
 }
 
-const TestAccTriggerBasic = `
+const TestAccBuildTriggerVcsBasic = `
 resource "teamcity_project" "trigger_project_test" {
   name = "Trigger Project"
 }
@@ -96,7 +96,7 @@ resource "teamcity_build_config" "config" {
 	project_id = "${teamcity_project.trigger_project_test.id}"
 }
 
-resource "teamcity_trigger" "test" {
+resource "teamcity_build_trigger_vcs" "test" {
 	build_config_id = "${teamcity_build_config.config.id}"
 	rules = "+:*"
 	branch_filter = "+:pull/*"

@@ -7,12 +7,12 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func resourceTrigger() *schema.Resource {
+func resourceBuildTriggerVcs() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceTriggerCreate,
-		Read:   resourceTriggerRead,
-		Update: resourceTriggerUpdate,
-		Delete: resourceTriggerDelete,
+		Create: resourceBuildTriggerVcsCreate,
+		Read:   resourceBuildTriggerVcsRead,
+		Update: resourceBuildTriggerVcsUpdate,
+		Delete: resourceBuildTriggerVcsDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -34,7 +34,7 @@ func resourceTrigger() *schema.Resource {
 	}
 }
 
-func resourceTriggerCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceBuildTriggerVcsCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	var buildConfigID string
 	var err error
@@ -70,10 +70,10 @@ func resourceTriggerCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.SetId(out.ID())
 
-	return resourceTriggerRead(d, meta)
+	return resourceBuildTriggerVcsRead(d, meta)
 }
 
-func resourceTriggerRead(d *schema.ResourceData, meta interface{}) error {
+func resourceBuildTriggerVcsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client).TriggerService(d.Get("build_config_id").(string))
 
 	ret, err := getTrigger(client, d.Id())
@@ -82,7 +82,7 @@ func resourceTriggerRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	dt, ok := ret.(*api.TriggerVcs)
 	if !ok {
-		return fmt.Errorf("invalid trigger type when reading VcsTrigger resource")
+		return fmt.Errorf("invalid trigger type when reading build_trigger_vcs resource")
 	}
 
 	if err := d.Set("build_config_id", dt.BuildTypeID()); err != nil {
@@ -102,11 +102,11 @@ func resourceTriggerRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func resourceTriggerUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceBuildTriggerVcsUpdate(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func resourceTriggerDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceBuildTriggerVcsDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	ts := client.TriggerService(d.Get("build_config_id").(string))
 
