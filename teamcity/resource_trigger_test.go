@@ -18,14 +18,13 @@ func TestAccTeamcityTrigger_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckteamcityTriggerDestroy(&out.BuildTypeID),
+		CheckDestroy: testAccCheckteamcityTriggerDestroy(&bc.ID),
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: TestAccTriggerBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
 					testAccCheckteamcityTriggerExists(resName, &bc.ID, &out),
-					resource.TestCheckResourceAttrPtr(resName, "build_config_id", &out.BuildTypeID),
 				),
 			},
 		},
@@ -83,13 +82,13 @@ func teamcityTriggerExistsHelper(n string, bt *string, s *terraform.State, clien
 		return fmt.Errorf("Received an error retrieving Trigger: %s", err)
 	}
 
-	*snap = *out
+	*snap = out
 	return nil
 }
 
 const TestAccTriggerBasic = `
 resource "teamcity_project" "trigger_project_test" {
-  name = "Snapshot"
+  name = "Trigger Project"
 }
 
 resource "teamcity_build_config" "config" {

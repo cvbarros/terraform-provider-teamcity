@@ -3,7 +3,6 @@ package teamcity
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -191,7 +190,7 @@ func NewGitVcsRootOptionsWithAgentSettings(defaultBranch string, fetchURL string
 
 	return opt, nil
 }
-func (o *GitVcsRootOptions) gitVcsRootProperties() *Properties {
+func (o *GitVcsRootOptions) properties() *Properties {
 	p := NewPropertiesEmpty()
 
 	p.AddOrReplaceValue("branch", o.DefaultBranch)
@@ -220,7 +219,7 @@ func (o *GitVcsRootOptions) gitVcsRootProperties() *Properties {
 	}
 
 	if len(o.BranchSpec) > 0 {
-		// Some properties use \\r\\n to split. But this one only uses \\n, con
+		// Some properties use \\r\\n to split. But this one only uses \\n, conversely
 		p.AddOrReplaceValue("teamcity:branchSpec", strings.Join(o.BranchSpec, "\\n"))
 	}
 
@@ -228,7 +227,7 @@ func (o *GitVcsRootOptions) gitVcsRootProperties() *Properties {
 		p.AddOrReplaceValue("reportTagRevisions", "true")
 	}
 
-	agentP := o.AgentSettings.gitVcsRootProperties()
+	agentP := o.AgentSettings.properties()
 	for _, ap := range agentP.Items {
 		p.AddOrReplaceProperty(ap)
 	}
@@ -236,7 +235,7 @@ func (o *GitVcsRootOptions) gitVcsRootProperties() *Properties {
 	return p
 }
 
-func (s *GitAgentSettings) gitVcsRootProperties() *Properties {
+func (s *GitAgentSettings) properties() *Properties {
 	p := NewPropertiesEmpty()
 
 	if s.GitPath != "" {
@@ -266,30 +265,4 @@ func (p *Properties) gitAgentSettings() *GitAgentSettings {
 	var out GitAgentSettings
 	fillStructFromProperties(&out, p)
 	return &out
-}
-
-func fillStructFromProperties(data interface{}, p *Properties) {
-	t := reflect.TypeOf(data).Elem()
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
-		if v, ok := f.Tag.Lookup("prop"); ok {
-			sf := reflect.ValueOf(data).Elem().Field(i)
-			if pv, pok := p.GetOk(v); pok {
-				switch sf.Kind() {
-				case reflect.Bool:
-					bv, _ := strconv.ParseBool(pv)
-					sf.SetBool(bv)
-				case reflect.String:
-					sf.SetString(pv)
-				case reflect.Slice:
-					sep := "\\r\\n" // Use default
-					sep, _ = f.Tag.Lookup("separator")
-					sVal := reflect.ValueOf(strings.Split(pv, sep))
-					sf.Set(sVal)
-				default:
-					continue
-				}
-			}
-		}
-	}
 }

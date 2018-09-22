@@ -15,17 +15,21 @@ type DependencyService struct {
 	artifactSling *sling.Sling
 	snapshotSling *sling.Sling
 
-	restHelper *restHelper
+	artifactHelper *restHelper
+	snapshotHelper *restHelper
 }
 
 //NewDependencyService constructs and instance of DependencyService scoped to a given buildTypeId
 func NewDependencyService(buildTypeID string, c *http.Client, base *sling.Sling) *DependencyService {
+	artifactSling := base.New().Path(fmt.Sprintf("buildTypes/%s/artifact-dependencies/", buildTypeID))
+	snapshotSling := base.New().Path(fmt.Sprintf("buildTypes/%s/snapshot-dependencies/", buildTypeID))
 	return &DependencyService{
-		BuildTypeID:   buildTypeID,
-		httpClient:    c,
-		artifactSling: base.New().Path(fmt.Sprintf("buildTypes/%s/artifact-dependencies/", buildTypeID)),
-		snapshotSling: base.New().Path(fmt.Sprintf("buildTypes/%s/snapshot-dependencies/", buildTypeID)),
-		restHelper:    newRestHelper(c),
+		BuildTypeID:    buildTypeID,
+		httpClient:     c,
+		artifactSling:  artifactSling,
+		snapshotSling:  snapshotSling,
+		artifactHelper: newRestHelperWithSling(c, artifactSling),
+		snapshotHelper: newRestHelperWithSling(c, snapshotSling),
 	}
 }
 
@@ -66,7 +70,7 @@ func (s *DependencyService) AddArtifactDependency(dep *ArtifactDependency) (*Art
 		return nil, fmt.Errorf("Unknown error when adding artifact dependency, statusCode: %d", resp.StatusCode)
 	}
 
-	out.BuildTypeID = s.BuildTypeID
+	out.SetBuildTypeID(s.BuildTypeID)
 	return &out, nil
 }
 
@@ -89,25 +93,21 @@ func (s *DependencyService) GetSnapshotByID(depID string) (*SnapshotDependency, 
 //GetArtifactByID returns an artifact dependency by its id
 func (s *DependencyService) GetArtifactByID(depID string) (*ArtifactDependency, error) {
 	var out ArtifactDependency
-	resp, err := s.artifactSling.New().Get(depID).ReceiveSuccess(&out)
-
-	if resp.StatusCode == 404 {
-		return nil, fmt.Errorf("404 Not Found - Artifact dependency (id: %s) for buildTypeId (id: %s) was not found", depID, s.BuildTypeID)
-	}
+	err := s.artifactHelper.get(depID, &out, "artifact dependency")
 
 	if err != nil {
 		return nil, err
 	}
-	out.BuildTypeID = s.BuildTypeID
+	out.SetBuildTypeID(s.BuildTypeID)
 	return &out, nil
 }
 
 //DeleteSnapshot removes a snapshot dependency from the build configuration by its id
 func (s *DependencyService) DeleteSnapshot(depID string) error {
-	return s.restHelper.deleteByIDWithSling(s.snapshotSling, depID, "snapshot dependency")
+	return s.snapshotHelper.deleteByIDWithSling(s.snapshotSling, depID, "snapshot dependency")
 }
 
 //DeleteArtifact removes an artifact dependency from the build configuration by its id
 func (s *DependencyService) DeleteArtifact(depID string) error {
-	return s.restHelper.deleteByIDWithSling(s.artifactSling, depID, "snapshot dependency")
+	return s.artifactHelper.deleteByIDWithSling(s.artifactSling, depID, "artifact dependency")
 }

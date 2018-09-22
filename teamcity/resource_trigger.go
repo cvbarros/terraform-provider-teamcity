@@ -37,6 +37,7 @@ func resourceTrigger() *schema.Resource {
 func resourceTriggerCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	var buildConfigID string
+	var err error
 
 	if v, ok := d.GetOk("build_config_id"); ok {
 		buildConfigID = v.(string)
@@ -47,15 +48,18 @@ func resourceTriggerCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	ts := client.TriggerService(buildConfigID)
-	var dt *api.Trigger
+	var dt *api.TriggerVcs
 	if v, ok := d.GetOk("rules"); ok {
-		dt = api.NewVcsTrigger(v.(string), "")
+		dt, err = api.NewTriggerVcs(v.(string), "")
+		if err != nil {
+			return err
+		}
 	} else {
-		return fmt.Errorf("Error getting required property 'rules' for trigger")
+		return fmt.Errorf("Error getting required property 'rules' for vcs trigger")
 	}
 
 	if v, ok := d.GetOk("branch_filter"); ok {
-		dt.SetBranchFilter(v.(string))
+		dt.BranchFilter = v.(string)
 	}
 
 	out, err := ts.AddTrigger(dt)
@@ -64,7 +68,7 @@ func resourceTriggerCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.SetId(out.ID)
+	d.SetId(out.ID())
 
 	return resourceTriggerRead(d, meta)
 }
@@ -72,21 +76,25 @@ func resourceTriggerCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceTriggerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client).TriggerService(d.Get("build_config_id").(string))
 
-	dt, err := getTrigger(client, d.Id())
+	ret, err := getTrigger(client, d.Id())
 	if err != nil {
 		return err
 	}
+	dt, ok := ret.(*api.TriggerVcs)
+	if !ok {
+		return fmt.Errorf("invalid trigger type when reading VcsTrigger resource")
+	}
 
-	if err := d.Set("build_config_id", dt.BuildTypeID); err != nil {
+	if err := d.Set("build_config_id", dt.BuildTypeID()); err != nil {
 		return err
 	}
 
-	if err := d.Set("rules", dt.Rules()); err != nil {
+	if err := d.Set("rules", dt.Rules); err != nil {
 		return err
 	}
 
-	if v, ok := dt.BranchFilterOk(); ok {
-		if err := d.Set("branch_filter", v); err != nil {
+	if dt.BranchFilter != "" {
+		if err := d.Set("branch_filter", dt.BranchFilter); err != nil {
 			return err
 		}
 	}
@@ -105,7 +113,7 @@ func resourceTriggerDelete(d *schema.ResourceData, meta interface{}) error {
 	return ts.Delete(d.Id())
 }
 
-func getTrigger(c *api.TriggerService, id string) (*api.Trigger, error) {
+func getTrigger(c *api.TriggerService, id string) (api.Trigger, error) {
 
 	dt, err := c.GetByID(id)
 	if err != nil {

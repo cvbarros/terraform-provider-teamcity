@@ -69,7 +69,7 @@ func (d *GitVcsRoot) MarshalJSON() ([]byte, error) {
 		ModificationCheckInterval: d.ModificationCheckInterval,
 		Project:                   d.Project,
 		VcsName:                   d.VcsName(),
-		Properties:                d.Options.gitVcsRootProperties(),
+		Properties:                d.Options.properties(),
 	}
 
 	return json.Marshal(out)

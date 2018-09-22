@@ -33,16 +33,16 @@ const (
 //For more information see: https://confluence.jetbrains.com/display/TCD10/Artifact+Dependencies
 type ArtifactDependencyOptions struct {
 	//ArtifactRevisionType maps to the TeamCity UI's "Get artifacts from", indicating which build should be used as artifact source.
-	ArtifactRevisionType ArtifactDependencyRevision
+	ArtifactRevisionType ArtifactDependencyRevision `prop:"revisionName"`
 
 	//PathRules is a list of rules to match files that will have to be dowloaded from the source build that output artifacts.
-	PathRules []string
+	PathRules []string `prop:"pathRules"`
 
 	//CleanDestination
-	CleanDestination bool
+	CleanDestination bool `prop:"cleanDestinationDirectory"`
 
 	//RevisionNumber is used in conjunction with `BuildWithSpecifiedNumber` (as the build number value) or `LastBuildFinishedWithTag` (as the tag value to look for)
-	RevisionNumber string
+	RevisionNumber string `prop:"revisionValue"`
 }
 
 //NewArtifactDependencyOptions creates an instance of ArtifactDependencyOptions with default values.
@@ -81,7 +81,7 @@ func NewArtifactDependencyOptions(pathRules []string, revisionType ArtifactDepen
 func (o *ArtifactDependencyOptions) artifactDependencyProperties() *Properties {
 	p := NewPropertiesEmpty()
 
-	p.AddOrReplaceValue("pathRules", strings.Join(o.PathRules, "\\r\\n"))
+	p.AddOrReplaceValue("pathRules", strings.Join(o.PathRules, "\r\n"))
 	p.AddOrReplaceValue("cleanDestinationDirectory", strconv.FormatBool(o.CleanDestination))
 
 	switch o.ArtifactRevisionType {
@@ -96,4 +96,12 @@ func (o *ArtifactDependencyOptions) artifactDependencyProperties() *Properties {
 
 	p.AddOrReplaceValue("revisionName", string(o.ArtifactRevisionType))
 	return p
+}
+
+func (p *Properties) artifactDepencyOptions() *ArtifactDependencyOptions {
+	var out ArtifactDependencyOptions
+
+	fillStructFromProperties(&out, p)
+
+	return &out
 }

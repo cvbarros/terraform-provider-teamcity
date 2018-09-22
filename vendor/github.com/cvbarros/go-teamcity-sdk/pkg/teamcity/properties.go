@@ -1,5 +1,12 @@
 package teamcity
 
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+)
+
 // Property represents a key/value/type structure used by several resources to extend their representation
 type Property struct {
 
@@ -87,6 +94,14 @@ func (p *Properties) AddOrReplaceProperty(prop *Property) {
 	p.AddOrReplaceValue(prop.Name, prop.Value)
 }
 
+// Concat appends the source Properties collection to this collection and returns the appended collection
+func (p *Properties) Concat(source *Properties) *Properties {
+	for _, item := range source.Items {
+		p.AddOrReplaceProperty(item)
+	}
+	return p
+}
+
 // GetOk returns the value of the propery and true if found, otherwise ""/false
 func (p *Properties) GetOk(key string) (string, bool) {
 	if len(p.Items) == 0 {
@@ -110,4 +125,64 @@ func (p *Properties) Map() map[string]string {
 	}
 
 	return out
+}
+
+func fillStructFromProperties(data interface{}, p *Properties) {
+	t := reflect.TypeOf(data).Elem()
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if v, ok := f.Tag.Lookup("prop"); ok {
+			sf := reflect.ValueOf(data).Elem().Field(i)
+			if pv, pok := p.GetOk(v); pok {
+				switch sf.Kind() {
+				case reflect.Uint:
+					bv, _ := strconv.ParseUint(pv, 10, 0)
+					sf.SetUint(bv)
+				case reflect.Bool:
+					bv, _ := strconv.ParseBool(pv)
+					sf.SetBool(bv)
+				case reflect.String:
+					sf.SetString(pv)
+				case reflect.Slice:
+					sep := "\\r\\n" // Use default
+					sep, _ = f.Tag.Lookup("separator")
+					sVal := reflect.ValueOf(strings.Split(pv, sep))
+					sf.Set(sVal)
+				default:
+					continue
+				}
+			}
+		}
+	}
+}
+
+func serializeToProperties(data interface{}) *Properties {
+	props := NewPropertiesEmpty()
+	t := reflect.TypeOf(data).Elem()
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if v, ok := f.Tag.Lookup("prop"); ok {
+			pv := reflect.ValueOf(data).Elem().Field(i)
+			switch pv.Kind() {
+			case reflect.Slice:
+				sep := "\\r\\n" // Use default
+				sep, _ = f.Tag.Lookup("separator")
+				pVal := strings.Join(pv.Interface().([]string), sep)
+				props.AddOrReplaceValue(v, pVal)
+			case reflect.Bool:
+				pVal := pv.Bool()
+				if pVal { // Only output to properties if bool is set. TODO: Add Tag to control this
+					props.AddOrReplaceValue(v, strconv.FormatBool(pVal))
+				}
+			case reflect.Uint:
+				props.AddOrReplaceValue(v, fmt.Sprint(pv.Uint()))
+			default:
+				pVal := pv.String()
+				if pVal != "" {
+					props.AddOrReplaceValue(v, pVal)
+				}
+			}
+		}
+	}
+	return props
 }

@@ -3,7 +3,6 @@ package teamcity
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 )
 
 // BuildStepType represents most common step types for build steps
@@ -80,19 +79,4 @@ var stepReadingFunc = func(dt []byte, out interface{}) error {
 
 	replaceValue(out, &step)
 	return nil
-}
-
-func replaceValue(i, v interface{}) {
-	val := reflect.ValueOf(i)
-	if val.Kind() != reflect.Ptr {
-		panic("not a pointer")
-	}
-	val = val.Elem()
-
-	newVal := reflect.Indirect(reflect.ValueOf(v))
-	if !val.Type().AssignableTo(newVal.Type()) {
-		panic("mismatched types")
-	}
-
-	val.Set(newVal)
 }

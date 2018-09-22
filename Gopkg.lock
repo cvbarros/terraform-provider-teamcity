@@ -81,7 +81,7 @@
   branch = "master"
   name = "github.com/cvbarros/go-teamcity-sdk"
   packages = ["pkg/teamcity"]
-  revision = "eab437082bfe283a50fd4b928f06879a2802e863"
+  revision = "55a239804ea6e649785c7a79834f87d08597302e"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -266,7 +266,7 @@
   branch = "master"
   name = "github.com/hashicorp/yamux"
   packages = ["."]
-  revision = "2658be15c5f05e76244154714161f17e3e77de2e"
+  revision = "7221087c3d281fda5f794e28c2ea4c6e4d5c4558"
 
 [[projects]]
   name = "github.com/jmespath/go-jmespath"

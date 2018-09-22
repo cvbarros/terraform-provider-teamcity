@@ -1,15 +1,24 @@
 package teamcity
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+)
 
-// ArtifactDependency represents a single artifact dependency for a build type
-type ArtifactDependency struct {
+//Dependency is an interface representing a Build dependency, for creating build chains
+type Dependency interface {
+	ID() string
+	Type() string
+	SetBuildTypeID(string)
+	BuildTypeID() string
+	SetSourceBuildTypeID(string)
+	SourceBuildTypeID() string
+}
 
+type dependencyJSON struct {
 	// disabled - Read Only, no effect on post
 	Disabled *bool `json:"disabled,omitempty" xml:"disabled"`
-
-	// href
-	Href string `json:"href,omitempty" xml:"href"`
 
 	// id
 	ID string `json:"id,omitempty" xml:"id"`
@@ -23,23 +32,60 @@ type ArtifactDependency struct {
 	// source build type
 	SourceBuildType *BuildTypeReference `json:"source-buildType,omitempty"`
 
-	// Build type id this dependency belongs to
-	BuildTypeID string `json:"-"`
-
 	// type
 	Type string `json:"type,omitempty" xml:"type"`
 }
 
-//ArtifactDependencies represents a collection of ArtifactDependency
-type ArtifactDependencies struct {
-	// count
-	Count int32 `json:"count,omitempty" xml:"count"`
+// ArtifactDependency represents a single artifact dependency for a build type
+type ArtifactDependency struct {
+	dependencyJSON    *dependencyJSON
+	buildTypeID       string
+	sourceBuildTypeID string
 
-	// property
-	Items []*ArtifactDependency `json:"artifact-dependency"`
+	Options *ArtifactDependencyOptions
 }
 
-// NewArtifactDependency creates a ArtifactDependency struct with default options
+//ID for this entity
+func (s *ArtifactDependency) ID() string {
+	return s.dependencyJSON.ID
+}
+
+//Type for this entity
+func (s *ArtifactDependency) Type() string {
+	return "artifact_dependency"
+}
+
+//BuildTypeID gets the build type identifier
+func (s *ArtifactDependency) BuildTypeID() string {
+	return s.buildTypeID
+}
+
+//SetBuildTypeID sets the build type identifier
+func (s *ArtifactDependency) SetBuildTypeID(id string) {
+	s.buildTypeID = id
+}
+
+//SourceBuildTypeID gets the source build type identifier
+func (s *ArtifactDependency) SourceBuildTypeID() string {
+	return s.sourceBuildTypeID
+}
+
+//SetSourceBuildTypeID sets the source build type identifier
+func (s *ArtifactDependency) SetSourceBuildTypeID(id string) {
+	s.sourceBuildTypeID = id
+}
+
+//SetDisabled controls whether this dependency is disabled or not
+func (s *ArtifactDependency) SetDisabled(disabled bool) {
+	s.dependencyJSON.Disabled = NewBool(disabled)
+}
+
+//Disabled gets the disabled status for this dependency
+func (s *ArtifactDependency) Disabled() bool {
+	return *s.dependencyJSON.Disabled
+}
+
+// NewArtifactDependency creates a ArtifactDependency with specified options
 func NewArtifactDependency(sourceBuildTypeID string, opt *ArtifactDependencyOptions) (*ArtifactDependency, error) {
 	if sourceBuildTypeID == "" {
 		return nil, errors.New("sourceBuildTypeID is required")
@@ -50,30 +96,47 @@ func NewArtifactDependency(sourceBuildTypeID string, opt *ArtifactDependencyOpti
 	}
 
 	return &ArtifactDependency{
-		SourceBuildType: &BuildTypeReference{ID: sourceBuildTypeID},
-		Disabled:        NewFalse(),
-		Type:            "artifact_dependency",
-		Properties:      opt.artifactDependencyProperties(),
+		sourceBuildTypeID: sourceBuildTypeID,
+		Options:           opt,
+		dependencyJSON: &dependencyJSON{
+			SourceBuildType: &BuildTypeReference{ID: sourceBuildTypeID},
+			Disabled:        NewFalse(),
+			Type:            "artifact_dependency",
+			Properties:      opt.artifactDependencyProperties(),
+		},
 	}, nil
 }
 
-// func (opt *Arti) properties() *Properties {
-// 	var props []*Property
+//MarshalJSON implements JSON serialization for ArtifactDependency
+func (s *ArtifactDependency) MarshalJSON() ([]byte, error) {
+	out := &dependencyJSON{
+		ID:              s.ID(),
+		Type:            s.Type(),
+		Disabled:        NewBool(s.Disabled()),
+		SourceBuildType: &BuildTypeReference{ID: s.SourceBuildTypeID()},
+		Properties:      s.Options.artifactDependencyProperties(),
+	}
 
-// 	p := NewProperty("run-build-if-dependency-failed", opt.OnFailedDependency)
-// 	props = append(props, p)
+	return json.Marshal(out)
+}
 
-// 	p = NewProperty("run-build-if-dependency-failed-to-start", opt.OnFailedToStartOrCanceledDependency)
-// 	props = append(props, p)
+//UnmarshalJSON implements JSON deserialization for ArtifactDependency
+func (s *ArtifactDependency) UnmarshalJSON(data []byte) error {
+	var aux dependencyJSON
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
 
-// 	p = NewProperty("run-build-on-the-same-agent", strconv.FormatBool(opt.RunSameAgent))
-// 	props = append(props, p)
+	if aux.Type != "artifact_dependency" {
+		return fmt.Errorf("invalid type %s trying to deserialize into ArtifactDependency entity", aux.Type)
+	}
 
-// 	p = NewProperty("take-started-build-with-same-revisions", strconv.FormatBool(opt.DoNotRunNewBuildIfThereIsASuitable))
-// 	props = append(props, p)
+	if aux.Disabled != nil {
+		s.SetDisabled(*aux.Disabled)
+	}
+	s.dependencyJSON = &aux
+	s.SetSourceBuildTypeID(aux.SourceBuildType.ID)
+	s.Options = aux.Properties.artifactDepencyOptions()
 
-// 	p = NewProperty("take-successful-builds-only", strconv.FormatBool(opt.TakeSuccessfulBuildsOnly))
-// 	props = append(props, p)
-
-// 	return NewProperties(props...)
-// }
+	return nil
+}
