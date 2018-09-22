@@ -14,6 +14,7 @@ func Provider() terraform.ResourceProvider {
 			"teamcity_build_config":                    resourceBuildConfiguration(),
 			"teamcity_snapshot_dependency":             resourceSnapshotDependency(),
 			"teamcity_build_trigger_vcs":               resourceBuildTriggerVcs(),
+			"teamcity_build_trigger_build_finish":      resourceBuildTriggerBuildFinish(),
 			"teamcity_agent_requirement":               resourceAgentRequirement(),
 			"teamcity_feature_commit_status_publisher": resourceFeatureCommitStatusPublisher(),
 		},

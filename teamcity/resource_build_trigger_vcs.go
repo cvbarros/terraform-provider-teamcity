@@ -82,7 +82,7 @@ func resourceBuildTriggerVcsRead(d *schema.ResourceData, meta interface{}) error
 	}
 	dt, ok := ret.(*api.TriggerVcs)
 	if !ok {
-		return fmt.Errorf("invalid trigger type when reading VcsTrigger resource")
+		return fmt.Errorf("invalid trigger type when reading build_trigger_vcs resource")
 	}
 
 	if err := d.Set("build_config_id", dt.BuildTypeID()); err != nil {

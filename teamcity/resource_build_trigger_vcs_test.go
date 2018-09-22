@@ -18,7 +18,7 @@ func TestAccTeamcityBuildTriggerVcs_Basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckTeamcityBuildTriggerDestroy(&bc.ID),
+		CheckDestroy: testAccCheckTeamcityBuildTriggerDestroy(&bc.ID, "teamcity_build_trigger_vcs"),
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: TestAccBuildTriggerVcsBasic,
@@ -31,16 +31,16 @@ func TestAccTeamcityBuildTriggerVcs_Basic(t *testing.T) {
 	})
 }
 
-func testAccCheckTeamcityBuildTriggerDestroy(bt *string) resource.TestCheckFunc {
+func testAccCheckTeamcityBuildTriggerDestroy(bt *string, resourceType string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(*api.Client)
-		return buildTriggerDestroyHelper(s, bt, client)
+		return buildTriggerDestroyHelper(s, bt, client, resourceType)
 	}
 }
 
-func buildTriggerDestroyHelper(s *terraform.State, bt *string, client *api.Client) error {
+func buildTriggerDestroyHelper(s *terraform.State, bt *string, client *api.Client, resourceType string) error {
 	for _, r := range s.RootModule().Resources {
-		if r.Type != "teamcity_build_trigger_vcs" {
+		if r.Type != resourceType {
 			continue
 		}
 
