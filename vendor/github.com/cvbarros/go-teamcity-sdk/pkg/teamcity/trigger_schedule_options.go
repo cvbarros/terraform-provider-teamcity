@@ -2,16 +2,16 @@ package teamcity
 
 //TriggerScheduleOptions represent options for configuring a scheduled build trigger
 type TriggerScheduleOptions struct {
+	QueueOptimization                   bool                       `prop:"enableQueueOptimization" force:""`
+	PromoteWatchedBuild                 bool                       `prop:"promoteWatchedBuild" force:""`
+	BuildWithPendingChangesOnly         bool                       `prop:"triggerBuildWithPendingChangesOnly" force:""`
 	TriggerIfWatchedBuildChanges        bool                       `prop:"triggerBuildIfWatchedBuildChanges"`
 	BuildOnAllCompatibleAgents          bool                       `prop:"triggerBuildOnAllCompatibleAgents"`
-	BuildWithPendingChangesOnly         bool                       `prop:"triggerBuildWithPendingChangesOnly"`
-	PromoteWatchedBuild                 bool                       `prop:"promoteWatchedBuild"`
 	RevisionRuleSourceBuildID           string                     `prop:"revisionRuleDependsOn"`
 	RevisionRule                        ArtifactDependencyRevision `prop:"revisionRule"`
 	RevisionRuleBuildBranch             string                     `prop:"revisionRuleBuildBranch"`
 	EnforceCleanCheckout                bool                       `prop:"enforceCleanCheckout"`
 	EnforceCleanCheckoutForDependencies bool                       `prop:"enforceCleanCheckoutForDependencies"`
-	QueueOptimization                   bool                       `prop:"enableQueueOptimization"`
 }
 
 //NewTriggerScheduleOptions returns a TriggerScheduleOptions with default values

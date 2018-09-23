@@ -1,5 +1,26 @@
 package teamcity
 
+import (
+	"fmt"
+	"time"
+)
+
+var daysOfWeek = map[string]time.Weekday{}
+
+func init() {
+	for d := time.Sunday; d <= time.Saturday; d++ {
+		daysOfWeek[d.String()] = d
+	}
+}
+
+func parseWeekday(v string) (time.Weekday, error) {
+	if d, ok := daysOfWeek[v]; ok {
+		return d, nil
+	}
+
+	return time.Sunday, fmt.Errorf("invalid weekday '%s'", v)
+}
+
 func expandStringSlice(configured []interface{}) []string {
 	vs := make([]string, 0, len(configured))
 	for _, v := range configured {

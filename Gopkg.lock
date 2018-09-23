@@ -81,7 +81,7 @@
   branch = "master"
   name = "github.com/cvbarros/go-teamcity-sdk"
   packages = ["pkg/teamcity"]
-  revision = "99d3dff40b3084019c179334c3758ea0fbefa333"
+  revision = "00523163ccab769c7ddb63e23773755984f7385c"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -259,8 +259,8 @@
     "tfdiags",
     "version"
   ]
-  revision = "41e50bd32a8825a84535e353c3674af8ce799161"
-  version = "v0.11.7"
+  revision = "6dfc4d748de9cda23835bc5704307ed45e839622"
+  version = "v0.11.8"
 
 [[projects]]
   branch = "master"

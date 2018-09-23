@@ -174,7 +174,8 @@ func serializeToProperties(data interface{}) *Properties {
 				props.AddOrReplaceValue(v, pVal)
 			case reflect.Bool:
 				pVal := pv.Bool()
-				if pVal { // Only output to properties if bool is set. TODO: Add Tag to control this
+				_, force := f.Tag.Lookup("force")
+				if pVal || force {
 					props.AddOrReplaceValue(v, strconv.FormatBool(pVal))
 				}
 			case reflect.Uint:
