@@ -6,41 +6,11 @@ import (
 	"fmt"
 )
 
-//Dependency is an interface representing a Build dependency, for creating build chains
-type Dependency interface {
-	ID() string
-	Type() string
-	SetBuildTypeID(string)
-	BuildTypeID() string
-	SetSourceBuildTypeID(string)
-	SourceBuildTypeID() string
-}
-
-type dependencyJSON struct {
-	// disabled - Read Only, no effect on post
-	Disabled *bool `json:"disabled,omitempty" xml:"disabled"`
-
-	// id
-	ID string `json:"id,omitempty" xml:"id"`
-
-	// inherited
-	Inherited *bool `json:"inherited,omitempty" xml:"inherited"`
-
-	// Properties are serializable options for this artifact dependency. Do not change this field directly, use the NewArtifactDependency... constructors
-	Properties *Properties `json:"properties,omitempty"`
-
-	// source build type
-	SourceBuildType *BuildTypeReference `json:"source-buildType,omitempty"`
-
-	// type
-	Type string `json:"type,omitempty" xml:"type"`
-}
-
 // ArtifactDependency represents a single artifact dependency for a build type
 type ArtifactDependency struct {
 	dependencyJSON    *dependencyJSON
 	buildTypeID       string
-	sourceBuildTypeID string
+	SourceBuildTypeID string
 
 	Options *ArtifactDependencyOptions
 }
@@ -65,16 +35,6 @@ func (s *ArtifactDependency) SetBuildTypeID(id string) {
 	s.buildTypeID = id
 }
 
-//SourceBuildTypeID gets the source build type identifier
-func (s *ArtifactDependency) SourceBuildTypeID() string {
-	return s.sourceBuildTypeID
-}
-
-//SetSourceBuildTypeID sets the source build type identifier
-func (s *ArtifactDependency) SetSourceBuildTypeID(id string) {
-	s.sourceBuildTypeID = id
-}
-
 //SetDisabled controls whether this dependency is disabled or not
 func (s *ArtifactDependency) SetDisabled(disabled bool) {
 	s.dependencyJSON.Disabled = NewBool(disabled)
@@ -96,13 +56,13 @@ func NewArtifactDependency(sourceBuildTypeID string, opt *ArtifactDependencyOpti
 	}
 
 	return &ArtifactDependency{
-		sourceBuildTypeID: sourceBuildTypeID,
+		SourceBuildTypeID: sourceBuildTypeID,
 		Options:           opt,
 		dependencyJSON: &dependencyJSON{
 			SourceBuildType: &BuildTypeReference{ID: sourceBuildTypeID},
 			Disabled:        NewFalse(),
 			Type:            "artifact_dependency",
-			Properties:      opt.artifactDependencyProperties(),
+			Properties:      opt.properties(),
 		},
 	}, nil
 }
@@ -113,8 +73,8 @@ func (s *ArtifactDependency) MarshalJSON() ([]byte, error) {
 		ID:              s.ID(),
 		Type:            s.Type(),
 		Disabled:        NewBool(s.Disabled()),
-		SourceBuildType: &BuildTypeReference{ID: s.SourceBuildTypeID()},
-		Properties:      s.Options.artifactDependencyProperties(),
+		SourceBuildType: &BuildTypeReference{ID: s.SourceBuildTypeID},
+		Properties:      s.Options.properties(),
 	}
 
 	return json.Marshal(out)
@@ -135,8 +95,8 @@ func (s *ArtifactDependency) UnmarshalJSON(data []byte) error {
 		s.SetDisabled(*aux.Disabled)
 	}
 	s.dependencyJSON = &aux
-	s.SetSourceBuildTypeID(aux.SourceBuildType.ID)
-	s.Options = aux.Properties.artifactDepencyOptions()
+	s.SourceBuildTypeID = aux.SourceBuildType.ID
+	s.Options = aux.Properties.artifactDependencyOptions()
 
 	return nil
 }
