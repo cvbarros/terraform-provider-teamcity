@@ -42,7 +42,7 @@ type ArtifactDependencyOptions struct {
 	CleanDestination bool `prop:"cleanDestinationDirectory"`
 
 	//RevisionNumber is used in conjunction with `BuildWithSpecifiedNumber` (as the build number value) or `LastBuildFinishedWithTag` (as the tag value to look for)
-	RevisionNumber string `prop:"revisionValue"`
+	RevisionNumber string
 }
 
 //NewArtifactDependencyOptions creates an instance of ArtifactDependencyOptions with default values.
@@ -78,7 +78,7 @@ func NewArtifactDependencyOptions(pathRules []string, revisionType ArtifactDepen
 	}, nil
 }
 
-func (o *ArtifactDependencyOptions) artifactDependencyProperties() *Properties {
+func (o *ArtifactDependencyOptions) properties() *Properties {
 	p := NewPropertiesEmpty()
 
 	p.AddOrReplaceValue("pathRules", strings.Join(o.PathRules, "\r\n"))
@@ -98,10 +98,15 @@ func (o *ArtifactDependencyOptions) artifactDependencyProperties() *Properties {
 	return p
 }
 
-func (p *Properties) artifactDepencyOptions() *ArtifactDependencyOptions {
+func (p *Properties) artifactDependencyOptions() *ArtifactDependencyOptions {
 	var out ArtifactDependencyOptions
 
 	fillStructFromProperties(&out, p)
+
+	if v, ok := p.GetOk("revisionValue"); ok {
+		s := strings.TrimSuffix(v, ".tcbuildtag")
+		out.RevisionNumber = s
+	}
 
 	return &out
 }
