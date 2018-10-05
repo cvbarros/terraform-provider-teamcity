@@ -3,9 +3,12 @@ package teamcity
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/dghubble/sling"
 )
@@ -92,6 +95,33 @@ func (r *restHelper) postCustom(path string, data interface{}, out interface{}, 
 	return r.handleRestError(response, "POST", resourceDescription)
 }
 
+func (r *restHelper) putTextPlain(path string, data string, resourceDescription string) (string, error) {
+	req, err := r.sling.New().Put(path).
+		BodyProvider(textPlainBodyProvider{payload: data}).
+		Add("Accept", "text/plain").
+		Request()
+
+	if err != nil {
+		return "", err
+	}
+	resp, err := r.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode == 201 || resp.StatusCode == 200 {
+		return string(bodyBytes), nil
+	}
+
+	return "", r.handleRestError(resp, "PUT", resourceDescription)
+}
+
 func (r *restHelper) post(path string, data interface{}, out interface{}, resourceDescription string) error {
 	request, _ := r.sling.New().Post(path).BodyJSON(data).Request()
 	response, err := r.httpClient.Do(request)
@@ -107,6 +137,23 @@ func (r *restHelper) post(path string, data interface{}, out interface{}, resour
 	}
 
 	return r.handleRestError(response, "POST", resourceDescription)
+}
+
+func (r *restHelper) put(path string, data interface{}, out interface{}, resourceDescription string) error {
+	request, _ := r.sling.New().Put(path).BodyJSON(data).Request()
+	response, err := r.httpClient.Do(request)
+
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode == 201 || response.StatusCode == 200 {
+		json.NewDecoder(response.Body).Decode(out)
+		return nil
+	}
+
+	return r.handleRestError(response, "PUT", resourceDescription)
 }
 
 func (r *restHelper) deleteByIDWithSling(sling *sling.Sling, resourceID string, resourceDescription string) error {
@@ -157,4 +204,24 @@ func reverseMap(m map[string]string) map[string]string {
 		n[v] = k
 	}
 	return n
+}
+
+type textPlainBodyProvider struct {
+	payload interface{}
+}
+
+func (p textPlainBodyProvider) ContentType() string {
+	return "text/plain; charset=utf-8"
+}
+
+func (p textPlainBodyProvider) Body() (io.Reader, error) {
+	return strings.NewReader(p.payload.(string)), nil
+}
+
+func debug(data []byte, err error) {
+	if err == nil {
+		fmt.Printf("%s\n\n", data)
+	} else {
+		log.Printf("[ERROR] %s\n\n", err)
+	}
 }

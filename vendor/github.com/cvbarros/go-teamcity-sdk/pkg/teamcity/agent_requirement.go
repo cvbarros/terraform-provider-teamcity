@@ -144,31 +144,30 @@ func NewAgentRequirement(condition string, paramName string, paramValue string) 
 	}, nil
 }
 
-// AgentRequirements is a collection of AgentRequirement
-type AgentRequirements struct {
-
-	// count
-	Count int32 `json:"count,omitempty" xml:"count"`
-
-	// href
-	Href string `json:"href,omitempty" xml:"href"`
-
-	// property
+type agentRequirementsJSON struct {
+	Count int32               `json:"count,omitempty" xml:"count"`
 	Items []*AgentRequirement `json:"agent-requirement"`
 }
 
 // AgentRequirementService provides operations for managing agent requirements for a build type
 type AgentRequirementService struct {
-	BuildTypeID string
-	httpClient  *http.Client
-	base        *sling.Sling
+	BuildTypeID  string
+	httpClient   *http.Client
+	base         *sling.Sling
+	restHelper   *restHelper
+	buildLocator Locator
 }
 
 func newAgentRequirementService(buildTypeID string, client *http.Client, base *sling.Sling) *AgentRequirementService {
+	buildLocator := Locator(buildTypeID)
+	sling := base.Path(fmt.Sprintf("buildTypes/%s/agent-requirements/", buildLocator))
+
 	return &AgentRequirementService{
-		BuildTypeID: buildTypeID,
-		httpClient:  client,
-		base:        base.Path(fmt.Sprintf("buildTypes/%s/agent-requirements/", Locator(buildTypeID).String())),
+		BuildTypeID:  buildTypeID,
+		httpClient:   client,
+		base:         sling,
+		restHelper:   newRestHelperWithSling(client, sling),
+		buildLocator: buildLocator,
 	}
 }
 
@@ -199,6 +198,19 @@ func (s *AgentRequirementService) GetByID(id string) (*AgentRequirement, error) 
 	}
 	out.BuildTypeID = s.BuildTypeID
 	return &out, nil
+}
+
+//GetAll returns all agent requirements for a given build configuration
+func (s *AgentRequirementService) GetAll() ([]*AgentRequirement, error) {
+	var aux agentRequirementsJSON
+	err := s.restHelper.get("", &aux, "agent requirements")
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range aux.Items {
+		i.BuildTypeID = s.BuildTypeID
+	}
+	return aux.Items, nil
 }
 
 //Delete removes an agent requirement from the build configuration by its id

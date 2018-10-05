@@ -22,8 +22,11 @@ func (p *PropertyAssertions) assertPropertyValue(props *Properties, name string,
 
 	propMap := props.Map()
 
-	p.a.Contains(propMap, name)
-	p.a.Equal(value, propMap[name])
+	if v, ok := propMap[name]; ok {
+		p.a.Equal(value, v)
+	} else {
+		p.a.Contains(propMap, name)
+	}
 }
 
 func (p *PropertyAssertions) assertPropertyDoesNotExist(props *Properties, name string) {

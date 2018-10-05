@@ -81,7 +81,7 @@
   branch = "master"
   name = "github.com/cvbarros/go-teamcity-sdk"
   packages = ["pkg/teamcity"]
-  revision = "193513e69063223c9de05a6976e81135475ec590"
+  revision = "246e95cb499c8e640006daa31dbb2fed8a4c59ed"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -272,18 +272,6 @@
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
   revision = "0b12d6b5"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/lann/builder"
-  packages = ["."]
-  revision = "1b87b36280d04fe7882d1512bf038ea2967ad534"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/lann/ps"
-  packages = ["."]
-  revision = "62de8c46ede02a7675c4c79c84883eb164cb71e3"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"

@@ -20,7 +20,11 @@ type Property struct {
 	Type *Type `json:"type,omitempty"`
 
 	// value
-	Value string `json:"value,omitempty" xml:"value"`
+	Value string `json:"value" xml:"value"`
+}
+
+func (p *Property) String() string {
+	return fmt.Sprintf("Name: '%s', Value: '%s'", p.Name, p.Value)
 }
 
 // Type represents a parameter type . The rawValue is the parameter specification as defined in the UI.
@@ -71,6 +75,21 @@ func NewProperty(name string, value string) *Property {
 func (p *Properties) Add(prop *Property) {
 	p.Count++
 	p.Items = append(p.Items, prop)
+}
+
+//Remove a property if it exists in the collection
+func (p *Properties) Remove(n string) {
+	removed := -1
+	for i := range p.Items {
+		if p.Items[i].Name == n {
+			removed = i
+			break
+		}
+	}
+	if removed >= 0 {
+		p.Count--
+		p.Items = append(p.Items[:removed], p.Items[removed+1:]...)
+	}
 }
 
 // AddOrReplaceValue will update a property value if it exists, or add if it doesnt
@@ -138,6 +157,9 @@ func fillStructFromProperties(data interface{}, p *Properties) {
 				case reflect.Uint:
 					bv, _ := strconv.ParseUint(pv, 10, 0)
 					sf.SetUint(bv)
+				case reflect.Int:
+					bv, _ := strconv.ParseInt(pv, 10, 0)
+					sf.SetInt(bv)
 				case reflect.Bool:
 					bv, _ := strconv.ParseBool(pv)
 					sf.SetBool(bv)
@@ -152,6 +174,7 @@ func fillStructFromProperties(data interface{}, p *Properties) {
 					sVal := reflect.ValueOf(strings.Split(pv, sep))
 					sf.Set(sVal)
 				default:
+					//TODO: Panic if cannot set value
 					continue
 				}
 			}
@@ -178,6 +201,8 @@ func serializeToProperties(data interface{}) *Properties {
 				if pVal || force {
 					props.AddOrReplaceValue(v, strconv.FormatBool(pVal))
 				}
+			case reflect.Int:
+				props.AddOrReplaceValue(v, fmt.Sprint(pv.Int()))
 			case reflect.Uint:
 				props.AddOrReplaceValue(v, fmt.Sprint(pv.Uint()))
 			default:
