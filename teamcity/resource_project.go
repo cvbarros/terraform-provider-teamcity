@@ -21,6 +21,28 @@ func resourceProject() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"parent_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"env_params": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"config_params": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"sys_params": {
+				Type:     schema.TypeMap,
+				Optional: true,
 			},
 		},
 	}
@@ -28,8 +50,15 @@ func resourceProject() *schema.Resource {
 
 func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
-	newProj := &api.Project{
-		Name: d.Get("name").(string),
+	var name string
+
+	if v, ok := d.GetOk("name"); ok {
+		name = v.(string)
+	}
+
+	newProj, err := api.NewProject(name, "", "")
+	if err != nil {
+		return err
 	}
 
 	created, err := client.Projects.Create(newProj)
@@ -37,10 +66,35 @@ func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.MarkNewResource()
 	d.SetId(created.ID)
-	d.Set("name", created.Name)
-	return nil
+
+	return resourceProjectUpdate(d, client)
+}
+
+func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*api.Client)
+	dt, err := client.Projects.GetByID(d.Id())
+	if err != nil {
+		return err
+	}
+	if v, ok := d.GetOk("description"); ok {
+		dt.Description = v.(string)
+	}
+	if v, ok := d.GetOk("parent_id"); ok {
+		if v != "" {
+			dt.SetParentProject(v.(string))
+		}
+	}
+	dt.Parameters, err = expandParameterCollection(d)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.Projects.Update(dt)
+	if err != nil {
+		return nil
+	}
+	return resourceProjectRead(d, meta)
 }
 
 func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
@@ -50,17 +104,20 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-
 	if err := d.Set("name", dt.Name); err != nil {
 		return err
 	}
+	if err := d.Set("description", dt.Description); err != nil {
+		return err
+	}
+	if err := d.Set("parent_id", dt.ParentProject.ID); err != nil {
+		return err
+	}
+
+	flattenParameterCollection(d, dt.Parameters)
 
 	log.Printf("[DEBUG] Project: %v", dt)
 	return nil
-}
-
-func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
-	return resourceProjectRead(d, meta)
 }
 
 func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {

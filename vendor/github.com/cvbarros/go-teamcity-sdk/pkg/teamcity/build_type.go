@@ -9,12 +9,7 @@ import (
 	"github.com/dghubble/sling"
 )
 
-// BuildType represents a build configuration or a build configuration template
-type BuildType struct {
-
-	// agent requirements
-	AgentRequirements *AgentRequirements `json:"agent-requirements,omitempty"`
-
+type buildTypeJSON struct {
 	// description
 	Description string `json:"description,omitempty" xml:"description"`
 
@@ -37,7 +32,7 @@ type BuildType struct {
 	Name string `json:"name,omitempty" xml:"name"`
 
 	// Parameters for the build configuration. Read-only, only useful when retrieving project details
-	Parameters *Properties `json:"parameters,omitempty"`
+	Parameters *Parameters `json:"parameters,omitempty"`
 
 	// paused
 	Paused *bool `json:"paused,omitempty" xml:"paused"`
@@ -54,9 +49,6 @@ type BuildType struct {
 	// project name
 	ProjectName string `json:"projectName,omitempty" xml:"projectName"`
 
-	// settings
-	Settings *Properties `json:"settings,omitempty"`
-
 	// snapshot dependencies
 	SnapshotDependencies *SnapshotDependencies `json:"snapshot-dependencies,omitempty"`
 
@@ -69,11 +61,91 @@ type BuildType struct {
 	// uuid
 	UUID string `json:"uuid,omitempty" xml:"uuid"`
 
+	// settings
+	Settings *Properties `json:"settings,omitempty"`
+
 	// vcs root entries
 	VcsRootEntries *VcsRootEntries `json:"vcs-root-entries,omitempty"`
 
 	// web Url
 	WebURL string `json:"webUrl,omitempty" xml:"webUrl"`
+}
+
+// BuildType represents a build configuration or a build configuration template
+type BuildType struct {
+	ProjectID   string
+	ID          string
+	Name        string
+	Description string
+	Options     *BuildTypeOptions
+	Disabled    bool
+
+	VcsRootEntries []*VcsRootEntry
+	Parameters     *Parameters
+	buildTypeJSON  *buildTypeJSON
+}
+
+//NewBuildType returns a build configuration with default options
+func NewBuildType(projectID string, name string) (*BuildType, error) {
+	if projectID == "" || name == "" {
+		return nil, fmt.Errorf("projectID and name are required")
+	}
+
+	opt := NewBuildTypeOptionsWithDefaults()
+	return &BuildType{
+		ProjectID:  projectID,
+		Name:       name,
+		Options:    opt,
+		Parameters: NewParametersEmpty(),
+		buildTypeJSON: &buildTypeJSON{
+			ProjectID: projectID,
+			Settings:  opt.properties(),
+		},
+	}, nil
+}
+
+//MarshalJSON implements JSON serialization for BuildType
+func (b *BuildType) MarshalJSON() ([]byte, error) {
+	optProps := b.Options.properties()
+
+	out := &buildTypeJSON{
+		ID:          b.ID,
+		ProjectID:   b.ProjectID,
+		Description: b.Description,
+		Name:        b.Name,
+		Settings:    optProps,
+		Parameters:  b.Parameters,
+	}
+
+	return json.Marshal(out)
+}
+
+//UnmarshalJSON implements JSON deserialization for TriggerSchedule
+func (b *BuildType) UnmarshalJSON(data []byte) error {
+	var aux buildTypeJSON
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	if err := b.read(&aux); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *BuildType) read(dt *buildTypeJSON) error {
+	opts := dt.Settings.buildTypeOptions()
+
+	b.ID = dt.ID
+	b.Name = dt.Name
+	b.Description = dt.Description
+	b.Options = opts
+	b.ProjectID = dt.ProjectID
+	b.VcsRootEntries = dt.VcsRootEntries.Items
+	b.Parameters = dt.Parameters
+
+	return nil
 }
 
 // BuildTypeReference represents a subset detail of a Build Type
@@ -87,18 +159,14 @@ type BuildTypeReference struct {
 
 	// project Id
 	ProjectID string `json:"projectId,omitempty" xml:"projectId"`
-
-	// project name
-	ProjectName string `json:"projectName,omitempty" xml:"projectName"`
 }
 
 // Reference converts a BuildType entity to a BuildType reference
 func (b *BuildType) Reference() *BuildTypeReference {
 	return &BuildTypeReference{
-		ID:          b.ID,
-		Name:        b.Name,
-		ProjectID:   b.ProjectID,
-		ProjectName: b.ProjectName,
+		ID:        b.ID,
+		Name:      b.Name,
+		ProjectID: b.ProjectID,
 	}
 }
 
@@ -146,6 +214,38 @@ func (s *BuildTypeService) GetByID(id string) (*BuildType, error) {
 	}
 
 	return &out, err
+}
+
+//Update changes the resource in-place for this build configuration.
+//TeamCity API does not support "PUT" on the whole Build Configuration resource, so the only updateable field is "Description". Other field updates will be ignored.
+//This method also updates Settings and Parameters, but this is not an atomic operation. If an error occurs, it will be returned to caller what was updated or not.
+func (s *BuildTypeService) Update(buildType *BuildType) (*BuildType, error) {
+	_, err := s.restHelper.putTextPlain(buildType.ID+"/description", buildType.Description, "build type description")
+
+	if err != nil {
+		return nil, err
+	}
+
+	//Update settings
+	var settings BuildTypeOptions
+	err = s.restHelper.put(buildType.ID+"/settings", buildType.Options.properties(), &settings, "build type settings")
+	if err != nil {
+		return nil, err
+	}
+
+	//Update Parameters
+	var parameters *Properties
+	err = s.restHelper.put(buildType.ID+"/parameters", buildType.Parameters, &parameters, "build type parameters")
+	if err != nil {
+		return nil, err
+	}
+
+	out, err := s.GetByID(buildType.ID) //Refresh after update
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 //Delete a build type resource

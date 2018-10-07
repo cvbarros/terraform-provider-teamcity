@@ -2,13 +2,10 @@ package teamcity
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/dghubble/sling"
@@ -51,7 +48,6 @@ type Client struct {
 	BuildTypes *BuildTypeService
 	Server     *ServerService
 	VcsRoots   *VcsRootService
-	Parameters *ParameterService
 }
 
 // New creates a new client for server address specified at TEAMCITY_ADDR environment variable
@@ -100,20 +96,6 @@ func (c *Client) BuildFeatureService(id string) *BuildFeatureService {
 	return newBuildFeatureService(id, c.HTTPClient, c.commonBase.New())
 }
 
-//ProjectParameterService returns a parameter service that operates parameters for the project with given id
-func (c *Client) ProjectParameterService(id string) *ParameterService {
-	return &ParameterService{
-		base: c.commonBase.New().Path(fmt.Sprintf("projects/%s/", LocatorID(id))),
-	}
-}
-
-//BuildTypeParameterService returns a parameter service that operates parameters for the build configuration with given id
-func (c *Client) BuildTypeParameterService(id string) *ParameterService {
-	return &ParameterService{
-		base: c.commonBase.New().Path(fmt.Sprintf("buildTypes/%s/", LocatorID(id))),
-	}
-}
-
 //DependencyService returns a service to manage snapshot and artifact dependencies for a build configuration with given id
 func (c *Client) DependencyService(id string) *DependencyService {
 	return NewDependencyService(id, c.HTTPClient, c.commonBase.New())
@@ -141,24 +123,4 @@ func (c *Client) Validate() (bool, error) {
 	}
 
 	return true, nil
-}
-
-type textPlainBodyProvider struct {
-	payload interface{}
-}
-
-func (p textPlainBodyProvider) ContentType() string {
-	return "text/plain; charset=utf-8"
-}
-
-func (p textPlainBodyProvider) Body() (io.Reader, error) {
-	return strings.NewReader(p.payload.(string)), nil
-}
-
-func debug(data []byte, err error) {
-	if err == nil {
-		fmt.Printf("%s\n\n", data)
-	} else {
-		log.Printf("[ERROR] %s\n\n", err)
-	}
 }

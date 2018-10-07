@@ -4,9 +4,7 @@ package teamcity
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/dghubble/sling"
@@ -14,57 +12,25 @@ import (
 
 // Project is the model for project entities in TeamCity
 type Project struct {
-
-	// archived
-	Archived *bool `json:"archived,omitempty" xml:"archived"`
-
-	// description
-	Description string `json:"description,omitempty" xml:"description"`
-
-	// href
-	Href string `json:"href,omitempty" xml:"href"`
-
-	// id
-	ID string `json:"id,omitempty" xml:"id"`
-
-	// internal Id
-	InternalID string `json:"internalId,omitempty" xml:"internalId"`
-
-	// locator
-	Locator string `json:"locator,omitempty" xml:"locator"`
-
-	// name
-	Name string `json:"name,omitempty" xml:"name"`
-
-	// Parameters for the project. Read-only, only useful when retrieving project details
-	Parameters *Properties `json:"parameters,omitempty"` //TODO: Encapsulate field
-
-	// parent project
-	ParentProject *Project `json:"parentProject,omitempty"`
-
-	// parent project Id
-	ParentProjectID string `json:"parentProjectId,omitempty" xml:"parentProjectId"`
-
-	// parent project internal Id
-	ParentProjectInternalID string `json:"parentProjectInternalId,omitempty" xml:"parentProjectInternalId"`
-
-	// parent project name
-	ParentProjectName string `json:"parentProjectName,omitempty" xml:"parentProjectName"`
-
-	// uuid
-	UUID string `json:"uuid,omitempty" xml:"uuid"`
-
-	// web Url
-	WebURL string `json:"webUrl,omitempty" xml:"webUrl"`
+	Archived        *bool             `json:"archived,omitempty" xml:"archived"`
+	Description     string            `json:"description,omitempty" xml:"description"`
+	Href            string            `json:"href,omitempty" xml:"href"`
+	ID              string            `json:"id,omitempty" xml:"id"`
+	Name            string            `json:"name,omitempty" xml:"name"`
+	Parameters      *Parameters       `json:"parameters,omitempty"`
+	ParentProject   *ProjectReference `json:"parentProject,omitempty"`
+	ParentProjectID string            `json:"parentProjectId,omitempty" xml:"parentProjectId"`
+	WebURL          string            `json:"webUrl,omitempty" xml:"webUrl"`
 }
 
 // ProjectReference contains basic information, usually enough to use as a type for relationships.
 // In addition to that, TeamCity does not return the full detailed representation when creating objects, thus the need for a reference.
 type ProjectReference struct {
-	// id
-	ID string `json:"id,omitempty" xml:"id"`
-	// name
-	Name string `json:"name,omitempty" xml:"name"`
+	ID          string `json:"id,omitempty" xml:"id"`
+	Name        string `json:"name,omitempty" xml:"name"`
+	Description string `json:"description,omitempty" xml:"description"`
+	Href        string `json:"href,omitempty" xml:"href"`
+	WebURL      string `json:"webUrl,omitempty" xml:"webUrl"`
 }
 
 // ProjectService has operations for handling projects
@@ -72,6 +38,47 @@ type ProjectService struct {
 	sling      *sling.Sling
 	httpClient *http.Client
 	restHelper *restHelper
+}
+
+//NewProject returns an instance of a Project. A non-empty name is required.
+//Description can be an empty string and will be omitted.
+//For creating a top-level project, pass empty to parentProjectId.
+func NewProject(name string, description string, parentProjectID string) (*Project, error) {
+	if name == "" {
+		return nil, fmt.Errorf("name is required")
+	}
+	var parent *ProjectReference
+	if parentProjectID != "" {
+		parent = &ProjectReference{
+			ID: parentProjectID,
+		}
+	}
+	return &Project{
+		Name:            name,
+		Description:     description,
+		ParentProject:   parent,
+		ParentProjectID: parentProjectID,
+		Parameters:      NewParametersEmpty(),
+	}, nil
+}
+
+//SetParentProject changes this Project instance's parent project
+func (p *Project) SetParentProject(parentID string) {
+	p.ParentProjectID = parentID
+	p.ParentProject = &ProjectReference{
+		ID: parentID,
+	}
+}
+
+//ProjectReference converts a project instance to a ProjectReference
+func (p *Project) ProjectReference() *ProjectReference {
+	return &ProjectReference{
+		ID:          p.ID,
+		Description: p.Description,
+		Name:        p.Name,
+		WebURL:      p.WebURL,
+		Href:        p.Href,
+	}
 }
 
 func newProjectService(base *sling.Sling, client *http.Client) *ProjectService {
@@ -84,64 +91,85 @@ func newProjectService(base *sling.Sling, client *http.Client) *ProjectService {
 }
 
 // Create creates a new project at root project level
-func (s *ProjectService) Create(project *Project) (*ProjectReference, error) {
+func (s *ProjectService) Create(project *Project) (*Project, error) {
 	var created ProjectReference
 	err := s.restHelper.post("", project, &created, "project")
 	if err != nil {
 		return nil, err
 	}
-	return &created, nil
+
+	//initial creation does not persist "description" or parameters, so in order to be consistent with the constructor, call an update after
+	project.ID = created.ID
+	updated, err := s.updateProject(project, true)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return updated, nil
 }
 
 // GetByID Retrieves a project resource by ID
 func (s *ProjectService) GetByID(id string) (*Project, error) {
 	var out Project
 
-	resp, err := s.sling.New().Get(LocatorID(id).String()).ReceiveSuccess(&out)
+	err := s.restHelper.get(LocatorID(id).String(), &out, "project")
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+//Update changes the resource in-place for this project.
+//TeamCity API does not support "PUT" on the whole project resource, so the only updateable field is "Description". Other field updates will be ignored.
+//This method also updates Settings and Parameters, but this is not an atomic operation. If an error occurs, it will be returned to caller what was updated or not.
+func (s *ProjectService) Update(project *Project) (*Project, error) {
+	return s.updateProject(project, false)
+}
+
+//Delete - Deletes a project
+func (s *ProjectService) Delete(id string) error {
+	err := s.restHelper.deleteByIDWithSling(s.sling.New(), id, "project")
+	return err
+}
+
+func (s *ProjectService) updateProject(project *Project, isCreate bool) (*Project, error) {
+	_, err := s.restHelper.putTextPlain(project.ID+"/description", project.Description, "project description")
 
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Error when retrieving Project id = '%s', status: %d", id, resp.StatusCode)
-	}
-
-	return &out, err
-}
-
-//Delete - Deletes a project
-func (s *ProjectService) Delete(id string) error {
-	request, _ := s.sling.New().Delete(id).Request()
-
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return err
-	}
-
-	defer response.Body.Close()
-	if response.StatusCode == 204 {
-		return nil
-	}
-
-	if response.StatusCode != 200 && response.StatusCode != 204 {
-		respData, err := ioutil.ReadAll(response.Body)
+	//Update Parent
+	if !isCreate {
+		current, err := s.GetByID(project.ID)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		return fmt.Errorf("Error '%d' when deleting project: %s", response.StatusCode, string(respData))
+		// Only perform update if there is a change.
+		// Or else TeamCity will "copy" the project to the same parent project, altering it's name
+		// For instance: "project" -> "project (1)"
+		if (project.ParentProjectID != "" || project.ParentProject != nil) && current.ParentProjectID != project.ParentProjectID {
+			var parent ProjectReference
+			err = s.restHelper.put(project.ID+"/parentProject", project.ParentProject, &parent, "parent project")
+			if err != nil {
+				return nil, nil
+			}
+		}
 	}
 
-	return nil
-}
-
-// Validate validates this project
-func (m *Project) Validate() error {
-	//var res []error
-
-	if len(m.Name) <= 0 {
-		return errors.New("Project must have a name")
+	//Update Parameters
+	if project.Parameters.Count > 0 {
+		var parameters *Parameters
+		err = s.restHelper.put(project.ID+"/parameters", project.Parameters, &parameters, "project parameters")
+		if err != nil {
+			return nil, err
+		}
+	}
+	out, err := s.GetByID(project.ID) //Refresh after update
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	return out, nil
 }
