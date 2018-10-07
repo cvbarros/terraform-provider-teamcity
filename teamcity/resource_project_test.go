@@ -64,6 +64,28 @@ func TestAccTeamcityProject_Full(t *testing.T) {
 	})
 }
 
+func TestAccTeamcityProject_Parent(t *testing.T) {
+	parentRes := "teamcity_project.parent"
+	childRes := "teamcity_project.child"
+	var child, parent api.Project
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamcityProjectDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccTeamcityProjectParent,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamcityProjectExists(parentRes, &parent),
+					testAccCheckTeamcityProjectExists(childRes, &child),
+					resource.TestCheckResourceAttrPtr(childRes, "parent_id", &parent.ID),
+				),
+			},
+		},
+	})
+}
+
 func TestAccTeamcityProject_Update(t *testing.T) {
 	resName := "teamcity_project.testproj"
 	var p api.Project
@@ -180,6 +202,17 @@ func teamcityProjectDestroyHelper(s *terraform.State, client *api.Client) error 
 const testAccTeamcityProjectConfig = `
 resource "teamcity_project" "testproj" {
   name = "testproj"
+}
+`
+
+const testAccTeamcityProjectParent = `
+resource "teamcity_project" "parent" {
+	name = "parent"
+}
+
+resource "teamcity_project" "child" {
+	name = "child"
+	parent_id = "${teamcity_project.parent.id}"
 }
 `
 

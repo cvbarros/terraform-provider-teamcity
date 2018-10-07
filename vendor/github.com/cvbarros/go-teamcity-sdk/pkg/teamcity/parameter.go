@@ -29,7 +29,7 @@ var ParameterTypes = struct {
 type Parameters struct {
 	Count int32        `json:"count,omitempty" xml:"count"`
 	Href  string       `json:"href,omitempty" xml:"href"`
-	Items []*Parameter `json:"property"`
+	Items []*Parameter `json:"property,omitempty"`
 }
 
 //Parameter represents a project or build configuration parameter that may be defined as "configuration", "system" or "environment variable"

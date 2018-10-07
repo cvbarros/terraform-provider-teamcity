@@ -47,12 +47,38 @@ func NewProject(name string, description string, parentProjectID string) (*Proje
 	if name == "" {
 		return nil, fmt.Errorf("name is required")
 	}
-
+	var parent *ProjectReference
+	if parentProjectID != "" {
+		parent = &ProjectReference{
+			ID: parentProjectID,
+		}
+	}
 	return &Project{
 		Name:            name,
 		Description:     description,
+		ParentProject:   parent,
 		ParentProjectID: parentProjectID,
+		Parameters:      NewParametersEmpty(),
 	}, nil
+}
+
+//SetParentProject changes this Project instance's parent project
+func (p *Project) SetParentProject(parentID string) {
+	p.ParentProjectID = parentID
+	p.ParentProject = &ProjectReference{
+		ID: parentID,
+	}
+}
+
+//ProjectReference converts a project instance to a ProjectReference
+func (p *Project) ProjectReference() *ProjectReference {
+	return &ProjectReference{
+		ID:          p.ID,
+		Description: p.Description,
+		Name:        p.Name,
+		WebURL:      p.WebURL,
+		Href:        p.Href,
+	}
 }
 
 func newProjectService(base *sling.Sling, client *http.Client) *ProjectService {
@@ -65,13 +91,22 @@ func newProjectService(base *sling.Sling, client *http.Client) *ProjectService {
 }
 
 // Create creates a new project at root project level
-func (s *ProjectService) Create(project *Project) (*ProjectReference, error) {
+func (s *ProjectService) Create(project *Project) (*Project, error) {
 	var created ProjectReference
 	err := s.restHelper.post("", project, &created, "project")
 	if err != nil {
 		return nil, err
 	}
-	return &created, nil
+
+	//initial creation does not persist "description" or parameters, so in order to be consistent with the constructor, call an update after
+	project.ID = created.ID
+	updated, err := s.updateProject(project, true)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return updated, nil
 }
 
 // GetByID Retrieves a project resource by ID
@@ -89,29 +124,52 @@ func (s *ProjectService) GetByID(id string) (*Project, error) {
 //TeamCity API does not support "PUT" on the whole project resource, so the only updateable field is "Description". Other field updates will be ignored.
 //This method also updates Settings and Parameters, but this is not an atomic operation. If an error occurs, it will be returned to caller what was updated or not.
 func (s *ProjectService) Update(project *Project) (*Project, error) {
-	_, err := s.restHelper.putTextPlain(project.ID+"/description", project.Description, "project description")
-
-	if err != nil {
-		return nil, err
-	}
-
-	//Update Parameters
-	var parameters *Parameters
-	err = s.restHelper.put(project.ID+"/parameters", project.Parameters, &parameters, "project parameters")
-	if err != nil {
-		return nil, err
-	}
-
-	out, err := s.GetByID(project.ID) //Refresh after update
-	if err != nil {
-		return nil, err
-	}
-
-	return out, nil
+	return s.updateProject(project, false)
 }
 
 //Delete - Deletes a project
 func (s *ProjectService) Delete(id string) error {
 	err := s.restHelper.deleteByIDWithSling(s.sling.New(), id, "project")
 	return err
+}
+
+func (s *ProjectService) updateProject(project *Project, isCreate bool) (*Project, error) {
+	_, err := s.restHelper.putTextPlain(project.ID+"/description", project.Description, "project description")
+
+	if err != nil {
+		return nil, err
+	}
+
+	//Update Parent
+	if !isCreate {
+		current, err := s.GetByID(project.ID)
+		if err != nil {
+			return nil, err
+		}
+		// Only perform update if there is a change.
+		// Or else TeamCity will "copy" the project to the same parent project, altering it's name
+		// For instance: "project" -> "project (1)"
+		if (project.ParentProjectID != "" || project.ParentProject != nil) && current.ParentProjectID != project.ParentProjectID {
+			var parent ProjectReference
+			err = s.restHelper.put(project.ID+"/parentProject", project.ParentProject, &parent, "parent project")
+			if err != nil {
+				return nil, nil
+			}
+		}
+	}
+
+	//Update Parameters
+	if project.Parameters.Count > 0 {
+		var parameters *Parameters
+		err = s.restHelper.put(project.ID+"/parameters", project.Parameters, &parameters, "project parameters")
+		if err != nil {
+			return nil, err
+		}
+	}
+	out, err := s.GetByID(project.ID) //Refresh after update
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }

@@ -27,6 +27,11 @@ func resourceProject() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"parent_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"env_params": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -62,9 +67,34 @@ func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.SetId(created.ID)
-	d.MarkNewResource()
 
 	return resourceProjectUpdate(d, client)
+}
+
+func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*api.Client)
+	dt, err := client.Projects.GetByID(d.Id())
+	if err != nil {
+		return err
+	}
+	if v, ok := d.GetOk("description"); ok {
+		dt.Description = v.(string)
+	}
+	if v, ok := d.GetOk("parent_id"); ok {
+		if v != "" {
+			dt.SetParentProject(v.(string))
+		}
+	}
+	dt.Parameters, err = expandParameterCollection(d)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.Projects.Update(dt)
+	if err != nil {
+		return nil
+	}
+	return resourceProjectRead(d, meta)
 }
 
 func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
@@ -74,11 +104,13 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-
 	if err := d.Set("name", dt.Name); err != nil {
 		return err
 	}
 	if err := d.Set("description", dt.Description); err != nil {
+		return err
+	}
+	if err := d.Set("parent_id", dt.ParentProject.ID); err != nil {
 		return err
 	}
 
@@ -86,25 +118,6 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 
 	log.Printf("[DEBUG] Project: %v", dt)
 	return nil
-}
-
-func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*api.Client)
-	dt, err := client.Projects.GetByID(d.Id())
-	if err != nil {
-		return err
-	}
-
-	if v, ok := d.GetOk("description"); ok {
-		dt.Description = v.(string)
-	}
-	dt.Parameters, err = expandParameterCollection(d)
-	if err != nil {
-		return err
-	}
-
-	_, err = client.Projects.Update(dt)
-	return err
 }
 
 func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
