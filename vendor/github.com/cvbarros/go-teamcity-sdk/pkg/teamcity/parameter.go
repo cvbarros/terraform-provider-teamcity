@@ -51,6 +51,15 @@ func NewParametersEmpty() *Parameters {
 	}
 }
 
+// NewParameters returns an instance of Parameters collection with the given parameters slice
+func NewParameters(items ...*Parameter) *Parameters {
+	count := len(items)
+	return &Parameters{
+		Count: int32(count),
+		Items: items,
+	}
+}
+
 //NewParameter creates a new instance of a parameter with the given type
 func NewParameter(t string, name string, value string) (*Parameter, error) {
 	if name == "" {
@@ -141,6 +150,14 @@ func (p *Parameters) AddOrReplaceParameter(param *Parameter) {
 func (p *Parameters) Add(param *Parameter) {
 	p.Count++
 	p.Items = append(p.Items, param)
+}
+
+// Concat appends the source Parameters collection to this collection and returns the appended collection
+func (p *Parameters) Concat(source *Parameters) *Parameters {
+	for _, item := range source.Items {
+		p.AddOrReplaceParameter(item)
+	}
+	return p
 }
 
 //Remove a parameter if it exists in the collection

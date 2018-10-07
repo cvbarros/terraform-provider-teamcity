@@ -116,8 +116,10 @@ func TestAccBuildConfig_Parameters(t *testing.T) {
 				Config: TestAccBuildConfigParams,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
-					testAccCheckProperties(&bc.Parameters, "env.DEPLOY_SERVER", "server.com"),
-					testAccCheckProperties(&bc.Parameters, "env.some_variable", "hello"),
+					resource.TestCheckResourceAttr(resName, "env_params.DEPLOY_SERVER", "server.com"),
+					resource.TestCheckResourceAttr(resName, "env_params.some_variable", "hello"),
+					resource.TestCheckResourceAttr(resName, "config_params.github.repository", "nocode"),
+					resource.TestCheckResourceAttr(resName, "sys_params.system_param", "system_value"),
 				),
 			},
 		},
@@ -228,13 +230,13 @@ func getPropertyOk(p *api.Properties, key string) (string, bool) {
 	return "", false
 }
 
-func testAccCheckVcsRootAttached(vcs **api.VcsRootEntries, n string, co string) resource.TestCheckFunc {
+func testAccCheckVcsRootAttached(vcs *[]*api.VcsRootEntry, n string, co string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if *vcs == nil {
 			return fmt.Errorf("VcsRootEntries must not be nil")
 		}
 
-		for _, v := range (*vcs).Items {
+		for _, v := range *vcs {
 			if v.VcsRoot.Name == n {
 				if v.CheckoutRules == co {
 					return nil
@@ -301,18 +303,18 @@ func buildConfigDestroyHelper(s *terraform.State, client *api.Client) error {
 
 // testAccCheckProperties can be used to check the property value for a resource
 func testAccCheckProperties(
-	props **api.Properties, key string, value string) resource.TestCheckFunc {
+	props **api.Parameters, key string, value string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if props == nil {
-			return fmt.Errorf("Properties must not be nil")
+			return fmt.Errorf("Parameters must not be nil")
 		}
 
-		m := (*props).Map()
+		m := (*props).Properties().Map()
 		v, ok := m[key]
 		if value != "" && !ok {
-			return fmt.Errorf("Missing property: %s", key)
+			return fmt.Errorf("Missing parameter: %s", key)
 		} else if value == "" && ok {
-			return fmt.Errorf("Extra property: %s", key)
+			return fmt.Errorf("Extra parameter: %s", key)
 		}
 		if value == "" {
 			return nil
@@ -354,6 +356,10 @@ resource "teamcity_build_config" "build_configuration_test" {
 
 	config_params {
 		github.repository = "nocode"
+	}
+
+	sys_params {
+		system_param = "system_value"
 	}
 }
 `
