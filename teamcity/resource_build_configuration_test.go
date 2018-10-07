@@ -22,15 +22,9 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 				Config: TestAccBuildConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.build_configuration_test", &bc),
-					resource.TestCheckResourceAttr(
-						"teamcity_build_config.build_configuration_test", "name", "build config test",
-					),
-					resource.TestCheckResourceAttr(
-						"teamcity_build_config.build_configuration_test", "description", "build config test desc",
-					),
-					resource.TestCheckResourceAttr(
-						"teamcity_build_config.build_configuration_test", "project_id", "BuildConfigProjectTest",
-					),
+					resource.TestCheckResourceAttr("teamcity_build_config.build_configuration_test", "name", "build config test"),
+					resource.TestCheckResourceAttr("teamcity_build_config.build_configuration_test", "description", "build config test desc"),
+					resource.TestCheckResourceAttr("teamcity_build_config.build_configuration_test", "project_id", "BuildConfigProjectTest"),
 				),
 			},
 		},

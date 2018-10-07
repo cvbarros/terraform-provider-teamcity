@@ -120,38 +120,9 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 		bt.Description = v.(string)
 	}
 
-	var config, system, env *api.Parameters
-	if v, ok := d.GetOk("env_params"); ok {
-		p, err := expandParameters(v.(map[string]interface{}), api.ParameterTypes.EnvironmentVariable)
-		if err != nil {
-			return err
-		}
-		env = p
-	}
-
-	if v, ok := d.GetOk("sys_params"); ok {
-		p, err := expandParameters(v.(map[string]interface{}), api.ParameterTypes.System)
-		if err != nil {
-			return err
-		}
-		system = p
-	}
-
-	if v, ok := d.GetOk("config_params"); ok {
-		p, err := expandParameters(v.(map[string]interface{}), api.ParameterTypes.Configuration)
-		if err != nil {
-			return err
-		}
-		config = p
-	}
-	if config != nil {
-		bt.Parameters = bt.Parameters.Concat(config)
-	}
-	if system != nil {
-		bt.Parameters = bt.Parameters.Concat(system)
-	}
-	if env != nil {
-		bt.Parameters = bt.Parameters.Concat(env)
+	bt.Parameters, err = expandParameterCollection(d)
+	if err != nil {
+		return err
 	}
 
 	created, err := client.BuildTypes.Create(projectID, bt)
@@ -220,22 +191,9 @@ func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) er
 		return err
 	}
 
-	var configParams, sysParams, envParams = flattenParameters(dt.Parameters)
-
-	if len(envParams) > 0 {
-		if err := d.Set("env_params", envParams); err != nil {
-			return err
-		}
-	}
-	if len(sysParams) > 0 {
-		if err := d.Set("sys_params", sysParams); err != nil {
-			return err
-		}
-	}
-	if len(configParams) > 0 {
-		if err := d.Set("config_params", configParams); err != nil {
-			return err
-		}
+	err = flattenParameterCollection(d, dt.Parameters)
+	if err != nil {
+		return err
 	}
 
 	vcsRoots := dt.VcsRootEntries
@@ -299,6 +257,66 @@ var stepTypeMap = map[string]string{
 	api.StepTypeCommandLine: "cmd_line",
 }
 
+func flattenParameterCollection(d *schema.ResourceData, params *api.Parameters) error {
+	var configParams, sysParams, envParams = flattenParameters(params)
+
+	if len(envParams) > 0 {
+		if err := d.Set("env_params", envParams); err != nil {
+			return err
+		}
+	}
+	if len(sysParams) > 0 {
+		if err := d.Set("sys_params", sysParams); err != nil {
+			return err
+		}
+	}
+	if len(configParams) > 0 {
+		if err := d.Set("config_params", configParams); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func expandParameterCollection(d *schema.ResourceData) (*api.Parameters, error) {
+	var config, system, env *api.Parameters
+	if v, ok := d.GetOk("env_params"); ok {
+		p, err := expandParameters(v.(map[string]interface{}), api.ParameterTypes.EnvironmentVariable)
+		if err != nil {
+			return nil, err
+		}
+		env = p
+	}
+
+	if v, ok := d.GetOk("sys_params"); ok {
+		p, err := expandParameters(v.(map[string]interface{}), api.ParameterTypes.System)
+		if err != nil {
+			return nil, err
+		}
+		system = p
+	}
+
+	if v, ok := d.GetOk("config_params"); ok {
+		p, err := expandParameters(v.(map[string]interface{}), api.ParameterTypes.Configuration)
+		if err != nil {
+			return nil, err
+		}
+		config = p
+	}
+
+	out := api.NewParametersEmpty()
+
+	if config != nil {
+		out = out.Concat(config)
+	}
+	if system != nil {
+		out = out.Concat(system)
+	}
+	if env != nil {
+		out = out.Concat(env)
+	}
+	return out, nil
+}
 func flattenParameters(dt *api.Parameters) (config map[string]string, sys map[string]string, env map[string]string) {
 	env, sys, config = make(map[string]string), make(map[string]string), make(map[string]string)
 	for _, p := range dt.Items {
