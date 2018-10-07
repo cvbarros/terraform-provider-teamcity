@@ -16,12 +16,6 @@ resource "teamcity_buildconfiguration" "nocode_triggered_build" {
   build_number_format = "0.0.%build.counter%"
   artifact_paths      = [""]
 
-  options {
-    status_widget         = false
-    detect_hanging        = true
-    allow_personal_builds = true
-  }
-
   step {
     type = "powershell"
     file = "build.ps1"
@@ -69,7 +63,7 @@ resource "teamcity_build_trigger_schedule" "buildrelease_schedule_trigger" {
 
   #Delete all files in checkout directory before the build - Default: false
   enforce_clean_checkout = true
-  
+
   #Delete all files in checkout directory before the build also for snapshot dependencies. Default: false
   enforce_clean_checkout_dependencies = true
 
@@ -78,7 +72,7 @@ resource "teamcity_build_trigger_schedule" "buildrelease_schedule_trigger" {
 
   #Configures the watched build for this trigger
   watched_build_config_id = "${teamcity_build_config.watched.id}"
-  
+
   #Specify which version of the watched build should be considered. "lastFinished", "lastPinned", "lastSuccessful", "buildTag"
   revision = "lastFinished"
 

@@ -120,6 +120,33 @@ func TestAccBuildConfig_Parameters(t *testing.T) {
 	})
 }
 
+func TestAccBuildConfig_Settings(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigSettings,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "settings.2182172152.configuration_type", "REGULAR"),
+					resource.TestCheckResourceAttr(resName, "settings.2182172152.allow_personal_builds", "true"),
+					resource.TestCheckResourceAttr(resName, "settings.2182172152.artifact_paths.#", "1"),
+					resource.TestCheckResourceAttr(resName, "settings.2182172152.artifact_paths.0", "+:*.json => /config/*.json"),
+					resource.TestCheckResourceAttr(resName, "settings.2182172152.build_counter", "20"),
+					resource.TestCheckResourceAttr(resName, "settings.2182172152.build_number_format", "1.0.%build.counter%"),
+					resource.TestCheckResourceAttr(resName, "settings.2182172152.concurrent_limit", "10"),
+					resource.TestCheckResourceAttr(resName, "settings.2182172152.detect_hanging", "true"),
+					resource.TestCheckResourceAttr(resName, "settings.2182172152.status_widget", "false"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccBuildConfig_VcsRoot(t *testing.T) {
 	var bc api.BuildType
 	resName := "teamcity_build_config.build_configuration_test"
@@ -342,7 +369,7 @@ resource "teamcity_project" "build_config_project_test" {
 resource "teamcity_build_config" "build_configuration_test" {
 	name = "build config test"
 	project_id = "${teamcity_project.build_config_project_test.id}"
-	
+
 	env_params {
 		DEPLOY_SERVER = "server.com"
 		some_variable = "hello"
@@ -355,6 +382,28 @@ resource "teamcity_build_config" "build_configuration_test" {
 	sys_params {
 		system_param = "system_value"
 	}
+}
+`
+
+const TestAccBuildConfigSettings = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+  name = "build config test"
+  project_id = "${teamcity_project.build_config_project_test.id}"
+
+  settings {
+	configuration_type = "REGULAR"
+    build_number_format = "1.0.%build.counter%"
+    build_counter = 20
+    allow_personal_builds = true
+    artifact_paths = ["+:*.json => /config/*.json"]
+    detect_hanging = true
+    status_widget = false
+    concurrent_limit = 10
+  }
 }
 `
 
@@ -373,7 +422,7 @@ resource "teamcity_vcs_root_git" "build_config_vcsroot_test" {
 resource "teamcity_build_config" "build_configuration_test" {
 	name = "build config test"
 	project_id = "${teamcity_project.build_config_project_test.id}"
-	
+
 	vcs_root {
 		id = "${teamcity_vcs_root_git.build_config_vcsroot_test.id}"
 		checkout_rules = ["+:*", "-:README.MD"]
@@ -389,7 +438,7 @@ resource "teamcity_project" "build_config_project_test" {
 resource "teamcity_build_config" "build_configuration_test" {
 	name = "build config test"
 	project_id = "${teamcity_project.build_config_project_test.id}"
-	
+
 	step {
 		type = "powershell"
 		name = "build_script"
@@ -413,7 +462,7 @@ resource "teamcity_project" "build_config_project_test" {
 resource "teamcity_build_config" "build_configuration_test" {
 	name = "build config test"
 	project_id = "${teamcity_project.build_config_project_test.id}"
-	
+
 	step {
 		type = "cmd_line"
 		name = "build_script"

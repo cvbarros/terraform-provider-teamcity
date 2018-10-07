@@ -95,6 +95,60 @@ func resourceBuildConfiguration() *schema.Resource {
 				Type:     schema.TypeMap,
 				Optional: true,
 			},
+			"settings": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"configuration_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"REGULAR", "DEPLOYMENT", "COMPOSITE"}, false),
+							Computed:     true,
+						},
+						"build_number_format": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"build_counter": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntAtLeast(0),
+							Computed:     true,
+						},
+						"allow_personal_builds": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"artifact_paths": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Computed: true,
+						},
+						"detect_hanging": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"status_widget": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"concurrent_limit": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntAtLeast(0),
+							Computed:     true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -123,6 +177,14 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 	bt.Parameters, err = expandParameterCollection(d)
 	if err != nil {
 		return err
+	}
+
+	opt, err := expandBuildConfigOptions(d)
+	if err != nil {
+		return err
+	}
+	if opt != nil {
+		bt.Options = opt
 	}
 
 	created, err := client.BuildTypes.Create(projectID, bt)
@@ -171,6 +233,15 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 	return resourceBuildConfigurationRead(d, meta)
 }
 
+func resourceBuildConfigurationUpdate(d *schema.ResourceData, meta interface{}) error {
+	return nil
+}
+
+func resourceBuildConfigurationDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*api.Client)
+	return client.BuildTypes.Delete(d.Id())
+}
+
 func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
@@ -178,20 +249,20 @@ func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return err
 	}
-
 	if err := d.Set("name", dt.Name); err != nil {
 		return err
 	}
-
 	if err := d.Set("description", dt.Description); err != nil {
 		return err
 	}
-
 	if err := d.Set("project_id", dt.ProjectID); err != nil {
 		return err
 	}
-
 	err = flattenParameterCollection(d, dt.Parameters)
+	if err != nil {
+		return err
+	}
+	err = flattenBuildConfigOptions(d, dt.Options)
 	if err != nil {
 		return err
 	}
@@ -232,15 +303,6 @@ func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	return nil
-}
-
-func resourceBuildConfigurationUpdate(d *schema.ResourceData, meta interface{}) error {
-	return nil
-}
-
-func resourceBuildConfigurationDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*api.Client)
-	return client.BuildTypes.Delete(d.Id())
 }
 
 func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
@@ -317,6 +379,7 @@ func expandParameterCollection(d *schema.ResourceData) (*api.Parameters, error) 
 	}
 	return out, nil
 }
+
 func flattenParameters(dt *api.Parameters) (config map[string]string, sys map[string]string, env map[string]string) {
 	env, sys, config = make(map[string]string), make(map[string]string), make(map[string]string)
 	for _, p := range dt.Items {
@@ -342,6 +405,57 @@ func expandParameters(raw map[string]interface{}, paramType string) (*api.Parame
 		out.AddOrReplaceParameter(p)
 	}
 	return out, nil
+}
+
+func expandBuildConfigOptions(d *schema.ResourceData) (*api.BuildTypeOptions, error) {
+	v, ok := d.GetOk("settings")
+	if !ok {
+		return nil, nil
+	}
+	raw := v.(*schema.Set).List()[0].(map[string]interface{})
+	opt := api.NewBuildTypeOptionsWithDefaults()
+
+	if v, ok := raw["configuration_type"]; ok {
+		opt.BuildConfigurationType = strings.ToUpper(v.(string))
+	}
+	if v, ok := raw["build_number_format"]; ok {
+		opt.BuildNumberFormat = v.(string)
+	}
+	if v, ok := raw["build_counter"]; ok {
+		opt.BuildCounter = v.(int)
+	}
+	if v, ok := raw["allow_personal_builds"]; ok {
+		opt.AllowPersonalBuildTriggering = v.(bool)
+	}
+	if v, ok := raw["artifact_paths"]; ok {
+		opt.ArtifactRules = expandStringSlice(v.([]interface{}))
+	}
+	if v, ok := raw["detect_hanging"]; ok {
+		opt.EnableHangingBuildsDetection = v.(bool)
+	}
+	if v, ok := raw["status_widget"]; ok {
+		opt.EnableStatusWidget = v.(bool)
+	}
+	if v, ok := raw["concurrent_limit"]; ok {
+		opt.MaxSimultaneousBuilds = v.(int)
+	}
+
+	return opt, nil
+}
+
+func flattenBuildConfigOptions(d *schema.ResourceData, dt *api.BuildTypeOptions) error {
+	m := make(map[string]interface{})
+
+	m["configuration_type"] = dt.BuildConfigurationType
+	m["build_number_format"] = dt.BuildNumberFormat
+	m["build_counter"] = dt.BuildCounter
+	m["allow_personal_builds"] = dt.AllowPersonalBuildTriggering
+	m["artifact_paths"] = flattenStringSlice(dt.ArtifactRules)
+	m["detect_hanging"] = dt.EnableHangingBuildsDetection
+	m["status_widget"] = dt.EnableStatusWidget
+	m["concurrent_limit"] = dt.MaxSimultaneousBuilds
+
+	return d.Set("settings", []map[string]interface{}{m})
 }
 
 func flattenBuildStep(s api.Step) (map[string]interface{}, error) {
