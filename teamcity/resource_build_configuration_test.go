@@ -12,7 +12,7 @@ import (
 
 func TestAccBuildConfig_Basic(t *testing.T) {
 	var bc api.BuildType
-
+	resName := "teamcity_build_config.build_configuration_test"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -21,10 +21,38 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: TestAccBuildConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBuildConfigExists("teamcity_build_config.build_configuration_test", &bc),
-					resource.TestCheckResourceAttr("teamcity_build_config.build_configuration_test", "name", "build config test"),
-					resource.TestCheckResourceAttr("teamcity_build_config.build_configuration_test", "description", "build config test desc"),
-					resource.TestCheckResourceAttr("teamcity_build_config.build_configuration_test", "project_id", "BuildConfigProjectTest"),
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "name", "build config test"),
+					resource.TestCheckResourceAttr(resName, "description", "build config test desc"),
+					resource.TestCheckResourceAttr(resName, "project_id", "BuildConfigProjectTest"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_UpdateBasic(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigBasic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "name", "build config test"),
+					resource.TestCheckResourceAttr(resName, "description", "build config test desc"),
+					resource.TestCheckResourceAttr(resName, "project_id", "BuildConfigProjectTest"),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildConfigBasicUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "description", "build config test desc updated"),
 				),
 			},
 		},
@@ -358,6 +386,18 @@ resource "teamcity_build_config" "build_configuration_test" {
 	name = "build config test"
 	project_id = "${teamcity_project.build_config_project_test.id}"
 	description = "build config test desc"
+}
+`
+
+const TestAccBuildConfigBasicUpdated = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	description = "build config test desc updated"
 }
 `
 
