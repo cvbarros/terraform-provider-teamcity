@@ -18,7 +18,7 @@ import (
 //DebugRequests toggle to enable tracing requests to stdout
 var DebugRequests = false
 
-//DebugResponses tottle to enable tracing responses to stdout
+//DebugResponses toggle to enable tracing responses to stdout
 var DebugResponses = false
 
 func init() {

@@ -12,7 +12,7 @@ import (
 
 func TestAccBuildConfig_Basic(t *testing.T) {
 	var bc api.BuildType
-
+	resName := "teamcity_build_config.build_configuration_test"
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -21,10 +21,38 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 			resource.TestStep{
 				Config: TestAccBuildConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckBuildConfigExists("teamcity_build_config.build_configuration_test", &bc),
-					resource.TestCheckResourceAttr("teamcity_build_config.build_configuration_test", "name", "build config test"),
-					resource.TestCheckResourceAttr("teamcity_build_config.build_configuration_test", "description", "build config test desc"),
-					resource.TestCheckResourceAttr("teamcity_build_config.build_configuration_test", "project_id", "BuildConfigProjectTest"),
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "name", "build config test"),
+					resource.TestCheckResourceAttr(resName, "description", "build config test desc"),
+					resource.TestCheckResourceAttr(resName, "project_id", "BuildConfigProjectTest"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_UpdateBasic(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigBasic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "name", "build config test"),
+					resource.TestCheckResourceAttr(resName, "description", "build config test desc"),
+					resource.TestCheckResourceAttr(resName, "project_id", "BuildConfigProjectTest"),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildConfigBasicUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "description", "build config test desc updated"),
 				),
 			},
 		},
@@ -56,8 +84,59 @@ func TestAccBuildConfig_StepsPowershell(t *testing.T) {
 				Config: TestAccBuildConfigStepsPowershell,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttrSet(resName, "step.2521969367.step_id"),
+					resource.TestCheckResourceAttrSet(resName, "step.4289253634.step_id"),
 					testAccCheckStepExists(&bc.ID, scriptStep),
 					testAccCheckStepExists(&bc.ID, codeStep),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_UpdateSteps(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	scriptStep := map[string]string{
+		"name": "build_script",
+		"type": api.StepTypePowershell,
+		"file": "build.ps1",
+		"args": "-Target buildrelease",
+	}
+
+	codeStep := map[string]string{
+		"type": api.StepTypePowershell,
+		"name": "build_code",
+		"code": "Get-Date",
+	}
+
+	scriptStepUpdate := map[string]string{
+		"name": "updated_script",
+		"type": api.StepTypePowershell,
+		"file": "updated.ps1",
+		"args": "-Target pullrequest",
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigStepsPowershell,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					testAccCheckStepExists(&bc.ID, scriptStep),
+					testAccCheckStepExists(&bc.ID, codeStep),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildConfigStepsPowershellUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckStepExists(&bc.ID, scriptStepUpdate),
+					testAccCheckStepRemoved(&bc.ID, codeStep),
+					resource.TestCheckResourceAttr(resName, "step.1706822360.file", "updated.ps1"),
+					resource.TestCheckResourceAttr(resName, "step.1706822360.name", "updated_script"),
 				),
 			},
 		},
@@ -166,22 +245,39 @@ func TestAccBuildConfig_VcsRoot(t *testing.T) {
 	})
 }
 
+func testAccCheckStepRemoved(buildTypeID *string, stepRemoved map[string]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		client := testAccProvider.Meta().(*api.Client)
+		exists, _ := testStepExists(client, *buildTypeID, stepRemoved)
+		if exists {
+			return fmt.Errorf("expected step %s to be removed, but still exists", stepRemoved["name"])
+		}
+		return nil
+	}
+}
+
 func testAccCheckStepExists(buildTypeID *string, stepExpected map[string]string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(*api.Client)
-		steps, err := client.BuildTypes.GetSteps(*buildTypeID)
-		if err != nil {
-			return fmt.Errorf("error when checking steps: %s", err)
-		}
-
-		for _, v := range steps {
-			if v.Name() == stepExpected["name"] {
-				return assertStepProperties(v, stepExpected)
-			}
-		}
-
-		return fmt.Errorf("Step named '%s' was not found", stepExpected["name"])
+		_, err := testStepExists(client, *buildTypeID, stepExpected)
+		return err
 	}
+}
+
+func testStepExists(client *api.Client, buildTypeID string, stepExpected map[string]string) (bool, error) {
+	steps, err := client.BuildTypes.GetSteps(buildTypeID)
+	if err != nil {
+		return false, fmt.Errorf("error when checking steps: %s", err)
+	}
+
+	for _, v := range steps {
+		if v.GetName() == stepExpected["name"] {
+			err := assertStepProperties(v, stepExpected)
+			return err != nil, err
+		}
+	}
+
+	return false, fmt.Errorf("Step named '%s' was not found", stepExpected["name"])
 }
 
 func assertStepProperties(actual api.Step, expected map[string]string) error {
@@ -361,6 +457,18 @@ resource "teamcity_build_config" "build_configuration_test" {
 }
 `
 
+const TestAccBuildConfigBasicUpdated = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	description = "build config test desc updated"
+}
+`
+
 const TestAccBuildConfigParams = `
 resource "teamcity_project" "build_config_project_test" {
   name = "build_config_project_test"
@@ -450,6 +558,24 @@ resource "teamcity_build_config" "build_configuration_test" {
 		type = "powershell"
 		name = "build_code"
 		code = "Get-Date"
+	}
+}
+`
+
+const TestAccBuildConfigStepsPowershellUpdated = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+
+	step {
+		type = "powershell"
+		name = "updated_script"
+		file = "updated.ps1"
+		args = "-Target pullrequest"
 	}
 }
 `

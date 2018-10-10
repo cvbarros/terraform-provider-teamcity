@@ -8,8 +8,8 @@ import (
 
 //StepPowershell represents a a build step of type "Powershell"
 type StepPowershell struct {
-	id       string
-	name     string
+	ID       string
+	Name     string
 	stepType string
 	stepJSON *stepJSON
 	isScript bool
@@ -30,7 +30,7 @@ func NewStepPowershellScriptFile(name string, scriptFile string, scriptArgs stri
 	}
 
 	return &StepPowershell{
-		name:        name,
+		Name:        name,
 		isScript:    true,
 		stepType:    StepTypePowershell,
 		ScriptFile:  scriptFile,
@@ -46,21 +46,21 @@ func NewStepPowershellCode(name string, code string) (*StepPowershell, error) {
 	}
 
 	return &StepPowershell{
-		name:        name,
+		Name:        name,
 		stepType:    StepTypePowershell,
 		Code:        code,
 		ExecuteMode: StepExecuteModeDefault,
 	}, nil
 }
 
-//ID for this entity.
-func (s *StepPowershell) ID() string {
-	return s.id
+//GetID is a wrapper implementation for ID field, to comply with Step interface
+func (s *StepPowershell) GetID() string {
+	return s.ID
 }
 
-//Name is a useful description of the step.
-func (s *StepPowershell) Name() string {
-	return s.name
+//GetName is a wrapper implementation for Name field, to comply with Step interface
+func (s *StepPowershell) GetName() string {
+	return s.Name
 }
 
 //Type returns the step type, in this case "StepTypePowershell".
@@ -93,8 +93,8 @@ func (s *StepPowershell) properties() *Properties {
 //MarshalJSON implements JSON serialization for StepPowershell
 func (s *StepPowershell) MarshalJSON() ([]byte, error) {
 	out := &stepJSON{
-		ID:         s.id,
-		Name:       s.name,
+		ID:         s.ID,
+		Name:       s.Name,
 		Type:       s.stepType,
 		Properties: s.properties(),
 	}
@@ -112,8 +112,8 @@ func (s *StepPowershell) UnmarshalJSON(data []byte) error {
 	if aux.Type != string(StepTypePowershell) {
 		return fmt.Errorf("invalid type %s trying to deserialize into StepPowershell entity", aux.Type)
 	}
-	s.name = aux.Name
-	s.id = aux.ID
+	s.Name = aux.Name
+	s.ID = aux.ID
 	s.stepType = StepTypePowershell
 
 	props := aux.Properties

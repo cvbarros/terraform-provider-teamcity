@@ -31,11 +31,11 @@ const (
 	StepExecuteAlways = "execute_always"
 )
 
-// Step interface represents a a build configuration/template build step. To intereact with concrete step types, see the Step* types.
+// Step interface represents a a build configuration/template build step. To interact with concrete step types, see the Step* types.
 type Step interface {
-	ID() string
+	GetID() string
+	GetName() string
 	Type() string
-	Name() string
 }
 
 type stepJSON struct {
