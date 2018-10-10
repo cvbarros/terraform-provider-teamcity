@@ -8,8 +8,8 @@ import (
 
 //StepCommandLine represents a a build step of type "CommandLine"
 type StepCommandLine struct {
-	id           string
-	name         string
+	ID           string
+	Name         string
 	stepType     string
 	stepJSON     *stepJSON
 	isExecutable bool
@@ -30,7 +30,7 @@ func NewStepCommandLineScript(name string, script string) (*StepCommandLine, err
 	}
 
 	return &StepCommandLine{
-		name:         name,
+		Name:         name,
 		isExecutable: false,
 		stepType:     StepTypeCommandLine,
 		CustomScript: script,
@@ -45,7 +45,7 @@ func NewStepCommandLineExecutable(name string, executable string, args string) (
 	}
 
 	return &StepCommandLine{
-		name:              name,
+		Name:              name,
 		stepType:          StepTypeCommandLine,
 		isExecutable:      true,
 		CommandExecutable: executable,
@@ -54,14 +54,14 @@ func NewStepCommandLineExecutable(name string, executable string, args string) (
 	}, nil
 }
 
-//ID for this entity.
-func (s *StepCommandLine) ID() string {
-	return s.id
+//GetID is a wrapper implementation for ID field, to comply with Step interface
+func (s *StepCommandLine) GetID() string {
+	return s.ID
 }
 
-//Name is a useful description of the step.
-func (s *StepCommandLine) Name() string {
-	return s.name
+//GetName is a wrapper implementation for Name field, to comply with Step interface
+func (s *StepCommandLine) GetName() string {
+	return s.Name
 }
 
 //Type returns the step type, in this case "StepTypePowershell".
@@ -90,8 +90,8 @@ func (s *StepCommandLine) properties() *Properties {
 //MarshalJSON implements JSON serialization for StepCommandLine
 func (s *StepCommandLine) MarshalJSON() ([]byte, error) {
 	out := &stepJSON{
-		ID:         s.id,
-		Name:       s.name,
+		ID:         s.ID,
+		Name:       s.Name,
 		Type:       s.stepType,
 		Properties: s.properties(),
 	}
@@ -109,8 +109,8 @@ func (s *StepCommandLine) UnmarshalJSON(data []byte) error {
 	if aux.Type != string(StepTypeCommandLine) {
 		return fmt.Errorf("invalid type %s trying to deserialize into StepCommandLine entity", aux.Type)
 	}
-	s.name = aux.Name
-	s.id = aux.ID
+	s.Name = aux.Name
+	s.ID = aux.ID
 	s.stepType = StepTypeCommandLine
 
 	props := aux.Properties

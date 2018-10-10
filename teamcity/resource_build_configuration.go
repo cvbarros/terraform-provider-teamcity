@@ -25,10 +25,12 @@ func resourceBuildConfiguration() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"project_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -57,6 +59,10 @@ func resourceBuildConfiguration() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"step_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
@@ -230,19 +236,29 @@ func resourceBuildConfigurationUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		d.SetPartial("vcs_root")
 	}
-
-	if v, ok := d.GetOk("step"); ok {
-		steps := v.(*schema.Set).List()
-		for _, raw := range steps {
-
-			newStep, err := expandBuildStep(raw)
-			if err != nil {
-				return err
+	if d.HasChange("step") {
+		o, n := d.GetChange("step")
+		os := o.(*schema.Set)
+		ns := n.(*schema.Set)
+		remove, _ := expandBuildSteps(os.Difference(ns).List())
+		add, err := expandBuildSteps(ns.Difference(os).List())
+		if err != nil {
+			return err
+		}
+		if len(remove) > 0 {
+			for _, s := range remove {
+				err := client.BuildTypes.DeleteStep(dt.ID, s.GetID())
+				if err != nil {
+					return err
+				}
 			}
-
-			_, err = client.BuildTypes.AddStep(dt.ID, newStep)
-			if err != nil {
-				return err
+		}
+		if len(add) > 0 {
+			for _, s := range add {
+				_, err := client.BuildTypes.AddStep(dt.ID, s)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		d.SetPartial("step")
@@ -476,15 +492,18 @@ func flattenBuildConfigOptions(d *schema.ResourceData, dt *api.BuildTypeOptions)
 
 func flattenBuildStep(s api.Step) (map[string]interface{}, error) {
 	mapType := stepTypeMap[s.Type()]
-
+	var out map[string]interface{}
+	var err error
 	switch mapType {
 	case "powershell":
-		return flattenBuildStepPowershell(s.(*api.StepPowershell)), nil
+		out, err = flattenBuildStepPowershell(s.(*api.StepPowershell)), nil
 	case "cmd_line":
-		return flattenBuildStepCmdLine(s.(*api.StepCommandLine)), nil
+		out, err = flattenBuildStepCmdLine(s.(*api.StepCommandLine)), nil
 	default:
 		return nil, fmt.Errorf("Build step type '%s' not supported", s.Type())
 	}
+	out["step_id"] = s.GetID()
+	return out, err
 }
 
 func flattenBuildStepPowershell(s *api.StepPowershell) map[string]interface{} {
@@ -498,8 +517,8 @@ func flattenBuildStepPowershell(s *api.StepPowershell) map[string]interface{} {
 	if s.Code != "" {
 		m["code"] = s.Code
 	}
-	if s.Name() != "" {
-		m["name"] = s.Name()
+	if s.Name != "" {
+		m["name"] = s.Name
 	}
 	m["type"] = "powershell"
 
@@ -517,12 +536,25 @@ func flattenBuildStepCmdLine(s *api.StepCommandLine) map[string]interface{} {
 	if s.CustomScript != "" {
 		m["code"] = s.CustomScript
 	}
-	if s.Name() != "" {
-		m["name"] = s.Name()
+	if s.Name != "" {
+		m["name"] = s.Name
 	}
 	m["type"] = "cmd_line"
 
 	return m
+}
+
+func expandBuildSteps(list interface{}) ([]api.Step, error) {
+	out := make([]api.Step, 0)
+	in := list.([]interface{})
+	for _, i := range in {
+		s, err := expandBuildStep(i)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, nil
 }
 
 func expandBuildStep(raw interface{}) (api.Step, error) {
@@ -555,10 +587,21 @@ func expandStepCmdLine(dt map[string]interface{}) (*api.StepCommandLine, error) 
 		code = v.(string)
 	}
 
+	var s *api.StepCommandLine
+	var err error
 	if file != "" {
-		return api.NewStepCommandLineExecutable(name, file, args)
+		s, err = api.NewStepCommandLineExecutable(name, file, args)
+	} else {
+		s, err = api.NewStepCommandLineScript(name, code)
 	}
-	return api.NewStepCommandLineScript(name, code)
+	if err != nil {
+		return nil, err
+	}
+
+	if v, ok := dt["step_id"]; ok {
+		s.ID = v.(string)
+	}
+	return s, nil
 }
 
 func expandStepPowershell(dt map[string]interface{}) (*api.StepPowershell, error) {
@@ -577,10 +620,21 @@ func expandStepPowershell(dt map[string]interface{}) (*api.StepPowershell, error
 		code = v.(string)
 	}
 
+	var s *api.StepPowershell
+	var err error
 	if file != "" {
-		return api.NewStepPowershellScriptFile(name, file, args)
+		s, err = api.NewStepPowershellScriptFile(name, file, args)
+	} else {
+		s, err = api.NewStepPowershellCode(name, code)
 	}
-	return api.NewStepPowershellCode(name, code)
+	if err != nil {
+		return nil, err
+	}
+
+	if v, ok := dt["step_id"]; ok {
+		s.ID = v.(string)
+	}
+	return s, nil
 }
 
 func buildVcsRootEntry(raw interface{}) *api.VcsRootEntry {
