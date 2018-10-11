@@ -16,6 +16,11 @@ func TestAccTeamcityBuildTriggerSchedule_Daily(t *testing.T) {
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckTeamcityBuildTriggerDestroy(&bc.ID, "teamcity_build_trigger_schedule"),
+		// schedule = "daily"
+		// timezone = "America/Sao Paulo"
+		// hour = 12
+		// minute = 37
+		// rules = ["+:*", "-:*.md"]
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: TestAccBuildTriggerScheduleDaily,
@@ -24,6 +29,53 @@ func TestAccTeamcityBuildTriggerSchedule_Daily(t *testing.T) {
 					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out, true),
 					resource.TestCheckResourceAttr(resName, "schedule", "daily"),
 					resource.TestCheckNoResourceAttr(resName, "weekday"),
+					resource.TestCheckResourceAttr(resName, "timezone", "America/Sao Paulo"),
+					resource.TestCheckResourceAttr(resName, "hour", "12"),
+					resource.TestCheckResourceAttr(resName, "minute", "37"),
+					resource.TestCheckResourceAttr(resName, "rules.0", "+:*"),
+					resource.TestCheckResourceAttr(resName, "rules.1", "-:*.md"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccTeamcityBuildTriggerSchedule_DailyUpdate(t *testing.T) {
+	resName := "teamcity_build_trigger_schedule.test"
+	var out api.Trigger
+	var bc api.BuildType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamcityBuildTriggerDestroy(&bc.ID, "teamcity_build_trigger_schedule"),
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildTriggerScheduleDaily,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
+					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out, true),
+					resource.TestCheckResourceAttr(resName, "schedule", "daily"),
+					resource.TestCheckNoResourceAttr(resName, "weekday"),
+					resource.TestCheckResourceAttr(resName, "timezone", "America/Sao Paulo"),
+					resource.TestCheckResourceAttr(resName, "hour", "12"),
+					resource.TestCheckResourceAttr(resName, "minute", "37"),
+					resource.TestCheckResourceAttr(resName, "rules.0", "+:*"),
+					resource.TestCheckResourceAttr(resName, "rules.1", "-:*.md"),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildTriggerScheduleDailyUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
+					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out, true),
+					resource.TestCheckResourceAttr(resName, "schedule", "daily"),
+					resource.TestCheckNoResourceAttr(resName, "weekday"),
+					resource.TestCheckResourceAttr(resName, "timezone", "America/New York"),
+					resource.TestCheckResourceAttr(resName, "hour", "23"),
+					resource.TestCheckResourceAttr(resName, "minute", "20"),
+					resource.TestCheckResourceAttr(resName, "rules.#", "1"),
+					resource.TestCheckResourceAttr(resName, "rules.0", "-:*.yaml"),
 				),
 			},
 		},
@@ -132,6 +184,27 @@ resource "teamcity_build_trigger_schedule" "test" {
     hour = 12
     minute = 37
     rules = ["+:*", "-:*.md"]
+}
+`
+
+const TestAccBuildTriggerScheduleDailyUpdated = `
+resource "teamcity_project" "trigger_project_test" {
+  name = "Trigger Build Finish Project"
+}
+
+resource "teamcity_build_config" "config" {
+	name = "BuildConfig"
+	project_id = "${teamcity_project.trigger_project_test.id}"
+}
+
+resource "teamcity_build_trigger_schedule" "test" {
+    build_config_id = "${teamcity_build_config.config.id}"
+
+    schedule = "daily"
+    timezone = "America/New York"
+    hour = 23
+    minute = 20
+    rules = ["-:*.yaml"]
 }
 `
 
