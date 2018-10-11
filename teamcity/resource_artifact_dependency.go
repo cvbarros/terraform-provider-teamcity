@@ -12,7 +12,6 @@ func resourceArtifactDependency() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceArtifactDependencyCreate,
 		Read:   resourceArtifactDependencyRead,
-		Update: resourceArtifactDependencyUpdate,
 		Delete: resourceArtifactDependencyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -22,13 +21,16 @@ func resourceArtifactDependency() *schema.Resource {
 			"build_config_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"source_build_config_id": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Required: true,
 			},
 			"dependency_revision": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Optional: true,
 				Default:  string(api.LatestSuccessfulBuild),
 				ValidateFunc: validation.StringInSlice([]string{
@@ -41,15 +43,18 @@ func resourceArtifactDependency() *schema.Resource {
 			},
 			"path_rules": {
 				Type:     schema.TypeList,
+				ForceNew: true,
 				Required: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"revision": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Optional: true,
 			},
 			"clean_destination": {
 				Type:     schema.TypeBool,
+				ForceNew: true,
 				Optional: true,
 				Default:  false,
 			},
@@ -121,10 +126,6 @@ func resourceArtifactDependencyRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	return d.Set("source_build_config_id", dt.SourceBuildTypeID)
-}
-
-func resourceArtifactDependencyUpdate(d *schema.ResourceData, meta interface{}) error {
-	return nil
 }
 
 func resourceArtifactDependencyDelete(d *schema.ResourceData, meta interface{}) error {
