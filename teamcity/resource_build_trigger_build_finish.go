@@ -12,7 +12,6 @@ func resourceBuildTriggerBuildFinish() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceBuildTriggerBuildFinishCreate,
 		Read:   resourceBuildTriggerBuildFinishRead,
-		Update: resourceBuildTriggerBuildFinishUpdate,
 		Delete: resourceBuildTriggerBuildFinishDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -22,15 +21,18 @@ func resourceBuildTriggerBuildFinish() *schema.Resource {
 			"build_config_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"after_successful_only": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+				ForceNew: true,
 			},
 			"branch_filter": {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+				ForceNew: true,
 				Optional: true,
 			},
 		},
@@ -103,10 +105,6 @@ func resourceBuildTriggerBuildFinishRead(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	return nil
-}
-
-func resourceBuildTriggerBuildFinishUpdate(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
