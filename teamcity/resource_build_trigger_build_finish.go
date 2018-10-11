@@ -23,6 +23,11 @@ func resourceBuildTriggerBuildFinish() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"source_build_config_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
 			"after_successful_only": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -41,19 +46,26 @@ func resourceBuildTriggerBuildFinish() *schema.Resource {
 
 func resourceBuildTriggerBuildFinishCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
-	var buildConfigID string
+	var buildConfigID, triggerBuildConfigID string
 
 	if v, ok := d.GetOk("build_config_id"); ok {
 		buildConfigID = v.(string)
+	}
+	if v, ok := d.GetOk("source_build_config_id"); ok {
+		triggerBuildConfigID = v.(string)
 	}
 	// validates the Build Configuration exists
 	if _, err := client.BuildTypes.GetByID(buildConfigID); err != nil {
 		return fmt.Errorf("invalid build_config_id '%s' - Build configuration does not exist", buildConfigID)
 	}
+	// validates the Trigger Build Configuration exists
+	if _, err := client.BuildTypes.GetByID(triggerBuildConfigID); err != nil {
+		return fmt.Errorf("invalid build_config_id '%s' - Build configuration does not exist", triggerBuildConfigID)
+	}
 
 	ts := client.TriggerService(buildConfigID)
 	opt := api.NewTriggerBuildFinishOptions(false, nil)
-	dt, err := api.NewTriggerBuildFinish(buildConfigID, opt)
+	dt, err := api.NewTriggerBuildFinish(triggerBuildConfigID, opt)
 	if err != nil {
 		return err
 	}
@@ -90,8 +102,10 @@ func resourceBuildTriggerBuildFinishRead(d *schema.ResourceData, meta interface{
 	if !ok {
 		return fmt.Errorf("invalid trigger type when reading build_trigger_build_finish resource")
 	}
-
 	if err := d.Set("build_config_id", dt.BuildTypeID()); err != nil {
+		return err
+	}
+	if err := d.Set("source_build_config_id", dt.SourceBuildID); err != nil {
 		return err
 	}
 	log.Printf("[INFO] READ: BranchFilter: %s, State: %s", dt.Options.BranchFilter, d.Get("branch_filter"))

@@ -10,7 +10,7 @@ import (
 func TestAccTeamcityBuildTriggerBuildFinish_Basic(t *testing.T) {
 	resName := "teamcity_build_trigger_build_finish.test"
 	var out api.Trigger
-	var bc api.BuildType
+	var bc, sc api.BuildType
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -21,8 +21,10 @@ func TestAccTeamcityBuildTriggerBuildFinish_Basic(t *testing.T) {
 				Config: TestAccBuildTriggerBuildFinishBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
+					testAccCheckBuildConfigExists("teamcity_build_config.source", &sc),
 					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out, true),
 					resource.TestCheckResourceAttrPtr(resName, "build_config_id", &bc.ID),
+					resource.TestCheckResourceAttrPtr(resName, "source_build_config_id", &sc.ID),
 					resource.TestCheckResourceAttr(resName, "after_successful_only", "true"),
 					resource.TestCheckResourceAttr(resName, "branch_filter.0", "master"),
 					resource.TestCheckResourceAttr(resName, "branch_filter.1", "feature"),
@@ -78,8 +80,14 @@ resource "teamcity_build_config" "config" {
 	project_id = "${teamcity_project.trigger_project_test.id}"
 }
 
+resource "teamcity_build_config" "source" {
+	name = "SourceConfig"
+	project_id = "${teamcity_project.trigger_project_test.id}"
+}
+
 resource "teamcity_build_trigger_build_finish" "test" {
 	build_config_id = "${teamcity_build_config.config.id}"
+	source_build_config_id = "${teamcity_build_config.source.id}"
 
 	after_successful_only = true
 	branch_filter = ["master", "feature"]
@@ -96,8 +104,14 @@ resource "teamcity_build_config" "config" {
 	project_id = "${teamcity_project.trigger_project_test.id}"
 }
 
+resource "teamcity_build_config" "source" {
+	name = "SourceConfig"
+	project_id = "${teamcity_project.trigger_project_test.id}"
+}
+
 resource "teamcity_build_trigger_build_finish" "test" {
 	build_config_id = "${teamcity_build_config.config.id}"
+	source_build_config_id = "${teamcity_build_config.source.id}"
 
 	after_successful_only = false
 	branch_filter = ["tag1", "tag2"]
