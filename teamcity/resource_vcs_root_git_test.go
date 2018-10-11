@@ -25,6 +25,9 @@ func TestAccVcsRootGit_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "name", "application"),
 					resource.TestCheckResourceAttr(resName, "fetch_url", "https://github.com/kelseyhightower/nocode"),
 					resource.TestCheckResourceAttr(resName, "default_branch", "refs/head/master"),
+					resource.TestCheckResourceAttr(resName, "branches.#", "2"),
+					resource.TestCheckResourceAttr(resName, "branches.0", "+:refs/(pull/*)/head"),
+					resource.TestCheckResourceAttr(resName, "branches.1", "+:refs/heads/develop"),
 					resource.TestCheckResourceAttr(resName, "project_id", "VcsRootProject"),
 					resource.TestCheckResourceAttr(resName, "enable_branch_spec_tags", "true"),
 					resource.TestCheckResourceAttr(resName, "submodule_checkout", "CHECKOUT"),
@@ -190,6 +193,10 @@ resource "teamcity_vcs_root_git" "git_test" {
 	project_id = "${teamcity_project.vcs_root_project.id}"
 	fetch_url = "https://github.com/kelseyhightower/nocode"
 	default_branch = "refs/head/master"
+	branches = [
+    "+:refs/(pull/*)/head",
+    "+:refs/heads/develop",
+  	]
 	username_style = "userid"
 	submodule_checkout = "checkout"
 	enable_branch_spec_tags = true

@@ -49,6 +49,12 @@ func resourceVcsRootGit() *schema.Resource {
 				Required:    true,
 				Description: "Branch specification for the default branch to pull/push from/to and inspec changes. Ex: refs/head/master",
 			},
+			"branches": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				Description: "Branches to monitor besides the default with a set of rules in the form of +|-:branch_name (with the optional * placeholder)",
+			},
 			"enable_branch_spec_tags": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -236,6 +242,12 @@ func resourceVcsRootGitRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	if len(dt.Options.BranchSpec) > 0 {
+		if err := d.Set("branches", dt.Options.BranchSpec); err != nil {
+			return err
+		}
+	}
+
 	if auth, err := flattenGitVcsRootAuth(d, dt.Options); err != nil {
 		if err := d.Set("auth", auth); err != nil {
 			return err
@@ -311,6 +323,10 @@ func expandGitVcsRootOptions(d *schema.ResourceData) (*api.GitVcsRootOptions, er
 	}
 	if v, ok := auth["key_spec"]; ok {
 		opt.PrivateKeySource = v.(string)
+	}
+
+	if v, ok := d.GetOk("branches"); ok {
+		opt.BranchSpec = expandStringSlice(v.([]interface{}))
 	}
 	return opt, nil
 }
