@@ -21,7 +21,7 @@ func TestAccTeamcityBuildTriggerBuildFinish_Basic(t *testing.T) {
 				Config: TestAccBuildTriggerBuildFinishBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
-					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out),
+					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out, true),
 				),
 			},
 		},

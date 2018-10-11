@@ -11,7 +11,6 @@ func resourceAgentRequirement() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAgentRequirementCreate,
 		Read:   resourceAgentRequirementRead,
-		Update: resourceAgentRequirementUpdate,
 		Delete: resourceAgentRequirementDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -21,18 +20,22 @@ func resourceAgentRequirement() *schema.Resource {
 			"build_config_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"condition": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"value": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -107,10 +110,6 @@ func resourceAgentRequirementRead(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	return nil
-}
-
-func resourceAgentRequirementUpdate(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 

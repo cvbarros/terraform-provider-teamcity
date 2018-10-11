@@ -35,6 +35,42 @@ func TestAccTeamcityAgentRequirement_Basic(t *testing.T) {
 	})
 }
 
+func TestAccTeamcityAgentRequirement_Update(t *testing.T) {
+	resName := "teamcity_agent_requirement.test"
+	var out api.AgentRequirement
+	var bc api.BuildType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamcityAgentRequirementDestroy(&out.BuildTypeID),
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccAgentRequirementBasic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
+					testAccCheckTeamcityAgentRequirementExists(resName, &bc.ID, &out),
+					resource.TestCheckResourceAttrPtr(resName, "build_config_id", &out.BuildTypeID),
+					resource.TestCheckResourceAttr(resName, "condition", api.Conditions.Equals),
+					resource.TestCheckResourceAttr(resName, "name", "agent_condition"),
+					resource.TestCheckResourceAttr(resName, "value", "somevalue"),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccAgentRequirementUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
+					testAccCheckTeamcityAgentRequirementExists(resName, &bc.ID, &out),
+					resource.TestCheckResourceAttrPtr(resName, "build_config_id", &out.BuildTypeID),
+					resource.TestCheckResourceAttr(resName, "condition", api.Conditions.DoesNotEqual),
+					resource.TestCheckResourceAttr(resName, "name", "updated_condition"),
+					resource.TestCheckResourceAttr(resName, "value", "updated_value"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckTeamcityAgentRequirementDestroy(bt *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(*api.Client)
@@ -91,13 +127,13 @@ func teamcityAgentRequirementExistsHelper(n string, bt *string, s *terraform.Sta
 }
 
 const TestAccAgentRequirementBasic = `
-resource "teamcity_project" "AgentRequirement_project_test" {
-  name = "Snapshot"
+resource "teamcity_project" "agentrequirement_project_test" {
+  name = "AgentRequirementProject"
 }
 
 resource "teamcity_build_config" "config" {
 	name = "BuildConfig"
-	project_id = "${teamcity_project.AgentRequirement_project_test.id}"
+	project_id = "${teamcity_project.agentrequirement_project_test.id}"
 }
 
 resource "teamcity_agent_requirement" "test" {
@@ -105,5 +141,23 @@ resource "teamcity_agent_requirement" "test" {
 	condition = "equals"
 	name = "agent_condition"
 	value = "somevalue"
+}
+`
+
+const TestAccAgentRequirementUpdated = `
+resource "teamcity_project" "agentrequirement_project_test" {
+  name = "AgentRequirementProject"
+}
+
+resource "teamcity_build_config" "config" {
+	name = "BuildConfig"
+	project_id = "${teamcity_project.agentrequirement_project_test.id}"
+}
+
+resource "teamcity_agent_requirement" "test" {
+	build_config_id = "${teamcity_build_config.config.id}"
+	condition = "does-not-equal"
+	name = "updated_condition"
+	value = "updated_value"
 }
 `

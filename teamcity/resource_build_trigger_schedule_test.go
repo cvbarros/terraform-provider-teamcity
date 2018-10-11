@@ -21,7 +21,7 @@ func TestAccTeamcityBuildTriggerSchedule_Daily(t *testing.T) {
 				Config: TestAccBuildTriggerScheduleDaily,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
-					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out),
+					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out, true),
 					resource.TestCheckResourceAttr(resName, "schedule", "daily"),
 					resource.TestCheckNoResourceAttr(resName, "weekday"),
 				),
@@ -44,7 +44,7 @@ func TestAccTeamcityBuildTriggerSchedule_Weekly(t *testing.T) {
 				Config: TestAccBuildTriggerScheduleWeekly,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
-					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out),
+					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out, true),
 					resource.TestCheckResourceAttr(resName, "schedule", "weekly"),
 					resource.TestCheckResourceAttr(resName, "weekday", "Saturday"),
 				),
@@ -69,7 +69,7 @@ func TestAccTeamcityBuildTriggerSchedule_Options(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
 					testAccCheckBuildConfigExists("teamcity_build_config.watched", &watched),
-					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out),
+					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out, true),
 					resource.TestCheckResourceAttr(resName, "schedule", "daily"),
 					resource.TestCheckResourceAttr(resName, "queue_optimization", "true"),
 					resource.TestCheckResourceAttr(resName, "on_all_compatible_agents", "true"),
@@ -104,7 +104,7 @@ func TestAccTeamcityBuildTriggerSchedule_DefaultOptions(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
 					testAccCheckBuildConfigExists("teamcity_build_config.watched", &watched),
-					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out),
+					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out, true),
 					resource.TestCheckResourceAttr(resName, "schedule", "daily"),
 					resource.TestCheckResourceAttr(resName, "queue_optimization", "true"),
 					resource.TestCheckResourceAttr(resName, "with_pending_changes_only", "true"),
@@ -180,7 +180,7 @@ resource "teamcity_build_trigger_schedule" "test" {
     hour = 12
     minute = 37
 	rules = ["+:*", "-:*.md"]
-	
+
 	queue_optimization = true
 	on_all_compatible_agents = true
 	with_pending_changes_only = true
