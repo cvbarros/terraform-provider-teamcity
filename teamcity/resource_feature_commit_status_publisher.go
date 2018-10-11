@@ -15,7 +15,6 @@ func resourceFeatureCommitStatusPublisher() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceFeatureCommitStatusPublisherCreate,
 		Read:   resourceFeatureCommitStatusPublisherRead,
-		Update: resourceFeatureCommitStatusPublisherUpdate,
 		Delete: resourceFeatureCommitStatusPublisherDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -25,14 +24,17 @@ func resourceFeatureCommitStatusPublisher() *schema.Resource {
 			"build_config_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"publisher": {
 				Type:         schema.TypeString,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"github"}, true),
 			},
 			"github": {
 				Type:     schema.TypeSet,
+				ForceNew: true,
 				Optional: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
@@ -41,27 +43,32 @@ func resourceFeatureCommitStatusPublisher() *schema.Resource {
 							Type:         schema.TypeString,
 							Required:     true,
 							ValidateFunc: validation.StringInSlice([]string{"token", "password"}, true),
+							ForceNew:     true,
 						},
 						"host": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Default:  "https://api.github.com",
+							ForceNew: true,
 						},
 						"username": {
 							Type:     schema.TypeString,
 							Optional: true,
+							ForceNew: true,
 						},
 						"password": {
 							Type:      schema.TypeString,
 							Optional:  true,
 							Sensitive: true,
 							Computed:  true,
+							ForceNew:  true,
 						},
 						"access_token": {
 							Type:      schema.TypeString,
 							Optional:  true,
 							Sensitive: true,
 							Computed:  true,
+							ForceNew:  true,
 						},
 					},
 				},
@@ -133,10 +140,6 @@ func resourceFeatureCommitStatusPublisherRead(d *schema.ResourceData, meta inter
 
 	optsToSave = append(optsToSave, m)
 	return d.Set("github", optsToSave)
-}
-
-func resourceFeatureCommitStatusPublisherUpdate(d *schema.ResourceData, meta interface{}) error {
-	return nil
 }
 
 func resourceFeatureCommitStatusPublisherDelete(d *schema.ResourceData, meta interface{}) error {

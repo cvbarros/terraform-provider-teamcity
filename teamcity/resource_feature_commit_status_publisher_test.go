@@ -25,6 +25,45 @@ func TestAccTeamcityFeatureCommitStatusPublisher_Github(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
 					testAccCheckBuildFeatureExists(resName, &bc.ID, &out),
+					resource.TestCheckResourceAttr(resName, "publisher", "github"),
+					resource.TestCheckResourceAttr(resName, "github.3735060251.auth_type", "password"),
+					resource.TestCheckResourceAttr(resName, "github.3735060251.host", "https://api.github.com"),
+					resource.TestCheckResourceAttr(resName, "github.3735060251.username", "bob"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccTeamcityFeatureCommitStatusPublisher_GithubUpdate(t *testing.T) {
+	resName := "teamcity_feature_commit_status_publisher.test"
+	var out api.BuildFeature
+	var bc api.BuildType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildFeatureDestroy(&bc.ID),
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildFeatureCommitStatusPublisher_GithubPassword,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
+					testAccCheckBuildFeatureExists(resName, &bc.ID, &out),
+					resource.TestCheckResourceAttr(resName, "publisher", "github"),
+					resource.TestCheckResourceAttr(resName, "github.3735060251.auth_type", "password"),
+					resource.TestCheckResourceAttr(resName, "github.3735060251.host", "https://api.github.com"),
+					resource.TestCheckResourceAttr(resName, "github.3735060251.username", "bob"),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildFeatureCommitStatusPublisher_GithubPasswordUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
+					testAccCheckBuildFeatureExists(resName, &bc.ID, &out),
+					resource.TestCheckResourceAttr(resName, "publisher", "github"),
+					resource.TestCheckResourceAttr(resName, "github.3764292600.host", "https://api.github.com/v3"),
+					resource.TestCheckResourceAttr(resName, "github.3764292600.username", "bob_updated"),
 				),
 			},
 		},
@@ -103,6 +142,28 @@ resource "teamcity_feature_commit_status_publisher" "test" {
 		auth_type = "password"
 		host = "https://api.github.com"
 		username = "bob"
+		password = "1234"
+	}
+}
+`
+
+const TestAccBuildFeatureCommitStatusPublisher_GithubPasswordUpdated = `
+resource "teamcity_project" "build_feature_project_test" {
+  name = "Build Feature"
+}
+
+resource "teamcity_build_config" "config" {
+	name = "BuildConfig"
+	project_id = "${teamcity_project.build_feature_project_test.id}"
+}
+
+resource "teamcity_feature_commit_status_publisher" "test" {
+	build_config_id = "${teamcity_build_config.config.id}"
+	publisher = "github"
+	github {
+		auth_type = "password"
+		host = "https://api.github.com/v3"
+		username = "bob_updated"
 		password = "1234"
 	}
 }
