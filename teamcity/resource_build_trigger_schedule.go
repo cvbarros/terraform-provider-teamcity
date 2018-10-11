@@ -12,7 +12,6 @@ func resourceBuildTriggerSchedule() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceBuildTriggerScheduleCreate,
 		Read:   resourceBuildTriggerScheduleRead,
-		Update: resourceBuildTriggerScheduleUpdate,
 		Delete: resourceBuildTriggerScheduleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -21,29 +20,35 @@ func resourceBuildTriggerSchedule() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"build_config_id": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Required: true,
 			},
 			"schedule": {
 				Type:         schema.TypeString,
+				ForceNew:     true,
 				Required:     true,
 				ValidateFunc: validation.StringInSlice([]string{"daily", "weekly"}, false),
 			},
 			"hour": {
 				Type:     schema.TypeInt,
+				ForceNew: true,
 				Required: true,
 			},
 			"minute": {
 				Type:     schema.TypeInt,
+				ForceNew: true,
 				Optional: true,
 				Default:  0,
 			},
 			"timezone": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Optional: true,
 				Default:  "SERVER",
 			},
 			"weekday": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Optional: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					"Sunday",
@@ -56,46 +61,56 @@ func resourceBuildTriggerSchedule() *schema.Resource {
 			},
 			"rules": {
 				Type:     schema.TypeList,
+				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 			},
 			"enforce_clean_checkout": {
 				Type:     schema.TypeBool,
+				ForceNew: true,
 				Optional: true,
 			},
 			"enforce_clean_checkout_dependencies": {
 				Type:     schema.TypeBool,
+				ForceNew: true,
 				Optional: true,
 			},
 			"queue_optimization": {
 				Type:     schema.TypeBool,
+				ForceNew: true,
 				Optional: true,
 				Default:  true,
 			},
 			"on_all_compatible_agents": {
 				Type:     schema.TypeBool,
+				ForceNew: true,
 				Optional: true,
 			},
 			"with_pending_changes_only": {
 				Type:     schema.TypeBool,
+				ForceNew: true,
 				Optional: true,
 				Default:  true,
 			},
 			"promote_watched_build": {
 				Type:     schema.TypeBool,
+				ForceNew: true,
 				Optional: true,
 				Default:  true,
 			},
 			"only_if_watched_changes": {
 				Type:     schema.TypeBool,
+				ForceNew: true,
 				Optional: true,
 			},
 			"watched_build_config_id": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Optional: true,
 			},
 			"revision": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Optional: true,
 				Default:  "lastFinished",
 				ValidateFunc: validation.StringInSlice([]string{
@@ -106,6 +121,7 @@ func resourceBuildTriggerSchedule() *schema.Resource {
 			},
 			"watched_branch": {
 				Type:     schema.TypeString,
+				ForceNew: true,
 				Optional: true,
 				Default:  "<default>",
 			},
@@ -197,10 +213,6 @@ func resourceBuildTriggerScheduleRead(d *schema.ResourceData, meta interface{}) 
 			return err
 		}
 	}
-	return nil
-}
-
-func resourceBuildTriggerScheduleUpdate(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 

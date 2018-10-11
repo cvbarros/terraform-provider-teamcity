@@ -33,6 +33,37 @@ func TestAccTeamcitySnapshotDependency_Basic(t *testing.T) {
 	})
 }
 
+func TestAccTeamcitySnapshotDependency_Updated(t *testing.T) {
+	resName := "teamcity_snapshot_dependency.test"
+	sd := api.SnapshotDependency{SourceBuildType: &api.BuildTypeReference{}}
+	var bc api.BuildType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamcitySnapshotDependencyDestroy(&sd.BuildTypeID),
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccSnapshotDependencyBasic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
+					testAccCheckTeamcitySnapshotDependencyExists(resName, &bc.ID, &sd),
+					resource.TestCheckResourceAttrPtr(resName, "build_config_id", &sd.BuildTypeID),
+					testAccCheckSnapshotSourceBuildType(resName, &sd),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccSnapshotDependencyBasicUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
+					testAccCheckTeamcitySnapshotDependencyExists(resName, &bc.ID, &sd),
+					resource.TestCheckResourceAttr(resName, "source_build_config_id", "Snapshot_Dependency2"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckSnapshotSourceBuildType(n string, sd *api.SnapshotDependency) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		key := "source_build_config_id"
@@ -130,6 +161,32 @@ resource "teamcity_build_config" "config" {
 
 resource "teamcity_snapshot_dependency" "test" {
 	source_build_config_id = "${teamcity_build_config.dependency.id}"
+	build_config_id = "${teamcity_build_config.config.id}"
+}
+`
+
+const TestAccSnapshotDependencyBasicUpdated = `
+resource "teamcity_project" "snapshop_dependency_project_test" {
+  name = "Snapshot"
+}
+
+resource "teamcity_build_config" "dependency" {
+	name = "Dependency"
+	project_id = "${teamcity_project.snapshop_dependency_project_test.id}"
+}
+
+resource "teamcity_build_config" "dependency2" {
+	name = "Dependency 2"
+	project_id = "${teamcity_project.snapshop_dependency_project_test.id}"
+}
+
+resource "teamcity_build_config" "config" {
+	name = "BuildConfig"
+	project_id = "${teamcity_project.snapshop_dependency_project_test.id}"
+}
+
+resource "teamcity_snapshot_dependency" "test" {
+	source_build_config_id = "${teamcity_build_config.dependency2.id}"
 	build_config_id = "${teamcity_build_config.config.id}"
 }
 `

@@ -11,7 +11,6 @@ func resourceBuildTriggerVcs() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceBuildTriggerVcsCreate,
 		Read:   resourceBuildTriggerVcsRead,
-		Update: resourceBuildTriggerVcsUpdate,
 		Delete: resourceBuildTriggerVcsDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -21,14 +20,17 @@ func resourceBuildTriggerVcs() *schema.Resource {
 			"build_config_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"rules": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"branch_filter": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -99,10 +101,6 @@ func resourceBuildTriggerVcsRead(d *schema.ResourceData, meta interface{}) error
 		}
 	}
 
-	return nil
-}
-
-func resourceBuildTriggerVcsUpdate(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 

@@ -11,7 +11,6 @@ func resourceSnapshotDependency() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceSnapshotDependencyCreate,
 		Read:   resourceSnapshotDependencyRead,
-		Update: resourceSnapshotDependencyUpdate,
 		Delete: resourceSnapshotDependencyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -21,10 +20,12 @@ func resourceSnapshotDependency() *schema.Resource {
 			"build_config_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"source_build_config_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
@@ -69,10 +70,6 @@ func resourceSnapshotDependencyRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	return d.Set("source_build_config_id", dt.SourceBuildType.ID)
-}
-
-func resourceSnapshotDependencyUpdate(d *schema.ResourceData, meta interface{}) error {
-	return nil
 }
 
 func resourceSnapshotDependencyDelete(d *schema.ResourceData, meta interface{}) error {
