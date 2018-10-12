@@ -533,6 +533,9 @@ resource "teamcity_build_config" "build_configuration_test" {
 	name = "build config test"
 	project_id = "${teamcity_project.build_config_project_test.id}"
 	description = "build config test desc"
+	settings {
+		build_number_format = "2.0.%build.counter%"
+	}
 }
 `
 
@@ -545,6 +548,9 @@ resource "teamcity_build_config" "build_configuration_test" {
 	name = "build config test"
 	project_id = "${teamcity_project.build_config_project_test.id}"
 	description = "build config test desc updated"
+	settings {
+		build_number_format = "2.0.%build.counter%"
+	}
 }
 `
 

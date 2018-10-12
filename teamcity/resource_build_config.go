@@ -112,12 +112,12 @@ func resourceBuildConfig() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: validation.StringInSlice([]string{"REGULAR", "DEPLOYMENT", "COMPOSITE"}, false),
-							Computed:     true,
+							Default:      "REGULAR",
 						},
 						"build_number_format": {
 							Type:     schema.TypeString,
 							Optional: true,
-							Computed: true,
+							Default:  "%build.counter%",
 						},
 						"build_counter": {
 							Type:         schema.TypeInt,
@@ -128,29 +128,28 @@ func resourceBuildConfig() *schema.Resource {
 						"allow_personal_builds": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Computed: true,
+							Default:  true,
 						},
 						"artifact_paths": {
 							Type:     schema.TypeList,
 							Optional: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
-							Computed: true,
 						},
 						"detect_hanging": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Computed: true,
+							Default:  true,
 						},
 						"status_widget": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Computed: true,
+							Default:  false,
 						},
 						"concurrent_limit": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							ValidateFunc: validation.IntAtLeast(0),
-							Computed:     true,
+							Default:      0,
 						},
 					},
 				},
@@ -236,6 +235,11 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if changed {
 		_, err := client.BuildTypes.Update(dt)
+		d.SetPartial("settings")
+		d.SetPartial("description")
+		d.SetPartial("config_params")
+		d.SetPartial("sys_params")
+		d.SetPartial("env_params")
 		if err != nil {
 			return err
 		}
