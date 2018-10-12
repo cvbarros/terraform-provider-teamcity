@@ -22,7 +22,7 @@ Seen an issue that you want to tackle? Make sure to comment indicating that inte
 Try to maitain the code conventions, or spot where they are inconsistent across the codebase, whenever possible. When submitting your work, if you would like to propose an enhancement to existing conventions, do it in a separate issue for discussion, other than the issued worked on.
 
 ### Running Locally ###
-TeamCity can be run with the official docker images from JetBrains. We leverage that by implementing full integration tests with every feature.   
+TeamCity can be run with the official docker images from JetBrains. We leverage that by implementing full integration tests with every feature.
 You are expected to fully run these tests and make sure your changes do not break existing functionality.
 
 In order to run it locally you can first start a warmed-up TeamCity container, from the repository root folder:
@@ -43,7 +43,7 @@ $ export TF_ACC=1
 To run tests:
 
 ```bash
-go test -v -timeout 30s ./...
+go test -v -timeout 180s ./...
 ```
 
 If using an editor such as **Visual Studio Code** with `Go` integration, you can make your development easier by configuring your workspace settings:
@@ -56,9 +56,10 @@ If using an editor such as **Visual Studio Code** with `Go` integration, you can
         "TEAMCITY_PASSWORD":"admin",
         "TF_ACC":"1"
     },
-    
+
     "go.testFlags": ["-v"],
-    "go.buildFlags": ["-v"]
+    "go.buildFlags": ["-v"],
+    "go.testTimeout": "180s"
 }
 ```
 

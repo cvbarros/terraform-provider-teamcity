@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform/helper/validation"
 )
 
-func resourceBuildConfiguration() *schema.Resource {
+func resourceBuildConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceBuildConfigurationCreate,
-		Read:   resourceBuildConfigurationRead,
-		Update: resourceBuildConfigurationUpdate,
-		Delete: resourceBuildConfigurationDelete,
+		Create: resourceBuildConfigCreate,
+		Read:   resourceBuildConfigRead,
+		Update: resourceBuildConfigUpdate,
+		Delete: resourceBuildConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -159,7 +159,7 @@ func resourceBuildConfiguration() *schema.Resource {
 	}
 }
 
-func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	var projectID, name string
 
@@ -203,23 +203,35 @@ func resourceBuildConfigurationCreate(d *schema.ResourceData, meta interface{}) 
 	d.SetId(created.ID)
 	d.Partial(true)
 
-	return resourceBuildConfigurationUpdate(d, meta)
+	return resourceBuildConfigUpdate(d, meta)
 }
 
-func resourceBuildConfigurationUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	dt, err := getBuildConfiguration(client, d.Id())
 	if err != nil {
 		return err
 	}
 
+	var changed bool
+	if d.HasChange("sys_params") || d.HasChange("config_params") || d.HasChange("env_params") {
+		dt.Parameters, err = expandParameterCollection(d)
+		if err != nil {
+			return err
+		}
+		changed = true
+	}
 	if v, ok := d.GetOk("description"); ok {
 		if d.HasChange("description") {
 			dt.Description = v.(string)
-			_, err := client.BuildTypes.Update(dt)
-			if err != nil {
-				return err
-			}
+			changed = true
+		}
+	}
+
+	if changed {
+		_, err := client.BuildTypes.Update(dt)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -266,15 +278,15 @@ func resourceBuildConfigurationUpdate(d *schema.ResourceData, meta interface{}) 
 
 	d.Partial(false)
 
-	return resourceBuildConfigurationRead(d, meta)
+	return resourceBuildConfigRead(d, meta)
 }
 
-func resourceBuildConfigurationDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceBuildConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	return client.BuildTypes.Delete(d.Id())
 }
 
-func resourceBuildConfigurationRead(d *schema.ResourceData, meta interface{}) error {
+func resourceBuildConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
 	dt, err := getBuildConfiguration(client, d.Id())

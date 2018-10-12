@@ -213,6 +213,9 @@ func (s *BuildTypeService) GetByID(id string) (*BuildType, error) {
 		return nil, fmt.Errorf("Error when retrieving BuildType id = '%s', status: %d", id, resp.StatusCode)
 	}
 
+	//For now, filter all inherited parameters, until figuring out a proper way of exposing filtering options to the caller
+	out.Parameters = out.Parameters.NonInherited()
+
 	return &out, err
 }
 

@@ -34,7 +34,7 @@ type Parameters struct {
 
 //Parameter represents a project or build configuration parameter that may be defined as "configuration", "system" or "environment variable"
 type Parameter struct {
-	Inherited *bool `json:"inherited,omitempty" xml:"inherited"`
+	Inherited bool `json:"inherited,omitempty" xml:"inherited"`
 
 	Name string `json:"name,omitempty" xml:"name"`
 
@@ -101,7 +101,9 @@ func (p *Parameter) UnmarshalJSON(data []byte) error {
 		paramType = ParameterTypes.Configuration
 	}
 	p.Name = name
-	p.Inherited = aux.Inherited
+	if aux.Inherited != nil {
+		p.Inherited = *aux.Inherited
+	}
 	p.Value = aux.Value
 	p.Type = paramType
 	return nil
@@ -118,11 +120,15 @@ func (p *Parameters) Properties() *Properties {
 
 //Property converts a Parameter instance to a Property
 func (p *Parameter) Property() *Property {
-	return &Property{
-		Name:      fmt.Sprintf("%s%s", paramPrefixByType[p.Type], p.Name),
-		Value:     p.Value,
-		Inherited: p.Inherited,
+	out := &Property{
+		Name:  fmt.Sprintf("%s%s", paramPrefixByType[p.Type], p.Name),
+		Value: p.Value,
 	}
+	//Omit default inherited value
+	if p.Inherited {
+		out.Inherited = NewBool(p.Inherited)
+	}
+	return out
 }
 
 // AddOrReplaceValue will update a parameter value if it exists, or add if it doesnt
@@ -173,6 +179,28 @@ func (p *Parameters) Remove(t string, n string) {
 		p.Count--
 		p.Items = append(p.Items[:removed], p.Items[removed+1:]...)
 	}
+}
+
+//NonInherited returns a new Parameters collection filtering out all inherited parameters
+func (p *Parameters) NonInherited() (po *Parameters) {
+	po = NewParametersEmpty()
+	for _, c := range p.Items {
+		if !c.Inherited {
+			po.AddOrReplaceParameter(c)
+		}
+	}
+	return po
+}
+
+//GetOk returns a Parameter by it's type/name combination
+func (p *Parameters) GetOk(t string, n string) (out *Parameter, ok bool) {
+	for i := range p.Items {
+		if p.Items[i].Name == n && p.Items[i].Type == t {
+			out, ok = p.Items[i], true
+			return
+		}
+	}
+	return nil, false
 }
 
 var paramPrefixByType = map[string]string{
