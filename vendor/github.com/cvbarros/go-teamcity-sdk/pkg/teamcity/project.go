@@ -117,6 +117,9 @@ func (s *ProjectService) GetByID(id string) (*Project, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	//For now, filter all inherited parameters, until figuring out a proper way of exposing filtering options to the caller
+	out.Parameters = out.Parameters.NonInherited()
 	return &out, err
 }
 

@@ -227,6 +227,12 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 			changed = true
 		}
 	}
+	if d.HasChange("settings") {
+		if _, ok := d.GetOk("settings"); ok {
+			dt.Options, err = expandBuildConfigOptions(d)
+			changed = true
+		}
+	}
 
 	if changed {
 		_, err := client.BuildTypes.Update(dt)

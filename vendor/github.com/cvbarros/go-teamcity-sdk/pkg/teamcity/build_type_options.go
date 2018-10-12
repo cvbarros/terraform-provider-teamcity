@@ -9,7 +9,7 @@ const DefaultBuildConfigurationType = "REGULAR"
 
 //BuildTypeOptions represents settings for a Build Configuration
 type BuildTypeOptions struct {
-	AllowPersonalBuildTriggering bool     `prop:"allowPersonalBuildTriggering"`
+	AllowPersonalBuildTriggering bool     `prop:"allowPersonalBuildTriggering" force:""`
 	ArtifactRules                []string `prop:"artifactRules" separator:"\n"`
 	EnableHangingBuildsDetection bool     `prop:"enableHangingBuildsDetection" force:""`
 	EnableStatusWidget           bool     `prop:"allowExternalStatus"`

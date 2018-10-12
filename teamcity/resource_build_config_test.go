@@ -248,15 +248,57 @@ func TestAccBuildConfig_Settings(t *testing.T) {
 				Config: TestAccBuildConfigSettings,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
-					resource.TestCheckResourceAttr(resName, "settings.2182172152.configuration_type", "REGULAR"),
-					resource.TestCheckResourceAttr(resName, "settings.2182172152.allow_personal_builds", "true"),
-					resource.TestCheckResourceAttr(resName, "settings.2182172152.artifact_paths.#", "1"),
-					resource.TestCheckResourceAttr(resName, "settings.2182172152.artifact_paths.0", "+:*.json => /config/*.json"),
-					resource.TestCheckResourceAttr(resName, "settings.2182172152.build_counter", "20"),
-					resource.TestCheckResourceAttr(resName, "settings.2182172152.build_number_format", "1.0.%build.counter%"),
-					resource.TestCheckResourceAttr(resName, "settings.2182172152.concurrent_limit", "10"),
-					resource.TestCheckResourceAttr(resName, "settings.2182172152.detect_hanging", "true"),
-					resource.TestCheckResourceAttr(resName, "settings.2182172152.status_widget", "false"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.configuration_type", "DEPLOYMENT"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.allow_personal_builds", "true"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.artifact_paths.#", "1"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.artifact_paths.0", "+:*.json => /config/*.json"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.build_counter", "20"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.build_number_format", "1.0.%build.counter%"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.concurrent_limit", "10"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.detect_hanging", "true"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.status_widget", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_SettingsUpdate(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigSettings,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.configuration_type", "DEPLOYMENT"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.allow_personal_builds", "true"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.artifact_paths.#", "1"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.artifact_paths.0", "+:*.json => /config/*.json"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.build_counter", "20"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.build_number_format", "1.0.%build.counter%"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.concurrent_limit", "10"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.detect_hanging", "true"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.status_widget", "false"),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildConfigSettingsUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "settings.3684435053.configuration_type", "REGULAR"),
+					resource.TestCheckResourceAttr(resName, "settings.3684435053.allow_personal_builds", "false"),
+					resource.TestCheckResourceAttr(resName, "settings.3684435053.artifact_paths.#", "1"),
+					resource.TestCheckResourceAttr(resName, "settings.3684435053.artifact_paths.0", "+:*.json => /artifacts/*.json"),
+					resource.TestCheckResourceAttr(resName, "settings.3684435053.build_counter", "25"),
+					resource.TestCheckResourceAttr(resName, "settings.3684435053.build_number_format", "2.0.%build.counter%"),
+					resource.TestCheckResourceAttr(resName, "settings.3684435053.concurrent_limit", "0"),
+					resource.TestCheckResourceAttr(resName, "settings.3684435053.detect_hanging", "false"),
+					resource.TestCheckResourceAttr(resName, "settings.3684435053.status_widget", "true"),
 				),
 			},
 		},
@@ -560,7 +602,7 @@ resource "teamcity_build_config" "build_configuration_test" {
   project_id = "${teamcity_project.build_config_project_test.id}"
 
   settings {
-	configuration_type = "REGULAR"
+	configuration_type = "DEPLOYMENT"
     build_number_format = "1.0.%build.counter%"
     build_counter = 20
     allow_personal_builds = true
@@ -568,6 +610,28 @@ resource "teamcity_build_config" "build_configuration_test" {
     detect_hanging = true
     status_widget = false
     concurrent_limit = 10
+  }
+}
+`
+
+const TestAccBuildConfigSettingsUpdated = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+  name = "build config test"
+  project_id = "${teamcity_project.build_config_project_test.id}"
+
+  settings {
+	configuration_type = "REGULAR"
+    build_number_format = "2.0.%build.counter%"
+    build_counter = 25
+    allow_personal_builds = false
+    artifact_paths = ["+:*.json => /artifacts/*.json"]
+    detect_hanging = false
+    status_widget = true
+    concurrent_limit = 0
   }
 }
 `
