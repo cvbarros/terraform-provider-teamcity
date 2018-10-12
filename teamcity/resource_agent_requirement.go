@@ -3,6 +3,8 @@ package teamcity
 import (
 	"fmt"
 
+	"github.com/hashicorp/terraform/helper/validation"
+
 	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -23,9 +25,10 @@ func resourceAgentRequirement() *schema.Resource {
 				ForceNew: true,
 			},
 			"condition": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Type:         schema.TypeString,
+				ValidateFunc: validation.StringInSlice(api.ConditionStrings, false),
+				Required:     true,
+				ForceNew:     true,
 			},
 			"name": {
 				Type:     schema.TypeString,
