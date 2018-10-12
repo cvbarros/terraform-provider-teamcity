@@ -199,6 +199,43 @@ func TestAccBuildConfig_Parameters(t *testing.T) {
 	})
 }
 
+func TestAccBuildConfig_UpdateParameters(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigParams,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "config_params.%", "1"),
+					resource.TestCheckResourceAttr(resName, "env_params.%", "2"),
+					resource.TestCheckResourceAttr(resName, "sys_params.%", "1"),
+					resource.TestCheckResourceAttr(resName, "env_params.DEPLOY_SERVER", "server.com"),
+					resource.TestCheckResourceAttr(resName, "env_params.some_variable", "hello"),
+					resource.TestCheckResourceAttr(resName, "config_params.github.repository", "nocode"),
+					resource.TestCheckResourceAttr(resName, "sys_params.system_param", "system_value"),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildConfigParamsUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "config_params.%", "1"),
+					resource.TestCheckResourceAttr(resName, "env_params.%", "2"),
+					resource.TestCheckResourceAttr(resName, "sys_params.%", "0"),
+					resource.TestCheckResourceAttr(resName, "env_params.DEPLOY_SERVER", "server.com"),
+					resource.TestCheckResourceAttr(resName, "env_params.some_variable", "hello"),
+					resource.TestCheckResourceAttr(resName, "config_params.github.repository", "updated_repo"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccBuildConfig_Settings(t *testing.T) {
 	var bc api.BuildType
 	resName := "teamcity_build_config.build_configuration_test"
@@ -489,6 +526,26 @@ resource "teamcity_build_config" "build_configuration_test" {
 
 	sys_params {
 		system_param = "system_value"
+	}
+}
+`
+
+const TestAccBuildConfigParamsUpdated = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+
+	env_params {
+		DEPLOY_SERVER = "server.com"
+		some_variable = "hello"
+	}
+
+	config_params {
+		github.repository = "updated_repo"
 	}
 }
 `
