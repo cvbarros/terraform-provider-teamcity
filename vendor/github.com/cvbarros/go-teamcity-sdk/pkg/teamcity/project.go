@@ -112,8 +112,22 @@ func (s *ProjectService) Create(project *Project) (*Project, error) {
 // GetByID Retrieves a project resource by ID
 func (s *ProjectService) GetByID(id string) (*Project, error) {
 	var out Project
+	locator := LocatorID(id).String()
+	err := s.restHelper.get(locator, &out, "project")
+	if err != nil {
+		return nil, err
+	}
 
-	err := s.restHelper.get(LocatorID(id).String(), &out, "project")
+	//For now, filter all inherited parameters, until figuring out a proper way of exposing filtering options to the caller
+	out.Parameters = out.Parameters.NonInherited()
+	return &out, err
+}
+
+//GetByName returns a project by it's name. There are no duplicate names in projects for TeamCity
+func (s *ProjectService) GetByName(name string) (*Project, error) {
+	var out Project
+
+	err := s.restHelper.get(LocatorName(name).String(), &out, "project")
 	if err != nil {
 		return nil, err
 	}
