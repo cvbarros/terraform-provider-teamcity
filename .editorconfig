@@ -15,6 +15,6 @@ charset = utf-8
 indent_style = tab
 indent_size = 4
 
-[*.tf]
+[*.{tf,md,markdown}]
 indent_style = space
 indent_size = 2
