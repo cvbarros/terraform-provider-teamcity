@@ -1,8 +1,9 @@
 Terraform Provider TeamCity
 ==================
-[![Build Status](https://travis-ci.org/cvbarros/terraform-provider-teamcity.svg?branch=master)](https://travis-ci.org/cvbarros/terraform-provider-teamcity) 
+[![Build Status](https://travis-ci.org/cvbarros/terraform-provider-teamcity.svg?branch=master)](https://travis-ci.org/cvbarros/terraform-provider-teamcity)
 
-https://www.jetbrains.com/teamcity/
+Motivation:
+https://cvbarros.io/2018/11/building-builds---teamcity-pipelines-as-code-using-terraform/
 
 Requirements
 ------------
