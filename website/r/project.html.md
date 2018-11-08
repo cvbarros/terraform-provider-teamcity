@@ -55,6 +55,11 @@ The following arguments are supported:
 
 * `sys_params`: (Optional) A map of parameters of type `System Properties`. System properties will be passed into the build (without system. prefix), they are only supported by the build runners that understand the property notion.
 
+## Attributes Reference
+In addition to all arguments above, the following attributes are exported:
+
+* `id`: The auto-generated ID of the project.
+
 ## Import
 Projects can be imported using their ID, e.g.
 
