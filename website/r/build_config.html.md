@@ -93,7 +93,7 @@ In addition to all arguments above, the following attributes are exported:
 * `id`: The auto-generated ID of the build configuration.
 
 ## Import
-Projects can be imported using their ID, e.g.
+Build Configurations can be imported using their ID, e.g.
 
 ```
 $ terraform import teamcity_build_config.teamcity_build_config MyProject_BuildRelease
