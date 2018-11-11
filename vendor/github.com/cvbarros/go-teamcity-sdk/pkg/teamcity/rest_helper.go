@@ -156,6 +156,10 @@ func (r *restHelper) put(path string, data interface{}, out interface{}, resourc
 	return r.handleRestError(response, "PUT", resourceDescription)
 }
 
+func (r *restHelper) delete(path string, resourceDescription string) error {
+	return r.deleteByIDWithSling(r.sling, path, resourceDescription)
+}
+
 func (r *restHelper) deleteByIDWithSling(sling *sling.Sling, resourceID string, resourceDescription string) error {
 	request, _ := sling.New().Delete(resourceID).Request()
 	response, err := r.httpClient.Do(request)

@@ -26,6 +26,8 @@ func TestAccTeamcityBuildTriggerVcs_Basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
 					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &out, true),
+					resource.TestCheckResourceAttr(resName, "rules.0", "+:*"),
+					resource.TestCheckResourceAttr(resName, "branch_filter.0", "+:pull/*"),
 				),
 			},
 		},
@@ -54,8 +56,8 @@ func TestAccTeamcityBuildTriggerVcs_Update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
 					testAccCheckTeamcityBuildTriggerExists(resName, &bc.ID, &after, true),
-					resource.TestCheckResourceAttr(resName, "rules", "updated_rules"),
-					resource.TestCheckResourceAttr(resName, "branch_filter", "+:refs/head/master"),
+					resource.TestCheckResourceAttr(resName, "rules.0", "updated_rules"),
+					resource.TestCheckResourceAttr(resName, "branch_filter.0", "+:refs/head/master"),
 				),
 			},
 		},
@@ -151,8 +153,8 @@ resource "teamcity_build_config" "config" {
 
 resource "teamcity_build_trigger_vcs" "test" {
 	build_config_id = "${teamcity_build_config.config.id}"
-	rules = "+:*"
-	branch_filter = "+:pull/*"
+	rules = ["+:*"]
+	branch_filter = ["+:pull/*"]
 }
 `
 
@@ -168,7 +170,7 @@ resource "teamcity_build_config" "config" {
 
 resource "teamcity_build_trigger_vcs" "test" {
 	build_config_id = "${teamcity_build_config.config.id}"
-	rules = "updated_rules"
-	branch_filter = "+:refs/head/master"
+	rules = ["updated_rules"]
+	branch_filter = ["+:refs/head/master"]
 }
 `

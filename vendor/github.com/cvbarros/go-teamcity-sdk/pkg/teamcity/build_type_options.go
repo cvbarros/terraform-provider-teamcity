@@ -17,8 +17,8 @@ type BuildTypeOptions struct {
 	BuildNumberFormat            string   `prop:"buildNumberPattern"`
 	BuildConfigurationType       string   `prop:"buildConfigurationType"`
 	MaxSimultaneousBuilds        int      `prop:"maximumNumberOfBuilds"`
-
-	BuildTypeID int
+	Template                     bool
+	BuildTypeID                  int
 }
 
 //NewBuildTypeOptionsWithDefaults returns a new instance of default settings, the same as presented in the TeamCity UI when a new build configuration is created.
@@ -32,6 +32,20 @@ func NewBuildTypeOptionsWithDefaults() *BuildTypeOptions {
 		BuildConfigurationType:       DefaultBuildConfigurationType,
 		BuildCounter:                 1,
 		BuildNumberFormat:            DefaultBuildNumberFormat,
+	}
+}
+
+//NewBuildTypeOptionsTemplate returns a new instance of settings for a BuildType Template.
+func NewBuildTypeOptionsTemplate() *BuildTypeOptions {
+	return &BuildTypeOptions{
+		AllowPersonalBuildTriggering: true,
+		ArtifactRules:                []string{},
+		EnableHangingBuildsDetection: true,
+		EnableStatusWidget:           false,
+		MaxSimultaneousBuilds:        0,
+		BuildConfigurationType:       DefaultBuildConfigurationType,
+		BuildNumberFormat:            DefaultBuildNumberFormat,
+		Template:                     true,
 	}
 }
 
@@ -64,11 +78,20 @@ func (o *BuildTypeOptions) properties() *Properties {
 	if v, ok := props.GetOk("maximumNumberOfBuilds"); ok && v == "0" {
 		props.Remove("maximumNumberOfBuilds")
 	}
+
+	//Build Type Templates do not have "buildNumberCounter" property, so remove that if these options are from a template
+	if o.Template {
+		props.Remove("buildNumberCounter")
+	}
 	return props
 }
 
-func (p *Properties) buildTypeOptions() *BuildTypeOptions {
-	out := NewBuildTypeOptionsWithDefaults()
+func (p *Properties) buildTypeOptions(template bool) (out *BuildTypeOptions) {
+	if template {
+		out = NewBuildTypeOptionsTemplate()
+	} else {
+		out = NewBuildTypeOptionsWithDefaults()
+	}
 
 	fillStructFromProperties(out, p)
 	return out
