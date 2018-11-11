@@ -1,3 +1,18 @@
+---
+layout: teamcity
+page_title: "TeamCity: teamcity_build_trigger_build_finish resource"
+sidebar_current: "docs-teamcity-build-trigger-build-finish"
+description: |-
+  Manages TeamCity build configuration triggers of "Finish Build" type.
+---
+
+# teamcity\_build\_trigger\_build\_finish
+
+The Build Trigger Build Finish resource allows managing build configuration triggers of type "Finish Build".
+
+## Example Usage
+
+```hcl
 resource "teamcity_project" "project" {
   name = "Go TeamCity SDK"
 }
@@ -41,9 +56,24 @@ resource "teamcity_buildconfiguration" "triggered_build" {
 resource "teamcity_build_trigger_build_finish" "buildrelease_finish_trigger" {
     build_config_id = "${teamcity_buildconfiguration.build_release.id}"
 
-    #Optional, defaults to false
     after_successful_only = true
-
-    #Optional
     branch_filter = ["master", "feature"]
 }
+```
+
+## Argument Reference
+
+The following arguments are supported:
+
+* `build_config_id`: (Required) ID of the build configuration which this trigger will be configured.
+
+* `source_build_config_id`: (Required) ID of the build configuration that, when finished, will fire this trigger.
+
+* `after_successful_only`: (Optional) If true, this trigger will fire only when `source_build_config_id` is successful. Defaults to `false`.
+
+* `branch_filter`: (Optional) A list of branches that scope this trigger. Only finished builds in the given branches will fire the trigger.
+
+## Attributes Reference
+In addition to all arguments above, the following attributes are exported:
+
+* `id`: The auto-generated ID of the agent requirement.
