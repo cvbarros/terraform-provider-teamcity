@@ -23,14 +23,16 @@ func resourceBuildTriggerVcs() *schema.Resource {
 				ForceNew: true,
 			},
 			"rules": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeList,
 				Required: true,
 				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"branch_filter": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 		},
 	}
@@ -52,7 +54,7 @@ func resourceBuildTriggerVcsCreate(d *schema.ResourceData, meta interface{}) err
 	ts := client.TriggerService(buildConfigID)
 	var dt *api.TriggerVcs
 	if v, ok := d.GetOk("rules"); ok {
-		dt, err = api.NewTriggerVcs(v.(string), "")
+		dt, err = api.NewTriggerVcs(expandStringSlice(v.([]interface{})), []string{})
 		if err != nil {
 			return err
 		}
@@ -61,7 +63,7 @@ func resourceBuildTriggerVcsCreate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	if v, ok := d.GetOk("branch_filter"); ok {
-		dt.BranchFilter = v.(string)
+		dt.BranchFilter = expandStringSlice(v.([]interface{}))
 	}
 
 	out, err := ts.AddTrigger(dt)
@@ -91,11 +93,13 @@ func resourceBuildTriggerVcsRead(d *schema.ResourceData, meta interface{}) error
 		return err
 	}
 
-	if err := d.Set("rules", dt.Rules); err != nil {
-		return err
+	if len(dt.Rules) > 0 {
+		if err := d.Set("rules", dt.Rules); err != nil {
+			return err
+		}
 	}
 
-	if dt.BranchFilter != "" {
+	if len(dt.BranchFilter) > 0 {
 		if err := d.Set("branch_filter", dt.BranchFilter); err != nil {
 			return err
 		}

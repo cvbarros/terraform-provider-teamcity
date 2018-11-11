@@ -10,65 +10,39 @@ import (
 )
 
 type buildTypeJSON struct {
-	// description
-	Description string `json:"description,omitempty" xml:"description"`
-
-	// href
-	Href string `json:"href,omitempty" xml:"href"`
-
-	// id
-	ID string `json:"id,omitempty" xml:"id"`
+	Description          string                `json:"description,omitempty" xml:"description"`
+	Href                 string                `json:"href,omitempty" xml:"href"`
+	ID                   string                `json:"id,omitempty" xml:"id"`
+	InternalID           string                `json:"internalId,omitempty" xml:"internalId"`
+	Locator              string                `json:"locator,omitempty" xml:"locator"`
+	Name                 string                `json:"name,omitempty" xml:"name"`
+	Parameters           *Parameters           `json:"parameters,omitempty"`
+	Paused               *bool                 `json:"paused,omitempty" xml:"paused"`
+	Project              *Project              `json:"project,omitempty"`
+	ProjectID            string                `json:"projectId,omitempty" xml:"projectId"`
+	ProjectInternalID    string                `json:"projectInternalId,omitempty" xml:"projectInternalId"`
+	ProjectName          string                `json:"projectName,omitempty" xml:"projectName"`
+	SnapshotDependencies *SnapshotDependencies `json:"snapshot-dependencies,omitempty"`
+	TemplateFlag         *bool                 `json:"templateFlag,omitempty" xml:"templateFlag"`
+	Type                 string                `json:"type,omitempty" xml:"type"`
+	UUID                 string                `json:"uuid,omitempty" xml:"uuid"`
+	Settings             *Properties           `json:"settings,omitempty"`
+	Templates            *Templates            `json:"templates,omitempty"`
+	VcsRootEntries       *VcsRootEntries       `json:"vcs-root-entries,omitempty"`
+	WebURL               string                `json:"webUrl,omitempty" xml:"webUrl"`
 
 	// inherited
 	// Inherited *bool `json:"inherited,omitempty" xml:"inherited"`
+}
 
-	// internal Id
-	InternalID string `json:"internalId,omitempty" xml:"internalId"`
+// Templates represents a collection of BuildTypeReference that are templates attached to a build configuration.
+type Templates struct {
 
-	// locator
-	Locator string `json:"locator,omitempty" xml:"locator"`
+	// count
+	Count int32 `json:"count,omitempty" xml:"count"`
 
-	// name
-	Name string `json:"name,omitempty" xml:"name"`
-
-	// Parameters for the build configuration. Read-only, only useful when retrieving project details
-	Parameters *Parameters `json:"parameters,omitempty"`
-
-	// paused
-	Paused *bool `json:"paused,omitempty" xml:"paused"`
-
-	// project
-	Project *Project `json:"project,omitempty"`
-
-	// project Id
-	ProjectID string `json:"projectId,omitempty" xml:"projectId"`
-
-	// project internal Id
-	ProjectInternalID string `json:"projectInternalId,omitempty" xml:"projectInternalId"`
-
-	// project name
-	ProjectName string `json:"projectName,omitempty" xml:"projectName"`
-
-	// snapshot dependencies
-	SnapshotDependencies *SnapshotDependencies `json:"snapshot-dependencies,omitempty"`
-
-	// template flag
-	TemplateFlag *bool `json:"templateFlag,omitempty" xml:"templateFlag"`
-
-	// type
-	Type string `json:"type,omitempty" xml:"type"`
-
-	// uuid
-	UUID string `json:"uuid,omitempty" xml:"uuid"`
-
-	// settings
-	Settings *Properties `json:"settings,omitempty"`
-
-	// vcs root entries
-	VcsRootEntries *VcsRootEntries `json:"vcs-root-entries,omitempty"`
-
-	// web Url
-	WebURL string `json:"webUrl,omitempty" xml:"webUrl"`
+	// buildType
+	Items []*BuildTypeReference `json:"buildType"`
 }
 
 // BuildType represents a build configuration or a build configuration template
@@ -79,6 +53,8 @@ type BuildType struct {
 	Description string
 	Options     *BuildTypeOptions
 	Disabled    bool
+	IsTemplate  bool
+	Templates   *Templates
 
 	VcsRootEntries []*VcsRootEntry
 	Parameters     *Parameters
@@ -97,6 +73,27 @@ func NewBuildType(projectID string, name string) (*BuildType, error) {
 		Name:       name,
 		Options:    opt,
 		Parameters: NewParametersEmpty(),
+		IsTemplate: false,
+		buildTypeJSON: &buildTypeJSON{
+			ProjectID: projectID,
+			Settings:  opt.properties(),
+		},
+	}, nil
+}
+
+//NewBuildTypeTemplate returns a build configuration template with default options
+func NewBuildTypeTemplate(projectID string, name string) (*BuildType, error) {
+	if projectID == "" || name == "" {
+		return nil, fmt.Errorf("projectID and name are required")
+	}
+
+	opt := NewBuildTypeOptionsTemplate()
+	return &BuildType{
+		ProjectID:  projectID,
+		Name:       name,
+		Options:    opt,
+		IsTemplate: true,
+		Parameters: NewParametersEmpty(),
 		buildTypeJSON: &buildTypeJSON{
 			ProjectID: projectID,
 			Settings:  opt.properties(),
@@ -109,14 +106,19 @@ func (b *BuildType) MarshalJSON() ([]byte, error) {
 	optProps := b.Options.properties()
 
 	out := &buildTypeJSON{
-		ID:          b.ID,
-		ProjectID:   b.ProjectID,
-		Description: b.Description,
-		Name:        b.Name,
-		Settings:    optProps,
-		Parameters:  b.Parameters,
+		ID:           b.ID,
+		ProjectID:    b.ProjectID,
+		Name:         b.Name,
+		Settings:     optProps,
+		Parameters:   b.Parameters,
+		TemplateFlag: NewBool(b.IsTemplate),
+		Templates:    b.Templates,
 	}
 
+	//TODO: TeamCity API doesn't support "description" property if creating a template. Need to manually update it after, like projects.
+	if !b.IsTemplate {
+		out.Description = b.Description
+	}
 	return json.Marshal(out)
 }
 
@@ -135,7 +137,12 @@ func (b *BuildType) UnmarshalJSON(data []byte) error {
 }
 
 func (b *BuildType) read(dt *buildTypeJSON) error {
-	opts := dt.Settings.buildTypeOptions()
+	var isTemplate bool
+	if dt.TemplateFlag != nil {
+		isTemplate = *dt.TemplateFlag
+		b.IsTemplate = isTemplate
+	}
+	opts := dt.Settings.buildTypeOptions(isTemplate)
 
 	b.ID = dt.ID
 	b.Name = dt.Name
@@ -144,6 +151,7 @@ func (b *BuildType) read(dt *buildTypeJSON) error {
 	b.ProjectID = dt.ProjectID
 	b.VcsRootEntries = dt.VcsRootEntries.Items
 	b.Parameters = dt.Parameters
+	b.Templates = dt.Templates
 
 	return nil
 }
@@ -190,7 +198,7 @@ func newBuildTypeService(base *sling.Sling, httpClient *http.Client) *BuildTypeS
 func (s *BuildTypeService) Create(projectID string, buildType *BuildType) (*BuildTypeReference, error) {
 	var created BuildTypeReference
 
-	_, err := s.sling.New().Post("").BodyJSON(buildType).ReceiveSuccess(&created)
+	err := s.restHelper.post("", buildType, &created, "Build Type")
 
 	if err != nil {
 		return nil, err

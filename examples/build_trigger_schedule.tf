@@ -1,35 +1,35 @@
-resource "teamcity_project" "nocode" {
-  name = "No Code"
+resource "teamcity_project" "project" {
+  name = "Go TeamCity SDK"
 }
 
-resource "teamcity_vcs_root_git" "nocode_vcs" {
+resource "teamcity_vcs_root_git" "project_vcs" {
   name       = "Application"
-  project_id = "${teamcity_project.nocode.id}"
+  project_id = "${teamcity_project.project.id}"
 
-  url    = "https://github.com/kelseyhightower/nocode"
+  url    = "https://github.com/cvbarros/go-teamcity-sdk"
   branch = "refs/head/master"
 }
-resource "teamcity_buildconfiguration" "nocode_triggered_build" {
-  project_id          = "${teamcity_project.nocode.id}"
+resource "teamcity_buildconfiguration" "triggered_build" {
+  project_id          = "${teamcity_project.project.id}"
   name                = "Triggered Build"
   description         = "Build triggered on schedules"
   build_number_format = "0.0.%build.counter%"
   artifact_paths      = [""]
 
   step {
-    type = "powershell"
-    file = "build.ps1"
-    args = "-Target buildrelease -Verbosity %verbosity%"
+    type = "command_line"
+    file = "build.sh"
+    args = "-t buildrelease"
   }
 
   vcs_root {
-    id             = "${teamcity_vcs_root_git.nocode_vcs}"
+    id             = "${teamcity_vcs_root_git.project_vcs}"
     checkout_rules = ["+:*"]
   }
 }
 
-resource "teamcity_build_trigger_schedule" "buildrelease_schedule_trigger" {
-  build_config_id = "${teamcity_buildconfiguration.nocode_build_release.id}"
+resource "teamcity_build_trigger_schedule" "schedule_trigger" {
+  build_config_id = "${teamcity_buildconfiguration.triggered_build.id}"
 
   #daily, weekly (cron yet not supported)
   schedule = "daily"

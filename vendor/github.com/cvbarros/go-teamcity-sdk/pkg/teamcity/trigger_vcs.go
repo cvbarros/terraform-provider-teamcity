@@ -3,14 +3,15 @@ package teamcity
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 //TriggerVcs represents a build trigger on VCS changes
 type TriggerVcs struct {
 	triggerJSON  *triggerJSON
 	buildTypeID  string
-	BranchFilter string
-	Rules        string
+	BranchFilter []string
+	Rules        []string
 	Options      *TriggerVcsOptions
 }
 
@@ -45,7 +46,7 @@ func (t *TriggerVcs) SetBuildTypeID(id string) {
 }
 
 // NewTriggerVcs returns a VCS trigger type with the triggerRules specified. triggerRules is required, but branchFilter can be optional if the VCS root uses multiple branches.
-func NewTriggerVcs(triggerRules string, branchFilter string) (*TriggerVcs, error) {
+func NewTriggerVcs(triggerRules []string, branchFilter []string) (*TriggerVcs, error) {
 	opt, err := NewTriggerVcsOptions(QuietPeriodDoNotUse, 0)
 	if err != nil {
 		return nil, err
@@ -55,7 +56,7 @@ func NewTriggerVcs(triggerRules string, branchFilter string) (*TriggerVcs, error
 }
 
 // NewTriggerVcsWithOptions returns a VCS trigger type with TriggerVcsOptions. See also NewTriggerVcs for other parameters.
-func NewTriggerVcsWithOptions(triggerRules string, branchFilter string, opt *TriggerVcsOptions) (*TriggerVcs, error) {
+func NewTriggerVcsWithOptions(triggerRules []string, branchFilter []string, opt *TriggerVcsOptions) (*TriggerVcs, error) {
 	if opt == nil {
 		return nil, fmt.Errorf("opt parameter must be valid TriggerVcsOptions, not nil")
 	}
@@ -77,12 +78,12 @@ func NewTriggerVcsWithOptions(triggerRules string, branchFilter string, opt *Tri
 func (t *TriggerVcs) properties() *Properties {
 	props := t.Options.properties()
 
-	if t.BranchFilter != "" {
-		props.AddOrReplaceValue("branchFilter", t.BranchFilter)
+	if len(t.BranchFilter) > 0 {
+		props.AddOrReplaceValue("branchFilter", strings.Join(t.BranchFilter, "\\n"))
 	}
 
-	if t.Rules != "" {
-		props.AddOrReplaceValue("triggerRules", t.Rules)
+	if len(t.Rules) > 0 {
+		props.AddOrReplaceValue("triggerRules", strings.Join(t.Rules, "\\n"))
 	}
 
 	return props
@@ -117,11 +118,11 @@ func (t *TriggerVcs) UnmarshalJSON(data []byte) error {
 	t.triggerJSON = &aux
 
 	if v, ok := aux.Properties.GetOk("branchFilter"); ok {
-		t.BranchFilter = v
+		t.BranchFilter = strings.Split(v, "\\n")
 	}
 
 	if v, ok := aux.Properties.GetOk("triggerRules"); ok {
-		t.Rules = v
+		t.Rules = strings.Split(v, "\\n")
 	}
 
 	opt, err := aux.Properties.triggerVcsOptions()

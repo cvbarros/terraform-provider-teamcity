@@ -147,6 +147,9 @@ func (p *Properties) Map() map[string]string {
 }
 
 func fillStructFromProperties(data interface{}, p *Properties) {
+	if p == nil {
+		return
+	}
 	t := reflect.TypeOf(data).Elem()
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)

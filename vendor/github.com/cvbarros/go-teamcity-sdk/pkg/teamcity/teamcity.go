@@ -101,6 +101,11 @@ func (c *Client) DependencyService(id string) *DependencyService {
 	return NewDependencyService(id, c.HTTPClient, c.commonBase.New())
 }
 
+//BuildTemplateService returns a service to manage template associations for a build configuration with given id
+func (c *Client) BuildTemplateService(id string) *BuildTemplateService {
+	return NewBuildTemplateService(id, c.HTTPClient, c.commonBase.New())
+}
+
 //TriggerService returns a service to manage build triggers for a build configuration with given id
 func (c *Client) TriggerService(buildTypeID string) *TriggerService {
 	return newTriggerService(buildTypeID, c.HTTPClient, c.commonBase.New())
