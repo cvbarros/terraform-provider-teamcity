@@ -72,7 +72,7 @@ The following arguments are supported:
   
 * `enable_branch_spec_tags`: (Optional) If true, tags can be used in the branch specification.
 
-* `submodule_checkout`: (Optional) If true, submodules will be checkout out along with the main repository. Defaults to `true`.
+* `submodule_checkout`: (Optional) If `checkout`, submodules will be checkout out along with the main repository. Use `ignore` to prevent them from being checked-out. Defaults to `checkout`.
 
 * `username_style`: (Optional) Defines a way TeamCity binds VCS changes to the user. Changing username style will affect only newly collected changes. Old changes will continue to be stored with the style that was active at the time of collecting changes. Allowed values: `userid`, `author_name`, `author_email`, `author_full`.
 

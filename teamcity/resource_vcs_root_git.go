@@ -59,13 +59,14 @@ func resourceVcsRootGit() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
-				Description: "Branch specification for the default branch to pull/push from/to and inspec changes. Ex: refs/head/master",
+				Description: "If true, tags can be used in the branch specification",
 			},
 			"submodule_checkout": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "checkout",
-				Description: "Branch specification for the default branch to pull/push from/to and inspec changes. Ex: refs/head/master",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "checkout",
+				ValidateFunc: validation.StringInSlice([]string{"checkout", "ignore"}, true),
+				Description:  "Defines whether to checkout submodules. Use either 'checkout' or 'ignore'.",
 				StateFunc: func(v interface{}) string {
 					value := v.(string)
 					return strings.ToUpper(value)
@@ -76,7 +77,7 @@ func resourceVcsRootGit() *schema.Resource {
 				Optional:     true,
 				Default:      "userid",
 				ValidateFunc: validation.StringInSlice([]string{"userid", "author_name", "author_email", "author_full"}, true),
-				Description:  "Branch specification for the default branch to pull/push from/to and inspec changes. Ex: refs/head/master",
+				Description:  "Defines a way TeamCity binds VCS changes to the user. Changing username style will affect only newly collected changes. Old changes will continue to be stored with the style that was active at the time of collecting changes. Allowed values: 'userid', 'author_name', 'author_email', 'author_full'",
 			},
 			"auth": {
 				Type:        schema.TypeSet,
