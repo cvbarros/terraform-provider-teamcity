@@ -50,13 +50,19 @@ func resourceProject() *schema.Resource {
 
 func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
-	var name string
+	var name, parent_id string
 
 	if v, ok := d.GetOk("name"); ok {
 		name = v.(string)
 	}
 
-	newProj, err := api.NewProject(name, "", "")
+	if v, ok := d.GetOk("parent_id"); ok {
+		if v != "" {
+			parent_id = v.(string)
+		}
+	}
+
+	newProj, err := api.NewProject(name, "", parent_id)
 	if err != nil {
 		return err
 	}
@@ -79,11 +85,6 @@ func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if v, ok := d.GetOk("description"); ok {
 		dt.Description = v.(string)
-	}
-	if v, ok := d.GetOk("parent_id"); ok {
-		if v != "" {
-			dt.SetParentProject(v.(string))
-		}
 	}
 	dt.Parameters, err = expandParameterCollection(d)
 	if err != nil {

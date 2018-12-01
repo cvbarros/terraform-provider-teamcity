@@ -31,6 +31,25 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 	})
 }
 
+func TestAccBuildConfig_NestedProject(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_config"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigurationIdWithParent,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "id", "Parent_Child_BuildConfig"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccBuildConfig_UpdateBasic(t *testing.T) {
 	var bc api.BuildType
 	resName := "teamcity_build_config.build_configuration_test"
@@ -728,5 +747,21 @@ resource "teamcity_build_config" "build_configuration_test" {
 		file = "./build.sh"
 		args = "default_target --verbose"
 	}
+}
+`
+
+const TestAccBuildConfigurationIdWithParent = `
+resource "teamcity_project" "parent" {
+	name = "parent"
+}
+
+resource "teamcity_project" "child" {
+	name = "child"
+	parent_id = "${teamcity_project.parent.id}"
+}
+
+resource teamcity_build_config "build_config" {
+	name = "build config"
+	project_id = "${teamcity_project.child.id}"
 }
 `
