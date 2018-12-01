@@ -72,6 +72,7 @@ func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	d.MarkNewResource()
 	d.SetId(created.ID)
 
 	return resourceProjectUpdate(d, client)
@@ -83,9 +84,17 @@ func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	if v, ok := d.GetOk("description"); ok {
 		dt.Description = v.(string)
 	}
+
+	if v, ok := d.GetOk("parent_id"); ok {
+		if v != "" {
+			dt.SetParentProject(v.(string))
+		}
+	}
+
 	dt.Parameters, err = expandParameterCollection(d)
 	if err != nil {
 		return err
