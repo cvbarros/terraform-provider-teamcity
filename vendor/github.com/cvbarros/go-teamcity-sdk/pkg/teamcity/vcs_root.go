@@ -18,6 +18,19 @@ type VcsRoot interface {
 	//In addition, this can be used to type assert to the appropriate concrete VCS Root type.
 	VcsName() string
 
+	//Name returns the name of VCS Root.
+	Name() string
+
+	//SetName changes the name of VCSRoot.
+	SetName(name string)
+
+	//ModificationCheckInterval returns how often TeamCity polls the VCS repository for VCS changes, in seconds. Returns an *int32 pointer as this is an optional settings.
+	//If the return is nil, means that the VCS Root follows the global server setting.
+	ModificationCheckInterval() *int32
+
+	//SetModificationCheckInterval specifies how often TeamCity polls the VCS repository for VCS changes, in seconds.
+	SetModificationCheckInterval(seconds int32)
+
 	//Properties returns the Properties collection for this VCS Root. This should be used for querying only.
 	Properties() *Properties
 }
@@ -89,6 +102,47 @@ func (s *VcsRootService) Create(projectID string, vcsRoot VcsRoot) (*VcsRootRefe
 	}
 
 	return &created, nil
+}
+
+//Update changes the resource in-place for a VCS Root.
+//TeamCity API does not support "PUT" on the whole VCS Root resource. Updateable fields are "name", "project" and "modificationCheckInterval".
+//This method also updates Settings and Parameters, but this is not an atomic operation. If an error occurs, it will be returned to caller what was updated or not.
+func (s *VcsRootService) Update(vcsRoot VcsRoot) (VcsRoot, error) {
+	var props Properties
+
+	//Do a diff change update. Since properties can only be modified individually, check for changes before sending requests.
+	dt, err := s.GetByID(vcsRoot.GetID())
+	if err != nil {
+		return nil, fmt.Errorf("could not refresh VcsRoot for diff prior to update: %s", err)
+	}
+
+	err = s.restHelper.put(fmt.Sprintf("%s/properties", dt.GetID()), vcsRoot.Properties(), &props, "VcsRoot")
+	if err != nil {
+		return nil, err
+	}
+
+	if dt.Name() != vcsRoot.Name() {
+		_, err = s.restHelper.putTextPlain(fmt.Sprintf("%s/name", vcsRoot.GetID()), vcsRoot.Name(), "VcsRoot name field")
+		if err != nil {
+			return nil, fmt.Errorf("error when updating 'name' field for VcsRoot. Resource may be in partial update state. %s", err)
+		}
+	}
+
+	if dt.ModificationCheckInterval() != vcsRoot.ModificationCheckInterval() && vcsRoot.ModificationCheckInterval() != nil {
+		v := vcsRoot.ModificationCheckInterval()
+		_, err = s.restHelper.putTextPlain(fmt.Sprintf("%s/modificationCheckInterval", vcsRoot.GetID()), fmt.Sprintf("%d", *v), "VcsRoot modificationCheckInterval field")
+		if err != nil {
+			return nil, fmt.Errorf("error when updating 'modificationCheckInterval' field for VcsRoot. Resource may be in partial update state. %s", err)
+		}
+	}
+
+	//Refresh after update
+	updated, err := s.GetByID(vcsRoot.GetID())
+	if err != nil {
+		return nil, err
+	}
+
+	return updated, nil
 }
 
 // GetByID Retrieves a vcs root by id using the id: locator

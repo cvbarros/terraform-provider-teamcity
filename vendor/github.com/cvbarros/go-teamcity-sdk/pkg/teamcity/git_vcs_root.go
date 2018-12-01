@@ -13,17 +13,13 @@ type GitVcsRoot struct {
 	// id
 	ID string `json:"id,omitempty" xml:"id"`
 
-	// ModificationCheckInterval value in seconds to override the global server setting.
-	ModificationCheckInterval int32 `json:"modificationCheckInterval,omitempty" xml:"modificationCheckInterval"`
-
-	// name
-	Name string `json:"name,omitempty" xml:"name"`
-
 	// project
 	Project *ProjectReference `json:"project,omitempty"`
 
-	vcsRootJSON *vcsRootJSON
-	properties  *Properties
+	modificationCheckInterval *int32
+	name                      string
+	vcsRootJSON               *vcsRootJSON
+	properties                *Properties
 }
 
 //NewGitVcsRoot returns a VCS Root instance that connects to Git VCS.
@@ -38,11 +34,19 @@ func NewGitVcsRoot(projectID string, name string, opts *GitVcsRootOptions) (*Git
 		return nil, errors.New("opts is required")
 	}
 	return &GitVcsRoot{
-		Name: name,
+		name: name,
 		Project: &ProjectReference{
 			ID: projectID,
 		},
 		Options: opts,
+		vcsRootJSON: &vcsRootJSON{
+			Project: &ProjectReference{
+				ID: projectID,
+			},
+			Name:       name,
+			VcsName:    VcsNames.Git,
+			Properties: opts.properties(),
+		},
 	}, nil
 }
 
@@ -56,20 +60,43 @@ func (d *GitVcsRoot) VcsName() string {
 	return VcsNames.Git
 }
 
+//Name returns the name of VCS Root.
+func (d *GitVcsRoot) Name() string {
+	return d.name
+}
+
+//SetName changes the name of VCS Root.
+func (d *GitVcsRoot) SetName(name string) {
+	d.name = name
+}
+
+//ModificationCheckInterval returns how often TeamCity polls the VCS repository for VCS changes (in seconds).
+func (d *GitVcsRoot) ModificationCheckInterval() *int32 {
+	return d.modificationCheckInterval
+}
+
+//SetModificationCheckInterval specifies how often TeamCity polls the VCS repository for VCS changes (in seconds).
+func (d *GitVcsRoot) SetModificationCheckInterval(seconds int32) {
+	d.modificationCheckInterval = &seconds
+}
+
 //Properties returns the properties for this VCS Root
 func (d *GitVcsRoot) Properties() *Properties {
-	return d.properties
+	return d.Options.properties()
 }
 
 //MarshalJSON implements JSON serialization for GitVcsRoot
 func (d *GitVcsRoot) MarshalJSON() ([]byte, error) {
 	out := &vcsRootJSON{
-		ID:   d.ID,
-		Name: d.Name,
-		ModificationCheckInterval: d.ModificationCheckInterval,
-		Project:                   d.Project,
-		VcsName:                   d.VcsName(),
-		Properties:                d.Options.properties(),
+		ID:         d.ID,
+		Name:       d.name,
+		Project:    d.Project,
+		VcsName:    d.VcsName(),
+		Properties: d.Options.properties(),
+	}
+
+	if d.modificationCheckInterval != nil {
+		out.ModificationCheckInterval = *d.modificationCheckInterval
 	}
 
 	return json.Marshal(out)
@@ -85,9 +112,12 @@ func (d *GitVcsRoot) UnmarshalJSON(data []byte) error {
 	if aux.VcsName != VcsNames.Git {
 		return fmt.Errorf("invalid VcsName %s trying to deserialize into GitVcsRoot entity", aux.VcsName)
 	}
-	d.Name = aux.Name
+
+	d.name = aux.Name
 	d.Project = aux.Project
-	d.ModificationCheckInterval = aux.ModificationCheckInterval
+	if aux.ModificationCheckInterval != 0 {
+		d.modificationCheckInterval = NewInt32(aux.ModificationCheckInterval)
+	}
 	d.ID = aux.ID
 	d.properties = NewProperties(aux.Properties.Items...)
 	d.Options = d.properties.gitVcsOptions()
