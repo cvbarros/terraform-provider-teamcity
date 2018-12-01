@@ -12,15 +12,16 @@ import (
 
 // Project is the model for project entities in TeamCity
 type Project struct {
-	Archived        *bool             `json:"archived,omitempty" xml:"archived"`
-	Description     string            `json:"description,omitempty" xml:"description"`
-	Href            string            `json:"href,omitempty" xml:"href"`
-	ID              string            `json:"id,omitempty" xml:"id"`
-	Name            string            `json:"name,omitempty" xml:"name"`
-	Parameters      *Parameters       `json:"parameters,omitempty"`
-	ParentProject   *ProjectReference `json:"parentProject,omitempty"`
-	ParentProjectID string            `json:"parentProjectId,omitempty" xml:"parentProjectId"`
-	WebURL          string            `json:"webUrl,omitempty" xml:"webUrl"`
+	Archived        *bool               `json:"archived,omitempty" xml:"archived"`
+	Description     string              `json:"description,omitempty" xml:"description"`
+	Href            string              `json:"href,omitempty" xml:"href"`
+	ID              string              `json:"id,omitempty" xml:"id"`
+	Name            string              `json:"name,omitempty" xml:"name"`
+	Parameters      *Parameters         `json:"parameters,omitempty"`
+	ParentProject   *ProjectReference   `json:"parentProject,omitempty"`
+	ParentProjectID string              `json:"parentProjectId,omitempty" xml:"parentProjectId"`
+	WebURL          string              `json:"webUrl,omitempty" xml:"webUrl"`
+	BuildTypes      BuildTypeReferences `json:"buildTypes,omitempty" xml:"buildTypes"`
 }
 
 // ProjectReference contains basic information, usually enough to use as a type for relationships.
@@ -123,7 +124,7 @@ func (s *ProjectService) GetByID(id string) (*Project, error) {
 	return &out, err
 }
 
-//GetByName returns a project by it's name. There are no duplicate names in projects for TeamCity
+//GetByName returns a project by its name. There are no duplicate names in projects for TeamCity
 func (s *ProjectService) GetByName(name string) (*Project, error) {
 	var out Project
 

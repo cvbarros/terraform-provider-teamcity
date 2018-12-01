@@ -33,6 +33,12 @@ func resourceVcsRootGit() *schema.Resource {
 				Required:    true,
 				Description: "The ID for the parent project for this VCS Root. Required.",
 			},
+			"modification_check_interval": {
+				Type:         schema.TypeInt,
+				ValidateFunc: validation.IntAtLeast(1),
+				Optional:     true,
+				Description:  "Specifies how often TeamCity polls the VCS repository for VCS changes (in seconds)",
+			},
 			"fetch_url": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -59,13 +65,14 @@ func resourceVcsRootGit() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
-				Description: "Branch specification for the default branch to pull/push from/to and inspec changes. Ex: refs/head/master",
+				Description: "If true, tags can be used in the branch specification",
 			},
 			"submodule_checkout": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "checkout",
-				Description: "Branch specification for the default branch to pull/push from/to and inspec changes. Ex: refs/head/master",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "checkout",
+				ValidateFunc: validation.StringInSlice([]string{"checkout", "ignore"}, true),
+				Description:  "Defines whether to checkout submodules. Use either 'checkout' or 'ignore'.",
 				StateFunc: func(v interface{}) string {
 					value := v.(string)
 					return strings.ToUpper(value)
@@ -76,7 +83,7 @@ func resourceVcsRootGit() *schema.Resource {
 				Optional:     true,
 				Default:      "userid",
 				ValidateFunc: validation.StringInSlice([]string{"userid", "author_name", "author_email", "author_full"}, true),
-				Description:  "Branch specification for the default branch to pull/push from/to and inspec changes. Ex: refs/head/master",
+				Description:  "Defines a way TeamCity binds VCS changes to the user. Changing username style will affect only newly collected changes. Old changes will continue to be stored with the style that was active at the time of collecting changes. Allowed values: 'userid', 'author_name', 'author_email', 'author_full'",
 			},
 			"auth": {
 				Type:        schema.TypeSet,
@@ -176,9 +183,16 @@ var expandCleanFilesPolicyMap = map[string]string{
 var flattenCleanFilesPolicyMap = reverseMap(expandCleanFilesPolicyMap)
 
 func resourceVcsRootGitCreate(d *schema.ResourceData, meta interface{}) error {
+	d.MarkNewResource()
+	return resourceVcsRootGitUpdate(d, meta)
+}
+
+func resourceVcsRootGitUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	projectID := d.Get("project_id").(string)
 	var gitVcs *api.GitVcsRoot
+	var name string
+	var modificationCheckInterval int
 
 	vcsOpts, err := expandGitVcsRootOptions(d)
 
@@ -186,6 +200,9 @@ func resourceVcsRootGitCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	if v, ok := d.GetOk("name"); ok {
+		name = v.(string)
+	}
 	if v, ok := d.GetOk("username_style"); ok {
 		vcsOpts.UsernameStyle = api.GitVcsUsernameStyle(expandUsernameStyleMap[v.(string)])
 	}
@@ -194,17 +211,82 @@ func resourceVcsRootGitCreate(d *schema.ResourceData, meta interface{}) error {
 		vcsOpts.EnableTagsInBranchSpec = v.(bool)
 	}
 
-	if gitVcs, err = api.NewGitVcsRoot(projectID, d.Get("name").(string), vcsOpts); err != nil {
-		return err
+	if v, ok := d.GetOk("modification_check_interval"); ok {
+		modificationCheckInterval = v.(int)
 	}
 
-	created, err := client.VcsRoots.Create(projectID, gitVcs)
+	if d.IsNewResource() {
+		log.Printf("[INFO] detected new VCS Root resource, creating.")
+		if gitVcs, err = api.NewGitVcsRoot(projectID, name, vcsOpts); err != nil {
+			return err
+		}
+		if modificationCheckInterval > 0 {
+			gitVcs.SetModificationCheckInterval(int32(modificationCheckInterval))
+		}
+		created, err := client.VcsRoots.Create(projectID, gitVcs)
+		if err != nil {
+			return err
+		}
+		d.SetId(created.ID)
+
+		return resourceVcsRootGitRead(d, meta)
+	}
+	log.Printf("[INFO] Updating VCS Root resource.")
+	vcs, err := client.VcsRoots.GetByID(d.Id())
 	if err != nil {
 		return err
 	}
 
-	d.MarkNewResource()
-	d.SetId(created.ID)
+	gitVcs = vcs.(*api.GitVcsRoot)
+	if d.HasChange("name") {
+		gitVcs.SetName(name)
+	}
+	if d.HasChange("project_id") {
+		gitVcs.SetProjectID(projectID)
+	}
+	if d.HasChange("modification_check_interval") {
+		gitVcs.SetModificationCheckInterval(int32(modificationCheckInterval))
+	}
+	if d.HasChange("auth") {
+		gitVcs.Options.AuthMethod = vcsOpts.AuthMethod
+		gitVcs.Options.Password = vcsOpts.Password
+		gitVcs.Options.PrivateKeySource = vcsOpts.PrivateKeySource
+		gitVcs.Options.Username = vcsOpts.Username
+	}
+
+	if d.HasChange("agent") {
+		gitVcs.Options.AgentSettings = vcsOpts.AgentSettings
+	}
+
+	if d.HasChange("username_style") {
+		gitVcs.Options.UsernameStyle = vcsOpts.UsernameStyle
+	}
+
+	if d.HasChange("enable_branch_spec_tags") {
+		gitVcs.Options.EnableTagsInBranchSpec = vcsOpts.EnableTagsInBranchSpec
+	}
+
+	if d.HasChange("push_url") {
+		gitVcs.Options.PushURL = vcsOpts.PushURL
+	}
+	if d.HasChange("fetch_url") {
+		gitVcs.Options.FetchURL = vcsOpts.FetchURL
+	}
+	if d.HasChange("branches") {
+		gitVcs.Options.BranchSpec = vcsOpts.BranchSpec
+	}
+	if d.HasChange("default_branch") {
+		gitVcs.Options.DefaultBranch = vcsOpts.DefaultBranch
+	}
+	if d.HasChange("submodule_checkout") {
+		gitVcs.Options.SubModuleCheckout = vcsOpts.SubModuleCheckout
+	}
+
+	_, err = client.VcsRoots.Update(gitVcs)
+	if err != nil {
+		return err
+	}
+
 	return resourceVcsRootGitRead(d, meta)
 }
 
@@ -226,8 +308,15 @@ func resourceVcsRootGitRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if err := d.Set("name", dt.Name); err != nil {
+	if err := d.Set("name", dt.Name()); err != nil {
 		return err
+	}
+
+	if dt.ModificationCheckInterval() != nil {
+		v := *(dt.ModificationCheckInterval())
+		if err := d.Set("modification_check_interval", int(v)); err != nil {
+			return err
+		}
 	}
 
 	if err := d.Set("fetch_url", dt.Options.FetchURL); err != nil {
@@ -277,12 +366,14 @@ func resourceVcsRootGitRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+func resourceVcsRootGitDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*api.Client)
+	return client.VcsRoots.Delete(d.Id())
+}
+
 func expandGitVcsRootOptions(d *schema.ResourceData) (*api.GitVcsRootOptions, error) {
-	authType, err := getGitAuthType(d)
-	var username, password, fetchURL, pushURL string
-	if err != nil {
-		return nil, err
-	}
+	var username, password, fetchURL, pushURL, privateKeySource string
+	var opt *api.GitVcsRootOptions
 
 	if v, ok := d.GetOk("push_url"); ok {
 		pushURL = v.(string)
@@ -292,24 +383,27 @@ func expandGitVcsRootOptions(d *schema.ResourceData) (*api.GitVcsRootOptions, er
 		fetchURL = v.(string)
 	}
 
+	authType, err := getGitAuthType(d)
+	if err != nil {
+		return nil, err
+	}
+
 	_, authSpecified := d.GetOkExists("auth")
-	if !authSpecified {
-		opt, err := api.NewGitVcsRootOptions(d.Get("default_branch").(string), fetchURL, pushURL, authType, username, password)
-		if err != nil {
-			return nil, err
+	if authSpecified {
+		// Only 1 max permitted
+		auth := d.Get("auth").(*schema.Set).List()[0].(map[string]interface{})
+
+		if authType != api.GitAuthMethodAnonymous {
+			password = auth["username"].(string)
 		}
-		return opt, nil
-	}
 
-	// Only 1 max permitted
-	auth := d.Get("auth").(*schema.Set).List()[0].(map[string]interface{})
+		if authType == api.GitAuthSSHUploadedKey || authType == api.GitAuthSSHCustomKey || authType == api.GitAuthMethodPassword {
+			username = auth["password"].(string)
+		}
 
-	if authType != api.GitAuthMethodAnonymous {
-		username = auth["username"].(string)
-	}
-
-	if authType == api.GitAuthSSHUploadedKey || authType == api.GitAuthSSHCustomKey || authType == api.GitAuthMethodPassword {
-		password = auth["password"].(string)
+		if v, ok := auth["key_spec"]; ok {
+			privateKeySource = v.(string)
+		}
 	}
 
 	agent, err := expandGitVcsAgentSettings(d)
@@ -317,17 +411,22 @@ func expandGitVcsRootOptions(d *schema.ResourceData) (*api.GitVcsRootOptions, er
 		return nil, err
 	}
 
-	opt, err := api.NewGitVcsRootOptionsWithAgentSettings(d.Get("default_branch").(string), fetchURL, pushURL, authType, username, password, agent)
+	opt, err = api.NewGitVcsRootOptionsWithAgentSettings(d.Get("default_branch").(string), fetchURL, pushURL, authType, username, password, agent)
 	if err != nil {
 		return nil, err
-	}
-	if v, ok := auth["key_spec"]; ok {
-		opt.PrivateKeySource = v.(string)
 	}
 
 	if v, ok := d.GetOk("branches"); ok {
 		opt.BranchSpec = expandStringSlice(v.([]interface{}))
 	}
+
+	if v, ok := d.GetOk("submodule_checkout"); ok {
+		opt.SubModuleCheckout = strings.ToUpper(v.(string))
+	}
+	if privateKeySource != "" {
+		opt.PrivateKeySource = privateKeySource
+	}
+
 	return opt, nil
 }
 
@@ -420,15 +519,6 @@ func flattenGitVcsRootAuth(d *schema.ResourceData, dt *api.GitVcsRootOptions) ([
 
 	optsToSave = append(optsToSave, m)
 	return optsToSave, nil
-}
-
-func resourceVcsRootGitUpdate(d *schema.ResourceData, meta interface{}) error {
-	return nil
-}
-
-func resourceVcsRootGitDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*api.Client)
-	return client.VcsRoots.Delete(d.Id())
 }
 
 func getGitAuthType(d *schema.ResourceData) (api.GitAuthMethod, error) {

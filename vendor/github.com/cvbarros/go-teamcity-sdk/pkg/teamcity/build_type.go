@@ -169,6 +169,15 @@ type BuildTypeReference struct {
 	ProjectID string `json:"projectId,omitempty" xml:"projectId"`
 }
 
+// BuildTypeReferences represents a collection of *BuildTypeReference
+type BuildTypeReferences struct {
+	// count
+	Count int32 `json:"count,omitempty" xml:"count"`
+
+	// buildType
+	Items []*BuildTypeReference `json:"buildType"`
+}
+
 // Reference converts a BuildType entity to a BuildType reference
 func (b *BuildType) Reference() *BuildTypeReference {
 	return &BuildTypeReference{
