@@ -33,6 +33,12 @@ func resourceVcsRootGit() *schema.Resource {
 				Required:    true,
 				Description: "The ID for the parent project for this VCS Root. Required.",
 			},
+			"modification_check_interval": {
+				Type:         schema.TypeInt,
+				ValidateFunc: validation.IntAtLeast(1),
+				Optional:     true,
+				Description:  "Specifies how often TeamCity polls the VCS repository for VCS changes (in seconds)",
+			},
 			"fetch_url": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -186,6 +192,7 @@ func resourceVcsRootGitUpdate(d *schema.ResourceData, meta interface{}) error {
 	projectID := d.Get("project_id").(string)
 	var gitVcs *api.GitVcsRoot
 	var name string
+	var modificationCheckInterval int
 
 	vcsOpts, err := expandGitVcsRootOptions(d)
 
@@ -204,10 +211,17 @@ func resourceVcsRootGitUpdate(d *schema.ResourceData, meta interface{}) error {
 		vcsOpts.EnableTagsInBranchSpec = v.(bool)
 	}
 
+	if v, ok := d.GetOk("modification_check_interval"); ok {
+		modificationCheckInterval = v.(int)
+	}
+
 	if d.IsNewResource() {
 		log.Printf("[INFO] detected new VCS Root resource, creating.")
 		if gitVcs, err = api.NewGitVcsRoot(projectID, name, vcsOpts); err != nil {
 			return err
+		}
+		if modificationCheckInterval > 0 {
+			gitVcs.SetModificationCheckInterval(int32(modificationCheckInterval))
 		}
 		created, err := client.VcsRoots.Create(projectID, gitVcs)
 		if err != nil {
@@ -229,6 +243,9 @@ func resourceVcsRootGitUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if d.HasChange("project_id") {
 		gitVcs.SetProjectID(projectID)
+	}
+	if d.HasChange("modification_check_interval") {
+		gitVcs.SetModificationCheckInterval(int32(modificationCheckInterval))
 	}
 	if d.HasChange("auth") {
 		gitVcs.Options.AuthMethod = vcsOpts.AuthMethod
@@ -293,6 +310,13 @@ func resourceVcsRootGitRead(d *schema.ResourceData, meta interface{}) error {
 
 	if err := d.Set("name", dt.Name()); err != nil {
 		return err
+	}
+
+	if dt.ModificationCheckInterval() != nil {
+		v := *(dt.ModificationCheckInterval())
+		if err := d.Set("modification_check_interval", int(v)); err != nil {
+			return err
+		}
 	}
 
 	if err := d.Set("fetch_url", dt.Options.FetchURL); err != nil {

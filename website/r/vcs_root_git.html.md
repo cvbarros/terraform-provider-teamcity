@@ -62,6 +62,8 @@ The following arguments are supported:
 
 * `project_id`: (Required) ID of the project under which this VCS Root will be created. Use `_Root` to create a top-level VCS Root.
 
+* `modification_check_interval`: (Optional) Specifies how often TeamCity polls the VCS repository for VCS changes (in seconds). If not specified, the interval will be the global server settings. In that case, that information is not saved to the terraform state.
+
 * `fetch_url`: (Required) URL used to pull source code for this VCS. For HTTP, prefix with http(s)://. For SSH, use user@server.com.
 
 * `push_url`: (Optional) URL used to push source code for this VCS. Assumes the same as `fetch_url`if not specified.

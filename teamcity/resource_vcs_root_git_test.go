@@ -32,6 +32,7 @@ func TestAccVcsRootGit_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "enable_branch_spec_tags", "true"),
 					resource.TestCheckResourceAttr(resName, "submodule_checkout", "CHECKOUT"),
 					resource.TestCheckResourceAttr(resName, "username_style", "userid"),
+					resource.TestCheckResourceAttr(resName, "modification_check_interval", "60"),
 				),
 			},
 		},
@@ -60,6 +61,7 @@ func TestAccVcsRootGit_UpdateBasic(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "enable_branch_spec_tags", "true"),
 					resource.TestCheckResourceAttr(resName, "submodule_checkout", "CHECKOUT"),
 					resource.TestCheckResourceAttr(resName, "username_style", "userid"),
+					resource.TestCheckResourceAttr(resName, "modification_check_interval", "60"),
 				),
 			},
 			resource.TestStep{
@@ -75,6 +77,7 @@ func TestAccVcsRootGit_UpdateBasic(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "enable_branch_spec_tags", "false"),
 					resource.TestCheckResourceAttr(resName, "submodule_checkout", "IGNORE"),
 					resource.TestCheckResourceAttr(resName, "username_style", "author_name"),
+					resource.TestCheckResourceAttr(resName, "modification_check_interval", "180"),
 				),
 			},
 		},
@@ -243,6 +246,7 @@ resource "teamcity_vcs_root_git" "git_test" {
 	username_style = "userid"
 	submodule_checkout = "checkout"
 	enable_branch_spec_tags = true
+	modification_check_interval = 60
 }
 `
 
@@ -266,6 +270,7 @@ resource "teamcity_vcs_root_git" "git_test" {
 	username_style = "author_name"
 	submodule_checkout = "ignore"
 	enable_branch_spec_tags = false
+	modification_check_interval = 180
 }
 `
 
