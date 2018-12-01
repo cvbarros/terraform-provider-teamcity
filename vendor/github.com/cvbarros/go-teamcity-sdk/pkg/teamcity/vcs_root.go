@@ -31,6 +31,12 @@ type VcsRoot interface {
 	//SetModificationCheckInterval specifies how often TeamCity polls the VCS repository for VCS changes, in seconds.
 	SetModificationCheckInterval(seconds int32)
 
+	//ProjectID returns the projectID where this VCS Root is defined
+	ProjectID() string
+
+	//SetProjectID specifies the project for this VCS Root. When moving VCS Roots between projects, it must not be in use by any other build configurations or sub-projects.
+	SetProjectID(id string)
+
 	//Properties returns the Properties collection for this VCS Root. This should be used for querying only.
 	Properties() *Properties
 }
@@ -125,6 +131,13 @@ func (s *VcsRootService) Update(vcsRoot VcsRoot) (VcsRoot, error) {
 		_, err = s.restHelper.putTextPlain(fmt.Sprintf("%s/name", vcsRoot.GetID()), vcsRoot.Name(), "VcsRoot name field")
 		if err != nil {
 			return nil, fmt.Errorf("error when updating 'name' field for VcsRoot. Resource may be in partial update state. %s", err)
+		}
+	}
+
+	if dt.ProjectID() != vcsRoot.ProjectID() {
+		_, err = s.restHelper.putTextPlain(fmt.Sprintf("%s/projectId", vcsRoot.GetID()), vcsRoot.ProjectID(), "VcsRoot projectId field")
+		if err != nil {
+			return nil, fmt.Errorf("error when updating 'projectId' field for VcsRoot. Resource may be in partial update state. %s", err)
 		}
 	}
 

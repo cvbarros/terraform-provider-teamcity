@@ -23,7 +23,7 @@ func TestAccVcsRootGit_Basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVcsRootGitExists(resName, &vcs),
 					resource.TestCheckResourceAttr(resName, "name", "application"),
-					resource.TestCheckResourceAttr(resName, "fetch_url", "https://github.com/kelseyhightower/nocode"),
+					resource.TestCheckResourceAttr(resName, "fetch_url", "https://github.com/cvbarros/terraform-provider-teamcity"),
 					resource.TestCheckResourceAttr(resName, "default_branch", "refs/head/master"),
 					resource.TestCheckResourceAttr(resName, "branches.#", "2"),
 					resource.TestCheckResourceAttr(resName, "branches.0", "+:refs/(pull/*)/head"),
@@ -32,6 +32,49 @@ func TestAccVcsRootGit_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "enable_branch_spec_tags", "true"),
 					resource.TestCheckResourceAttr(resName, "submodule_checkout", "CHECKOUT"),
 					resource.TestCheckResourceAttr(resName, "username_style", "userid"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccVcsRootGit_UpdateBasic(t *testing.T) {
+	var vcs api.GitVcsRoot
+	resName := "teamcity_vcs_root_git.git_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckVcsRootGitDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccVcsRootGitBasic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVcsRootGitExists(resName, &vcs),
+					resource.TestCheckResourceAttr(resName, "name", "application"),
+					resource.TestCheckResourceAttr(resName, "fetch_url", "https://github.com/cvbarros/terraform-provider-teamcity"),
+					resource.TestCheckResourceAttr(resName, "default_branch", "refs/head/master"),
+					resource.TestCheckResourceAttr(resName, "branches.#", "2"),
+					resource.TestCheckResourceAttr(resName, "branches.0", "+:refs/(pull/*)/head"),
+					resource.TestCheckResourceAttr(resName, "branches.1", "+:refs/heads/develop"),
+					resource.TestCheckResourceAttr(resName, "project_id", "VcsRootProject"),
+					resource.TestCheckResourceAttr(resName, "enable_branch_spec_tags", "true"),
+					resource.TestCheckResourceAttr(resName, "submodule_checkout", "CHECKOUT"),
+					resource.TestCheckResourceAttr(resName, "username_style", "userid"),
+				),
+			},
+			resource.TestStep{
+				Config: testAccVcsRootGitUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVcsRootGitExists(resName, &vcs),
+					resource.TestCheckResourceAttr(resName, "name", "application_updated"),
+					resource.TestCheckResourceAttr(resName, "fetch_url", "https://github.com/cvbarros/go-teamcity-sdk"),
+					resource.TestCheckResourceAttr(resName, "default_branch", "refs/head/develop"),
+					resource.TestCheckResourceAttr(resName, "branches.#", "1"),
+					resource.TestCheckResourceAttr(resName, "branches.0", "+:refs/heads/master"),
+					resource.TestCheckResourceAttr(resName, "project_id", "VcsRootProjectNew"),
+					resource.TestCheckResourceAttr(resName, "enable_branch_spec_tags", "false"),
+					resource.TestCheckResourceAttr(resName, "submodule_checkout", "IGNORE"),
+					resource.TestCheckResourceAttr(resName, "username_style", "author_name"),
 				),
 			},
 		},
@@ -191,7 +234,7 @@ resource "teamcity_project" "vcs_root_project" {
 resource "teamcity_vcs_root_git" "git_test" {
 	name = "application"
 	project_id = "${teamcity_project.vcs_root_project.id}"
-	fetch_url = "https://github.com/kelseyhightower/nocode"
+	fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
 	default_branch = "refs/head/master"
 	branches = [
     "+:refs/(pull/*)/head",
@@ -200,6 +243,29 @@ resource "teamcity_vcs_root_git" "git_test" {
 	username_style = "userid"
 	submodule_checkout = "checkout"
 	enable_branch_spec_tags = true
+}
+`
+
+const testAccVcsRootGitUpdated = `
+resource "teamcity_project" "vcs_root_project" {
+  name = "vcs_root_project"
+}
+
+resource "teamcity_project" "vcs_root_project_new" {
+	name = "vcs_root_project_new"
+  }
+
+resource "teamcity_vcs_root_git" "git_test" {
+	name = "application_updated"
+	project_id = "${teamcity_project.vcs_root_project_new.id}"
+	fetch_url = "https://github.com/cvbarros/go-teamcity-sdk"
+	default_branch = "refs/head/develop"
+	branches = [
+    	"+:refs/heads/master",
+  	]
+	username_style = "author_name"
+	submodule_checkout = "ignore"
+	enable_branch_spec_tags = false
 }
 `
 

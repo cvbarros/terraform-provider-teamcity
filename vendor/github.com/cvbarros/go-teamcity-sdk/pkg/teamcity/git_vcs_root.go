@@ -80,6 +80,16 @@ func (d *GitVcsRoot) SetModificationCheckInterval(seconds int32) {
 	d.modificationCheckInterval = &seconds
 }
 
+//ProjectID returns the projectID where this VCS Root is defined
+func (d *GitVcsRoot) ProjectID() string {
+	return d.Project.ID
+}
+
+//SetProjectID specifies the project for this VCS Root. When moving VCS Roots between projects, it must not be in use by any other build configurations or sub-projects.
+func (d *GitVcsRoot) SetProjectID(id string) {
+	d.Project.ID = id
+}
+
 //Properties returns the properties for this VCS Root
 func (d *GitVcsRoot) Properties() *Properties {
 	return d.Options.properties()
