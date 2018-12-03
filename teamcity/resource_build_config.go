@@ -3,6 +3,8 @@ package teamcity
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"reflect"
 	"strings"
 
 	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
@@ -19,6 +21,46 @@ func resourceBuildConfig() *schema.Resource {
 		Delete: resourceBuildConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+
+		CustomizeDiff: func(diff *schema.ResourceDiff, v interface{}) error {
+			if diff.HasChange("settings") {
+				o, n := diff.GetChange("settings")
+
+				os := o.(*schema.Set)
+				ns := n.(*schema.Set)
+				if os.Len() == 0 || ns.Len() == 0 {
+					return nil
+				}
+				osi, err := expandBuildConfigOptionsRaw(os)
+				if err != nil {
+					return err
+				}
+				nsi, err := expandBuildConfigOptionsRaw(ns)
+				if err != nil {
+					return err
+				}
+
+				if buildCounterChange(osi, nsi) {
+					var setComputed bool
+
+					// If the configuration doesn't specify the build counter, set the value from READ and mark settings as computed
+					if nsi.BuildCounter == 0 {
+						log.Printf("[INFO] Build counter not defined in config. Setting it to computed: %v after reading.", osi.BuildCounter)
+						nsi.BuildCounter = osi.BuildCounter
+						setComputed = true
+					} else if osi.BuildCounter > nsi.BuildCounter {
+						log.Printf("[INFO] Build counter computed is higher, adjusting state. Old: %v, New: %v.", osi.BuildCounter, nsi.BuildCounter)
+						nsi.BuildCounter = osi.BuildCounter
+						setComputed = true
+					}
+					if setComputed {
+						computed := flattenBuildConfigOptionsRaw(nsi)
+						diff.SetNew("settings", []map[string]interface{}{computed})
+					}
+				}
+			}
+			return nil
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -156,6 +198,17 @@ func resourceBuildConfig() *schema.Resource {
 			},
 		},
 	}
+}
+
+func buildCounterChange(o *api.BuildTypeOptions, n *api.BuildTypeOptions) bool {
+	return o.AllowPersonalBuildTriggering == n.AllowPersonalBuildTriggering &&
+		reflect.DeepEqual(o.ArtifactRules, n.ArtifactRules) &&
+		o.BuildConfigurationType == n.BuildConfigurationType &&
+		o.BuildNumberFormat == n.BuildNumberFormat &&
+		o.EnableHangingBuildsDetection == n.EnableHangingBuildsDetection &&
+		o.EnableStatusWidget == n.EnableStatusWidget &&
+		o.MaxSimultaneousBuilds == n.MaxSimultaneousBuilds &&
+		o.BuildCounter != n.BuildCounter
 }
 
 func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
@@ -466,7 +519,12 @@ func expandBuildConfigOptions(d *schema.ResourceData) (*api.BuildTypeOptions, er
 	if !ok {
 		return nil, nil
 	}
-	raw := v.(*schema.Set).List()[0].(map[string]interface{})
+
+	return expandBuildConfigOptionsRaw(v.(*schema.Set))
+}
+
+func expandBuildConfigOptionsRaw(v *schema.Set) (*api.BuildTypeOptions, error) {
+	raw := v.List()[0].(map[string]interface{})
 	opt := api.NewBuildTypeOptionsWithDefaults()
 
 	if v, ok := raw["configuration_type"]; ok {
@@ -496,8 +554,12 @@ func expandBuildConfigOptions(d *schema.ResourceData) (*api.BuildTypeOptions, er
 
 	return opt, nil
 }
-
 func flattenBuildConfigOptions(d *schema.ResourceData, dt *api.BuildTypeOptions) error {
+	m := flattenBuildConfigOptionsRaw(dt)
+	return d.Set("settings", []map[string]interface{}{m})
+}
+
+func flattenBuildConfigOptionsRaw(dt *api.BuildTypeOptions) map[string]interface{} {
 	m := make(map[string]interface{})
 
 	m["configuration_type"] = dt.BuildConfigurationType
@@ -509,7 +571,7 @@ func flattenBuildConfigOptions(d *schema.ResourceData, dt *api.BuildTypeOptions)
 	m["status_widget"] = dt.EnableStatusWidget
 	m["concurrent_limit"] = dt.MaxSimultaneousBuilds
 
-	return d.Set("settings", []map[string]interface{}{m})
+	return m
 }
 
 func flattenBuildStep(s api.Step) (map[string]interface{}, error) {
