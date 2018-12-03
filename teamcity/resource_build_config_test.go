@@ -31,6 +31,93 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 	})
 }
 
+func TestAccBuildConfig_BasicBuildCounter(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigBasic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "name", "build config test"),
+					resource.TestCheckResourceAttr(resName, "description", "build config test desc"),
+					resource.TestCheckResourceAttr(resName, "project_id", "BuildConfigProjectTest"),
+				),
+			},
+			resource.TestStep{
+				PreConfig:          func() { updateBuildCounter(&bc, 10) }, //Simulate external computed
+				Config:             TestAccBuildConfigBasic,
+				ExpectNonEmptyPlan: false,
+				PlanOnly:           true,
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_UpdateBuildCounter(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_config"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigBuildCounter,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "settings.3691833092.build_counter", "2"),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildConfigBuildCounterUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "settings.1862934543.build_counter", "10"),
+				),
+			},
+			resource.TestStep{
+				PreConfig:          func() { updateBuildCounter(&bc, 20) }, //Simulate external computed
+				Config:             TestAccBuildConfigBuildCounterUpdated,
+				ExpectNonEmptyPlan: false,
+				PlanOnly:           true,
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_UpdateOtherSetting(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigBasic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "settings.2597056888.build_number_format", "2.0.%build.counter%"),
+					resource.TestCheckResourceAttr(resName, "settings.2597056888.build_counter", "0"),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildConfigBasicUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "settings.1873735866.build_counter", "0"),
+					resource.TestCheckResourceAttr(resName, "settings.1873735866.build_number_format", "3.0.%build.counter%"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccBuildConfig_NestedProject(t *testing.T) {
 	var bc api.BuildType
 	resName := "teamcity_build_config.build_config"
@@ -470,6 +557,22 @@ func testAccCheckBuildConfigExists(n string, out *api.BuildType) resource.TestCh
 	}
 }
 
+func updateBuildCounter(buildType *api.BuildType, counter int) {
+	client := testAccProvider.Meta().(*api.Client)
+	id := buildType.ID
+
+	bt, err := client.BuildTypes.GetByID(id)
+	if err != nil {
+		panic(err)
+	}
+	bt.Options.BuildCounter = counter
+
+	_, err = client.BuildTypes.Update(bt)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func buildConfigExistsHelper(n string, s *terraform.State, client *api.Client, out *api.BuildType) error {
 	rs, ok := s.RootModule().Resources[n]
 	if !ok {
@@ -568,11 +671,39 @@ resource "teamcity_build_config" "build_configuration_test" {
 	project_id = "${teamcity_project.build_config_project_test.id}"
 	description = "build config test desc updated"
 	settings {
-		build_number_format = "2.0.%build.counter%"
+		build_number_format = "3.0.%build.counter%"
+	}
+}
+`
+const TestAccBuildConfigBuildCounter = `
+resource "teamcity_project" "project" {
+  name = "project"
+}
+
+resource "teamcity_build_config" "build_config" {
+	name = "build config test"
+	project_id = "${teamcity_project.project.id}"
+	description = "build config test desc"
+	settings {
+		build_counter = 2
 	}
 }
 `
 
+const TestAccBuildConfigBuildCounterUpdated = `
+resource "teamcity_project" "project" {
+	name = "project"
+  }
+
+  resource "teamcity_build_config" "build_config" {
+	  name = "build config test"
+	  project_id = "${teamcity_project.project.id}"
+	  description = "build config test desc"
+	  settings {
+		build_counter = 10
+	  }
+  }
+`
 const TestAccBuildConfigParams = `
 resource "teamcity_project" "build_config_project_test" {
   name = "build_config_project_test"
