@@ -394,11 +394,11 @@ func expandGitVcsRootOptions(d *schema.ResourceData) (*api.GitVcsRootOptions, er
 		auth := d.Get("auth").(*schema.Set).List()[0].(map[string]interface{})
 
 		if authType != api.GitAuthMethodAnonymous {
-			password = auth["username"].(string)
+			username = auth["username"].(string)
 		}
 
 		if authType == api.GitAuthSSHUploadedKey || authType == api.GitAuthSSHCustomKey || authType == api.GitAuthMethodPassword {
-			username = auth["password"].(string)
+			password = auth["password"].(string)
 		}
 
 		if v, ok := auth["key_spec"]; ok {
