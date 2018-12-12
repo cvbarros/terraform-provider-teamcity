@@ -4,7 +4,7 @@ Breaking change on `teamcity_build_trigger` resource. I've decided to create sep
 Thus, three new resources will be created:
 - `teamcity_build_trigger_vcs`: Corresponding to Build Triggers of type `VCS`
 - `teamcity_build_trigger_build_finish`: Corresponding to Build Triggers of type `Finish Build`
-- `teamcity_build_trigger_schedule`: Correspondong to Build Triggers of type `Schedule`
+- `teamcity_build_trigger_schedule`: Corresponding to Build Triggers of type `Schedule`
 
 
 # 2018-05-15
