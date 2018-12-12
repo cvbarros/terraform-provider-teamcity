@@ -446,11 +446,11 @@ func expandGitVcsAgentSettings(d *schema.ResourceData) (*api.GitAgentSettings, e
 	}
 
 	if v, ok = agent["clean_policy"]; ok {
-		cleanPolicy = v.(string)
+		cleanPolicy = expandCleanPolicyMap[v.(string)]
 	}
 
 	if v, ok = agent["clean_files_policy"]; ok {
-		cleanFilesPolicy = v.(string)
+		cleanFilesPolicy = expandCleanFilesPolicyMap[v.(string)]
 	}
 
 	if v, ok = agent["use_mirrors"]; ok {

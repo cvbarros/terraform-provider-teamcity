@@ -2,6 +2,7 @@ package teamcity_test
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -132,6 +133,12 @@ func TestAccVcsRootGit_SshUploadedKeyAuth(t *testing.T) {
 func TestAccVcsRootGit_AgentSettings(t *testing.T) {
 	var vcs api.GitVcsRoot
 	resourceName := "teamcity_vcs_root_git.git_test"
+	expected := map[string]string{
+		"clean_policy":       "ON_BRANCH_CHANGE",
+		"git_path":           "/usr/bin/git",
+		"clean_files_policy": "IGNORED_ONLY",
+		"use_mirrors":        "true",
+	}
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
@@ -141,11 +148,12 @@ func TestAccVcsRootGit_AgentSettings(t *testing.T) {
 				Config: testAccVcsRootGitAgentSettings,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVcsRootGitExists(resourceName, &vcs),
+					testAccCheckVcsRootGitAgentSettings(&vcs, expected),
 					resource.TestCheckResourceAttr(resourceName, "agent.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "agent.2650242794.git_path", "/usr/bin/git"),
-					resource.TestCheckResourceAttr(resourceName, "agent.2650242794.clean_policy", "always"),
-					resource.TestCheckResourceAttr(resourceName, "agent.2650242794.clean_files_policy", "ignored_only"),
-					resource.TestCheckResourceAttr(resourceName, "agent.2650242794.use_mirrors", "true"),
+					resource.TestCheckResourceAttr(resourceName, "agent.2618137949.git_path", "/usr/bin/git"),
+					resource.TestCheckResourceAttr(resourceName, "agent.2618137949.clean_policy", "branch_change"),
+					resource.TestCheckResourceAttr(resourceName, "agent.2618137949.clean_files_policy", "ignored_only"),
+					resource.TestCheckResourceAttr(resourceName, "agent.2618137949.use_mirrors", "true"),
 				),
 			},
 		},
@@ -216,6 +224,32 @@ func vcsRootGitDestroyHelper(s *terraform.State, client *api.Client) error {
 		return fmt.Errorf("VCS Root still exists")
 	}
 	return nil
+}
+
+func testAccCheckVcsRootGitAgentSettings(vcs *api.GitVcsRoot, expected map[string]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		client := testAccProvider.Meta().(*api.Client)
+		dt, err := client.VcsRoots.GetByID((*vcs).ID)
+		if err != nil {
+			return err
+		}
+		actual := dt.(*api.GitVcsRoot)
+		as := actual.Options.AgentSettings
+
+		if string(as.CleanPolicy) != expected["clean_policy"] {
+			return fmt.Errorf("agent setting %s: got '%s', expected '%s'", "clean_policy", as.CleanPolicy, expected["clean_policy"])
+		}
+		if string(as.CleanFilesPolicy) != expected["clean_files_policy"] {
+			return fmt.Errorf("agent setting %s: got '%s', expected '%s'", "clean_files_policy", as.CleanFilesPolicy, expected["clean_files_policy"])
+		}
+		if as.GitPath != expected["git_path"] {
+			return fmt.Errorf("agent setting %s: got '%s', expected '%s'", "git_path", as.GitPath, expected["git_path"])
+		}
+		if strconv.FormatBool(as.UseMirrors) != expected["use_mirrors"] {
+			return fmt.Errorf("agent setting %s: got '%v', expected '%s'", "use_mirrors", as.UseMirrors, expected["use_mirrors"])
+		}
+		return nil
+	}
 }
 
 func testAccVcsRootGitConfig(projectId string) string {
@@ -327,7 +361,7 @@ resource "teamcity_vcs_root_git" "git_test" {
 
 	agent {
 		git_path = "/usr/bin/git"
-		clean_policy = "always"
+		clean_policy = "branch_change"
 		clean_files_policy = "ignored_only"
 		use_mirrors = true
 	}
