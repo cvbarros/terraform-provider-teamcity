@@ -74,6 +74,37 @@ func TestAccTeamcityArtifactDependency_Update(t *testing.T) {
 	})
 }
 
+func TestAccTeamcityArtifactDependency_DependencyRevisionUpdate(t *testing.T) {
+	resName := "teamcity_artifact_dependency.test"
+	var dep api.ArtifactDependency
+	var bc api.BuildType
+	var sb api.BuildType
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamcityArtifactDependencyDestroy(&bc.ID, "teamcity_artifact_dependency"),
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccArtifactDependencyBasic,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
+					testAccCheckBuildConfigExists("teamcity_build_config.dependency", &sb),
+					testAccCheckTeamcityArtifactDependencyExists(resName, &bc.ID, &dep),
+					resource.TestCheckResourceAttrPtr(resName, "build_config_id", &bc.ID),
+					resource.TestCheckResourceAttrPtr(resName, "source_build_config_id", &sb.ID),
+					resource.TestCheckResourceAttr(resName, "path_rules.0", "+:*"),
+				),
+			},
+			resource.TestStep{
+				Config:             TestAccArtifactDependencyDependencyRevisionUpdated,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 func TestAccTeamcityArtifactDependency_OptionsNoRevision(t *testing.T) {
 	resName := "teamcity_artifact_dependency.test"
 	var dep api.ArtifactDependency
@@ -350,5 +381,29 @@ resource "teamcity_artifact_dependency" "test" {
 
 	dependency_revision = "buildNumber"
 	#Missing revision required property
+}
+`
+
+const TestAccArtifactDependencyDependencyRevisionUpdated = `
+resource "teamcity_project" "artifact_dependency_project_test" {
+  name = "Artifact Dependency"
+}
+
+resource "teamcity_build_config" "dependency" {
+	name = "Dependency"
+	project_id = "${teamcity_project.artifact_dependency_project_test.id}"
+}
+
+resource "teamcity_build_config" "config" {
+	name = "BuildConfig"
+	project_id = "${teamcity_project.artifact_dependency_project_test.id}"
+}
+
+resource "teamcity_artifact_dependency" "test" {
+	source_build_config_id = "${teamcity_build_config.dependency.id}"
+	build_config_id = "${teamcity_build_config.config.id}"
+
+	path_rules = ["+:*"]
+	dependency_revision = "lastFinished" #Added
 }
 `
