@@ -39,6 +39,7 @@ func resourceArtifactDependency() *schema.Resource {
 					string(api.LatestPinnedBuild),
 					string(api.LatestSuccessfulBuild),
 					string(api.BuildWithSpecifiedNumber),
+					string(api.BuildFromSameChain),
 				}, false),
 			},
 			"path_rules": {
