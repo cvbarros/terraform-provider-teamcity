@@ -190,8 +190,8 @@ func TestAccBuildConfig_StepsPowershell(t *testing.T) {
 				Config: TestAccBuildConfigStepsPowershell,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
-					resource.TestCheckResourceAttrSet(resName, "step.2521969367.step_id"),
-					resource.TestCheckResourceAttrSet(resName, "step.4289253634.step_id"),
+					resource.TestCheckResourceAttrSet(resName, "step.2032957957.step_id"),
+					resource.TestCheckResourceAttrSet(resName, "step.2405117611.step_id"),
 					testAccCheckStepExists(&bc.ID, scriptStep),
 					testAccCheckStepExists(&bc.ID, codeStep),
 				),
@@ -241,8 +241,8 @@ func TestAccBuildConfig_UpdateSteps(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckStepExists(&bc.ID, scriptStepUpdate),
 					testAccCheckStepRemoved(&bc.ID, codeStep),
-					resource.TestCheckResourceAttr(resName, "step.1706822360.file", "updated.ps1"),
-					resource.TestCheckResourceAttr(resName, "step.1706822360.name", "updated_script"),
+					resource.TestCheckResourceAttr(resName, "step.531649812.file", "updated.ps1"),
+					resource.TestCheckResourceAttr(resName, "step.531649812.name", "updated_script"),
 				),
 			},
 		},
@@ -277,6 +277,45 @@ func TestAccBuildConfig_StepsCmdLine(t *testing.T) {
 					testAccCheckBuildConfigExists(resName, &bc),
 					testAccCheckStepExists(&bc.ID, codeStep),
 					testAccCheckStepExists(&bc.ID, exeStep),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_StepsCmdLineUpdateSteps(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	scriptStep := map[string]string{
+		"name": "build_script",
+		"type": api.StepTypeCommandLine,
+		"code": "echo \"Hello World\"",
+	}
+
+	scriptStepUpdate := map[string]string{
+		"name": "build_script",
+		"type": api.StepTypeCommandLine,
+		"code": "echo \"Hello Foo\"",
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigStepsCmdLine,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					testAccCheckStepExists(&bc.ID, scriptStep),
+					resource.TestCheckResourceAttr(resName, "step.266212651.code", "echo \"Hello World\""),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildConfigStepsCmdLineUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckStepExists(&bc.ID, scriptStepUpdate),
+					resource.TestCheckResourceAttr(resName, "step.451335694.code", "echo \"Hello Foo\""),
 				),
 			},
 		},
@@ -870,6 +909,30 @@ resource "teamcity_build_config" "build_configuration_test" {
 		type = "cmd_line"
 		name = "build_script"
 		code = "echo \"Hello World\""
+	}
+
+	step {
+		type = "cmd_line"
+		name = "build_executable"
+		file = "./build.sh"
+		args = "default_target --verbose"
+	}
+}
+`
+
+const TestAccBuildConfigStepsCmdLineUpdated = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+
+	step {
+		type = "cmd_line"
+		name = "build_script"
+		code = "echo \"Hello Foo\""
 	}
 
 	step {
