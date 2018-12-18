@@ -257,7 +257,7 @@ func testAccVcsRootGitConfig(projectId string) string {
 resource "teamcity_vcs_root_git" "git_test" {
 	name = "application"
 	project_id = "%s"
-	fetch_url = "https://github.com/kelseyhightower/nocode"
+	fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
 	default_branch = "refs/head/master"
 }
 `, projectId)

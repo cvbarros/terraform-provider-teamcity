@@ -190,8 +190,8 @@ func TestAccBuildConfig_StepsPowershell(t *testing.T) {
 				Config: TestAccBuildConfigStepsPowershell,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
-					resource.TestCheckResourceAttrSet(resName, "step.2032957957.step_id"),
-					resource.TestCheckResourceAttrSet(resName, "step.2405117611.step_id"),
+					resource.TestCheckResourceAttrSet(resName, "step.0.step_id"),
+					resource.TestCheckResourceAttrSet(resName, "step.1.step_id"),
 					testAccCheckStepExists(&bc.ID, scriptStep),
 					testAccCheckStepExists(&bc.ID, codeStep),
 				),
@@ -241,8 +241,8 @@ func TestAccBuildConfig_UpdateSteps(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckStepExists(&bc.ID, scriptStepUpdate),
 					testAccCheckStepRemoved(&bc.ID, codeStep),
-					resource.TestCheckResourceAttr(resName, "step.531649812.file", "updated.ps1"),
-					resource.TestCheckResourceAttr(resName, "step.531649812.name", "updated_script"),
+					resource.TestCheckResourceAttr(resName, "step.0.file", "updated.ps1"),
+					resource.TestCheckResourceAttr(resName, "step.0.name", "updated_script"),
 				),
 			},
 		},
@@ -308,14 +308,43 @@ func TestAccBuildConfig_StepsCmdLineUpdateSteps(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
 					testAccCheckStepExists(&bc.ID, scriptStep),
-					resource.TestCheckResourceAttr(resName, "step.266212651.code", "echo \"Hello World\""),
+					resource.TestCheckResourceAttr(resName, "step.0.code", "echo \"Hello World\""),
 				),
 			},
 			resource.TestStep{
 				Config: TestAccBuildConfigStepsCmdLineUpdated,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckStepExists(&bc.ID, scriptStepUpdate),
-					resource.TestCheckResourceAttr(resName, "step.451335694.code", "echo \"Hello Foo\""),
+					resource.TestCheckResourceAttr(resName, "step.0.code", "echo \"Hello Foo\""),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_StepOrdering(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	order := []string{"step_1", "step_2", "step_3"}
+	updatedOrder := []string{"step_1", "step_3", "step_2"}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigStepsOrder,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					testAccCheckBuildStepOrder(&bc, order),
+				),
+			},
+			resource.TestStep{
+				Config: TestAccBuildConfigStepsOrderUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					testAccCheckBuildStepOrder(&bc, updatedOrder),
 				),
 			},
 		},
@@ -502,6 +531,23 @@ func testStepExists(client *api.Client, buildTypeID string, stepExpected map[str
 	}
 
 	return false, fmt.Errorf("Step named '%s' was not found", stepExpected["name"])
+}
+
+func testAccCheckBuildStepOrder(bc *api.BuildType, expectedOrder []string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		client := testAccProvider.Meta().(*api.Client)
+		steps, err := client.BuildTypes.GetSteps(bc.ID)
+		if err != nil {
+			return err
+		}
+
+		for i, s := range steps {
+			if expectedOrder[i] != s.GetName() {
+				return fmt.Errorf("Error in step order - expected: %v, got: %v", expectedOrder[i], s.GetName())
+			}
+		}
+		return nil
+	}
 }
 
 func assertStepProperties(actual api.Step, expected map[string]string) error {
@@ -839,7 +885,7 @@ resource "teamcity_project" "build_config_project_test" {
 resource "teamcity_vcs_root_git" "build_config_vcsroot_test" {
 	name = "application"
 	project_id = "${teamcity_project.build_config_project_test.id}"
-	fetch_url = "https://github.com/kelseyhightower/nocode"
+	fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
 	default_branch = "refs/head/master"
 }
 
@@ -914,6 +960,68 @@ resource "teamcity_build_config" "build_configuration_test" {
 	step {
 		type = "cmd_line"
 		name = "build_executable"
+		file = "./build.sh"
+		args = "default_target --verbose"
+	}
+}
+`
+
+const TestAccBuildConfigStepsOrder = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+
+	step {
+		type = "cmd_line"
+		name = "step_1"
+		code = "echo \"Hello World\""
+	}
+
+	step {
+		type = "cmd_line"
+		name = "step_2"
+		file = "./build.sh"
+		args = "default_target --verbose"
+	}
+
+	step {
+		type = "cmd_line"
+		name = "step_3"
+		file = "./build.sh"
+		args = "default_target --verbose"
+	}
+}
+`
+
+const TestAccBuildConfigStepsOrderUpdated = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+
+	step {
+		type = "cmd_line"
+		name = "step_1"
+		code = "echo \"Hello World\""
+	}
+
+	step {
+		type = "cmd_line"
+		name = "step_3"
+		file = "./build.sh"
+		args = "default_target --verbose"
+	}
+
+	step {
+		type = "cmd_line"
+		name = "step_2"
 		file = "./build.sh"
 		args = "default_target --verbose"
 	}

@@ -1,14 +1,12 @@
 package teamcity
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"reflect"
 	"strings"
 
 	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 )
@@ -60,6 +58,7 @@ func resourceBuildConfig() *schema.Resource {
 					}
 				}
 			}
+
 			return nil
 		},
 
@@ -97,7 +96,7 @@ func resourceBuildConfig() *schema.Resource {
 				Set: vcsRootHash,
 			},
 			"step": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -129,7 +128,6 @@ func resourceBuildConfig() *schema.Resource {
 						},
 					},
 				},
-				Set: stepSetHash,
 			},
 			"env_params": {
 				Type:     schema.TypeMap,
@@ -312,25 +310,22 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.SetPartial("vcs_root")
 	}
 	if d.HasChange("step") {
-		o, n := d.GetChange("step")
-		os := o.(*schema.Set)
-		ns := n.(*schema.Set)
-		remove, _ := expandBuildSteps(os.Difference(ns).List())
-		add, err := expandBuildSteps(ns.Difference(os).List())
+		add, err := expandBuildSteps(d.Get("step").([]interface{}))
 		if err != nil {
 			return err
 		}
-		if len(remove) > 0 {
-			for _, s := range remove {
-				err := client.BuildTypes.DeleteStep(dt.ID, s.GetID())
-				if err != nil {
-					return err
-				}
+		//Remove all existing steps
+		remove, err := client.BuildTypes.GetSteps(d.Id())
+		for _, s := range remove {
+			err := client.BuildTypes.DeleteStep(dt.ID, s.GetID())
+			if err != nil {
+				return err
 			}
 		}
 		if len(add) > 0 {
-			for _, s := range add {
-				_, err := client.BuildTypes.AddStep(dt.ID, s)
+			for i, s := range add {
+				added, err := client.BuildTypes.AddStep(dt.ID, s)
+				log.Printf("[INFO] Adding step '%v' (%v)with order = %v", s.GetName(), added.GetID(), i+1)
 				if err != nil {
 					return err
 				}
@@ -638,21 +633,23 @@ func expandBuildSteps(list interface{}) ([]api.Step, error) {
 		}
 		out = append(out, s)
 	}
+
 	return out, nil
 }
 
-func expandBuildStep(raw interface{}) (api.Step, error) {
+func expandBuildStep(raw interface{}) (step api.Step, err error) {
 	localStep := raw.(map[string]interface{})
-
+	err = nil
 	t := localStep["type"].(string)
 	switch t {
 	case "powershell":
-		return expandStepPowershell(localStep)
+		step, err = expandStepPowershell(localStep)
 	case "cmd_line":
-		return expandStepCmdLine(localStep)
+		step, err = expandStepCmdLine(localStep)
 	default:
 		return nil, fmt.Errorf("Unsupported step type '%s'", t)
 	}
+	return step, err
 }
 
 func expandStepCmdLine(dt map[string]interface{}) (*api.StepCommandLine, error) {
@@ -739,28 +736,4 @@ func buildVcsRootEntry(raw interface{}) *api.VcsRootEntry {
 func vcsRootHash(v interface{}) int {
 	raw := v.(map[string]interface{})
 	return schema.HashString(raw["id"].(string))
-}
-
-func stepSetHash(v interface{}) int {
-	var buf bytes.Buffer
-	m := v.(map[string]interface{})
-	buf.WriteString(fmt.Sprintf("%s-", m["type"].(string)))
-
-	if v, ok := m["name"]; ok {
-		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
-	}
-
-	if v, ok := m["file"]; ok {
-		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
-	}
-
-	if v, ok := m["args"]; ok {
-		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
-	}
-
-	if v, ok := m["code"]; ok {
-		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
-	}
-
-	return hashcode.String(buf.String())
 }
