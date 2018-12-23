@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strconv"
 	"strings"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
@@ -108,7 +109,7 @@ func resourceBuildConfig() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"powershell", "cmd_line"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"powershell", "cmd_line", "octopus.push.package"}, false),
 						},
 						"name": {
 							Type:     schema.TypeString,
@@ -126,6 +127,36 @@ func resourceBuildConfig() *schema.Resource {
 						"code": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+
+						// octopus.push.package parameters.
+						"host": {
+							Type:     schema.TypeString,
+							Optional: true, // Should be required when type is octopus.push.package
+						},
+						"api_key": {
+							Type:     schema.TypeString,
+							Optional: true, // Should be required when type is octopus.push.package
+						},
+						"package_paths": {
+							Type:     schema.TypeString,
+							Optional: true, // Should be required when type is octopus.push.package
+							Default:  "*",
+						},
+						"force_push": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+						"publish_artifacts": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+						"additional_command_line_arguments": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "",
 						},
 					},
 				},
@@ -422,8 +453,9 @@ func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
 }
 
 var stepTypeMap = map[string]string{
-	api.StepTypePowershell:  "powershell",
-	api.StepTypeCommandLine: "cmd_line",
+	api.StepTypePowershell:         "powershell",
+	api.StepTypeCommandLine:        "cmd_line",
+	api.StepTypeOctopusPushPackage: "octopus.push.package",
 }
 
 func flattenParameterCollection(d *schema.ResourceData, params *api.Parameters) error {
@@ -583,6 +615,8 @@ func flattenBuildStep(s api.Step) (map[string]interface{}, error) {
 		out, err = flattenBuildStepPowershell(s.(*api.StepPowershell)), nil
 	case "cmd_line":
 		out, err = flattenBuildStepCmdLine(s.(*api.StepCommandLine)), nil
+	case "octopus.push.package":
+		out, err = flattenBuildStepOctopusPushPackage(s.(*api.StepOctopusPushPackage)), nil
 	default:
 		return nil, fmt.Errorf("Build step type '%s' not supported", s.Type())
 	}
@@ -628,6 +662,35 @@ func flattenBuildStepCmdLine(s *api.StepCommandLine) map[string]interface{} {
 	return m
 }
 
+func flattenBuildStepOctopusPushPackage(s *api.StepOctopusPushPackage) map[string]interface{} {
+	m := make(map[string]interface{})
+	if s.Name != "" {
+		m["name"] = s.Name
+	}
+	if s.Host != "" {
+		m["host"] = s.Host
+	}
+	if s.ApiKey != "" {
+		m["api_key"] = s.ApiKey
+	}
+	if s.PackagePaths != "" {
+		m["package_paths"] = s.PackagePaths
+	}
+	if s.ForcePush {
+		m["force_push"] = s.ForcePush
+	}
+	if s.PublishArtifacts {
+		m["publish_artifacts"] = s.PublishArtifacts
+	}
+	if s.AdditionalCommandLineArguments != "" {
+		m["additional_command_line_arguments"] = s.AdditionalCommandLineArguments
+	}
+
+	m["type"] = "octopus.push.package"
+
+	return m
+}
+
 func expandBuildSteps(list interface{}) ([]api.Step, error) {
 	out := make([]api.Step, 0)
 	in := list.([]interface{})
@@ -650,6 +713,8 @@ func expandBuildStep(raw interface{}) (api.Step, error) {
 		return expandStepPowershell(localStep)
 	case "cmd_line":
 		return expandStepCmdLine(localStep)
+	case "octopus.push.package":
+		return expandStepOctopusPushPackage(localStep)
 	default:
 		return nil, fmt.Errorf("Unsupported step type '%s'", t)
 	}
@@ -721,6 +786,47 @@ func expandStepPowershell(dt map[string]interface{}) (*api.StepPowershell, error
 	return s, nil
 }
 
+func expandStepOctopusPushPackage(dt map[string]interface{}) (*api.StepOctopusPushPackage, error) {
+	var name string
+	if v, ok := dt["name"]; ok {
+		name = v.(string)
+	}
+	s, err := api.NewStepOctopusPushPackage(name)
+	if err != nil {
+		return nil, err
+	}
+	// s := &api.StepOctopusPushPackage{}
+
+	if v, ok := dt["host"]; ok {
+		s.Host = v.(string)
+	}
+
+	if v, ok := dt["api_key"]; ok {
+		s.ApiKey = v.(string)
+	}
+
+	if v, ok := dt["package_paths"]; ok {
+		s.PackagePaths = v.(string)
+	}
+
+	if v, ok := dt["force_push"]; ok {
+		s.ForcePush = v.(bool)
+	}
+
+	if v, ok := dt["publish_artifacts"]; ok {
+		s.PublishArtifacts = v.(bool)
+	}
+
+	if v, ok := dt["additional_Command_line_arguments"]; ok {
+		s.AdditionalCommandLineArguments = v.(string)
+	}
+
+	if v, ok := dt["step_id"]; ok {
+		s.ID = v.(string)
+	}
+	return s, nil
+}
+
 func buildVcsRootEntry(raw interface{}) *api.VcsRootEntry {
 	localVcs := raw.(map[string]interface{})
 	rawRules := localVcs["checkout_rules"].([]interface{})
@@ -760,6 +866,20 @@ func stepSetHash(v interface{}) int {
 
 	if v, ok := m["code"]; ok {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+
+	// Octopus push package.
+	octopusPushPackageStringParams := []string{"host", "api_key", "package_paths", "additional_Command_line_arguments"}
+	for _, element := range octopusPushPackageStringParams {
+		if v, ok := m[element]; ok {
+			buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+		}
+	}
+	octopusPushPackageBoolParams := []string{"force_push", "publish_artifacts"}
+	for _, element := range octopusPushPackageBoolParams {
+		if v, ok := m[element]; ok {
+			buf.WriteString(strconv.FormatBool(v.(bool)))
+		}
 	}
 
 	return hashcode.String(buf.String())

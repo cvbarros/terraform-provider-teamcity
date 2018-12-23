@@ -32,6 +32,13 @@ resource "teamcity_build_config" "build" {
 		file = "./build.sh"
 		args = "default_target --verbose"
 	}
+
+  step {
+    type = octopus.push.package
+    host          = "https://prod.octoserver.com"
+    api_key       = "API-ABCD123"
+    package_paths = "*"
+  }
 }
 ```
 
@@ -59,7 +66,7 @@ The `vcs_root` block is used to manage attaching VCS Roots to this build configu
 
 The `step` block supports the attributes below. You may use one step block per step you want the build configuration to perform. The order configured will be the order they will be performed.
 
-* `type`: (Required) Specify `cmd_line` for command line runner or `powershell` for powershell runner.
+* `type`: (Required) Specify `cmd_line` for command line runner, `powershell` for powershell runner or `octopus.push.package` for the Octopus Push Package runner.
 
 * `name`: (Optional) A named reference for this step. If not specified, TeamCity will generate it based on runner.
 
@@ -68,6 +75,14 @@ The `step` block supports the attributes below. You may use one step block per s
 * `code`: (Optional) Inline script code to call. Do not use this with `file`.
 
 * `args`: (Optional) Arguments to pass to external script specified in `file`.
+
+If you selected the `octopus.push.package` runner, here are the available options:
+* `host`: (Required) Octopus web portal URL.
+* `api_key`: (Required) Octopus API key.
+* `package_paths`: (Required) Package path patterns.
+* `force_push`: (Optional).  Defaults to `true`.
+* `publish_artifacts`: (Optional). Defaults to `true`.
+* `additional_command_line_arguments`: (Optional). Defaults to `''` (none).
 
 The `settings` block supports:
 
