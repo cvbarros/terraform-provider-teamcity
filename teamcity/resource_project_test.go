@@ -221,17 +221,17 @@ resource "teamcity_project" "testproj" {
 	name = "test_project"
 	description = "Test Project"
 
-	config_params {
+	config_params = {
 		param1 = "config_value1"
 		param2 = "config_value2"
 	}
 
-	env_params {
+	env_params = {
 		param3 = "env_value1"
 		param4 = "env_value2"
 	}
 
-	sys_params {
+	sys_params = {
 		param5 = "sys_value1"
 		param6 = "sys_value2"
 	}
@@ -243,7 +243,7 @@ resource "teamcity_project" "testproj" {
 	name = "test_project"
 	description = "Test Project Updated"
 
-	config_params {
+	config_params = {
 		param1 = "config_value1"
 		param2 = "config_value2"
 	}
