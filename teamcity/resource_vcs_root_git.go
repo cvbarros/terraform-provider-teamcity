@@ -388,10 +388,9 @@ func expandGitVcsRootOptions(d *schema.ResourceData) (*api.GitVcsRootOptions, er
 		return nil, err
 	}
 
-	_, authSpecified := d.GetOkExists("auth")
-	if authSpecified {
+	if a, ok := d.GetOk("auth"); ok {
 		// Only 1 max permitted
-		auth := d.Get("auth").(*schema.Set).List()[0].(map[string]interface{})
+		auth := a.(*schema.Set).List()[0].(map[string]interface{})
 
 		if authType != api.GitAuthMethodAnonymous {
 			username = auth["username"].(string)
