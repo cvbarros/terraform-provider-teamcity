@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strings"
 
-	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
+	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"

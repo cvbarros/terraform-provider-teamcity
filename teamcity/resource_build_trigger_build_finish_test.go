@@ -3,7 +3,7 @@ package teamcity_test
 import (
 	"testing"
 
-	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
+	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
 	"github.com/hashicorp/terraform/helper/resource"
 )
 

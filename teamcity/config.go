@@ -3,7 +3,7 @@ package teamcity
 import (
 	"net/http"
 
-	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
+	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
 )
 
 // Config Used to configure an api client for TeamCity

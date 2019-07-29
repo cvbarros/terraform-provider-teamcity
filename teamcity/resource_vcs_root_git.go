@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
+	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -388,10 +388,9 @@ func expandGitVcsRootOptions(d *schema.ResourceData) (*api.GitVcsRootOptions, er
 		return nil, err
 	}
 
-	_, authSpecified := d.GetOkExists("auth")
-	if authSpecified {
+	if a, ok := d.GetOk("auth"); ok {
 		// Only 1 max permitted
-		auth := d.Get("auth").(*schema.Set).List()[0].(map[string]interface{})
+		auth := a.(*schema.Set).List()[0].(map[string]interface{})
 
 		if authType != api.GitAuthMethodAnonymous {
 			username = auth["username"].(string)

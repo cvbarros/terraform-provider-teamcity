@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
+	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -752,16 +752,16 @@ resource "teamcity_build_config" "build_configuration_test" {
 	name = "build config test"
 	project_id = "${teamcity_project.build_config_project_test.id}"
 
-	env_params {
+	env_params = {
 		DEPLOY_SERVER = "server.com"
 		some_variable = "hello"
 	}
 
-	config_params {
-		github.repository = "nocode"
+	config_params = {
+		"github.repository" = "nocode"
 	}
 
-	sys_params {
+	sys_params = {
 		system_param = "system_value"
 	}
 }
@@ -776,13 +776,13 @@ resource "teamcity_build_config" "build_configuration_test" {
 	name = "build config test"
 	project_id = "${teamcity_project.build_config_project_test.id}"
 
-	env_params {
+	env_params = {
 		DEPLOY_SERVER = "server.com"
 		some_variable = "hello"
 	}
 
-	config_params {
-		github.repository = "updated_repo"
+	config_params = {
+		"github.repository" = "updated_repo"
 	}
 }
 `

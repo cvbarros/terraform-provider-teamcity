@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	api "github.com/cvbarros/go-teamcity-sdk/pkg/teamcity"
+	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
 	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
@@ -162,7 +162,7 @@ func buildGithubCommitStatusPublisher(d *schema.ResourceData) (api.BuildFeature,
 		opt = api.NewCommitStatusPublisherGithubOptionsPassword(host, local["username"].(string), local["password"].(string))
 	}
 
-	return api.NewFeatureCommitStatusPublisherGithub(opt)
+	return api.NewFeatureCommitStatusPublisherGithub(opt, "")
 }
 
 func getBuildFeatureCommitPublisher(c *api.BuildFeatureService, id string) (*api.FeatureCommitStatusPublisher, error) {
