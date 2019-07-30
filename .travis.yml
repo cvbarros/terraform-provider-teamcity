@@ -6,9 +6,10 @@ services:
   - docker
 language: go
 go:
- - "1.10.x"
+ - "1.11.x"
 env:
   global:
+    - GO111MODULE=on
     - TEAMCITY_ADDR=http://localhost:8112
     - TF_ACC=1
     - TEAMCITY_USER=admin

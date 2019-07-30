@@ -1,3 +1,6 @@
+# 2019-07-30
+Project has been converted to use Go Modules. This follows on other major providers and Terraform project itself.
+
 # 2018-09-22
 Breaking change on `teamcity_build_trigger` resource. I've decided to create separate resource types for different types of build triggers, since the configuration complexity of these resources will greatly increase if kept on a single "build trigger" resource type.
 
