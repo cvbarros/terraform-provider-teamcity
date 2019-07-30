@@ -2,6 +2,7 @@ package teamcity_test
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -26,6 +27,11 @@ func TestAccTeamcitySnapshotDependency_Basic(t *testing.T) {
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
 					testAccCheckTeamcitySnapshotDependencyExists(resName, &bc.ID, &sd),
 					resource.TestCheckResourceAttrPtr(resName, "build_config_id", &sd.BuildTypeID),
+					resource.TestCheckResourceAttr(resName, "run_build_if_dependency_failed", api.DefaultSnapshotDependencyOptions.OnFailedDependency),
+					resource.TestCheckResourceAttr(resName, "run_build_if_dependency_failed_to_start", api.DefaultSnapshotDependencyOptions.OnFailedToStartOrCanceledDependency),
+					resource.TestCheckResourceAttr(resName, "run_build_on_the_same_agent", strconv.FormatBool(api.DefaultSnapshotDependencyOptions.RunSameAgent)),
+					resource.TestCheckResourceAttr(resName, "take_started_build_with_same_revisions", strconv.FormatBool(api.DefaultSnapshotDependencyOptions.DoNotRunNewBuildIfThereIsASuitable)),
+					resource.TestCheckResourceAttr(resName, "take_successful_builds_only", strconv.FormatBool(api.DefaultSnapshotDependencyOptions.TakeSuccessfulBuildsOnly)),
 					testAccCheckSnapshotSourceBuildType(resName, &sd),
 				),
 			},
@@ -49,6 +55,11 @@ func TestAccTeamcitySnapshotDependency_Updated(t *testing.T) {
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
 					testAccCheckTeamcitySnapshotDependencyExists(resName, &bc.ID, &sd),
 					resource.TestCheckResourceAttrPtr(resName, "build_config_id", &sd.BuildTypeID),
+					resource.TestCheckResourceAttr(resName, "run_build_if_dependency_failed", api.DefaultSnapshotDependencyOptions.OnFailedDependency),
+					resource.TestCheckResourceAttr(resName, "run_build_if_dependency_failed_to_start", api.DefaultSnapshotDependencyOptions.OnFailedToStartOrCanceledDependency),
+					resource.TestCheckResourceAttr(resName, "run_build_on_the_same_agent", strconv.FormatBool(api.DefaultSnapshotDependencyOptions.RunSameAgent)),
+					resource.TestCheckResourceAttr(resName, "take_started_build_with_same_revisions", strconv.FormatBool(api.DefaultSnapshotDependencyOptions.DoNotRunNewBuildIfThereIsASuitable)),
+					resource.TestCheckResourceAttr(resName, "take_successful_builds_only", strconv.FormatBool(api.DefaultSnapshotDependencyOptions.TakeSuccessfulBuildsOnly)),
 					testAccCheckSnapshotSourceBuildType(resName, &sd),
 				),
 			},
@@ -58,6 +69,11 @@ func TestAccTeamcitySnapshotDependency_Updated(t *testing.T) {
 					testAccCheckBuildConfigExists("teamcity_build_config.config", &bc),
 					testAccCheckTeamcitySnapshotDependencyExists(resName, &bc.ID, &sd),
 					resource.TestCheckResourceAttr(resName, "source_build_config_id", "Snapshot_Dependency2"),
+					resource.TestCheckResourceAttr(resName, "run_build_if_dependency_failed", "MAKE_FAILED_TO_START"),
+					resource.TestCheckResourceAttr(resName, "run_build_if_dependency_failed_to_start", "CANCEL"),
+					resource.TestCheckResourceAttr(resName, "run_build_on_the_same_agent", "true"),
+					resource.TestCheckResourceAttr(resName, "take_started_build_with_same_revisions", "false"),
+					resource.TestCheckResourceAttr(resName, "take_successful_builds_only", "false"),
 				),
 			},
 		},
@@ -188,5 +204,10 @@ resource "teamcity_build_config" "config" {
 resource "teamcity_snapshot_dependency" "test" {
 	source_build_config_id = "${teamcity_build_config.dependency2.id}"
 	build_config_id = "${teamcity_build_config.config.id}"
+	run_build_if_dependency_failed = "MAKE_FAILED_TO_START"
+	run_build_if_dependency_failed_to_start = "CANCEL"
+	run_build_on_the_same_agent = "true"
+	take_started_build_with_same_revisions = "false"
+	take_successful_builds_only = "false"
 }
 `
