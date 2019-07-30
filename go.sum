@@ -65,13 +65,15 @@ github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f/go.mod h1:E3G3o1h8I7cfcXa63jLwjI0eiQQMgzzUDFVpN/nH/eA=
-github.com/cvbarros/go-teamcity-sdk v0.0.0-20190131214126-9abe613e03a0 h1:sTI16Gk8aX76FkoaO+exburvkEsjlTs8wBrpsTnWmp8=
-github.com/cvbarros/go-teamcity-sdk v0.0.0-20190131214126-9abe613e03a0/go.mod h1:aMM0uxPTq0IM6jd6bNycRtMGI6dlBDz60B0yn3XZfXQ=
+github.com/cvbarros/go-teamcity v0.5.0 h1:sJZrcs0i3ElhUiPw6zTEYQe1WV8h9Q+12dFWAcSBaQU=
+github.com/cvbarros/go-teamcity v0.5.0/go.mod h1:wQxn54gP1RHaDYuwwud9MRA+Y8VXfD3d5+ZjZCZLVVU=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dghubble/sling v1.2.0 h1:PYGS9ofwbV9nfhB1kYjB1vtXshMxlp2oQxTMMXVJ5pE=
 github.com/dghubble/sling v1.2.0/go.mod h1:ZcPRuLm0qrcULW2gOrjXrAWgf76sahqSyxXyVOvkunE=
+github.com/dghubble/sling v1.3.0 h1:pZHjCJq4zJvc6qVQ5wN1jo5oNZlNE0+8T/h0XeXBUKU=
+github.com/dghubble/sling v1.3.0/go.mod h1:XXShWaBWKzNLhu2OxikSNFrlsvowtz4kyRuXUG7oQKY=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dimchansky/utfbom v1.0.0/go.mod h1:rO41eb7gLfo8SF1jd9F8HplJm1Fewwi4mQvIirEdv+8=
 github.com/dnaeon/go-vcr v0.0.0-20180920040454-5637cf3d8a31/go.mod h1:aBB1+wY4s93YsC3HHjMBMrwTj2R9FHDzUr9KyGc8n1E=
@@ -263,6 +265,8 @@ github.com/motemen/go-loghttp v0.0.0-20170804080138-974ac5ceac27 h1:uAI3rnOT1OSS
 github.com/motemen/go-loghttp v0.0.0-20170804080138-974ac5ceac27/go.mod h1:6eu9CfGt5kfrMVgeu9MfB9PRUnpc47I+udLswiTszI8=
 github.com/motemen/go-nuts v0.0.0-20180315145558-42c35bdb11c2 h1:gfo7RLzXaBdNShd7F5N3K1oM779cD777np9ljUgvf9s=
 github.com/motemen/go-nuts v0.0.0-20180315145558-42c35bdb11c2/go.mod h1:vfh/NPxHgDwggXit20W1llPsXcz39xJ7I8vo7kVrOCk=
+github.com/motemen/go-nuts v0.0.0-20190725124253-1d2432db96b0 h1:CnSVrlMNAZMWI1+uH6ldpXRv2pe7t50IQX448EJrJhw=
+github.com/motemen/go-nuts v0.0.0-20190725124253-1d2432db96b0/go.mod h1:vfh/NPxHgDwggXit20W1llPsXcz39xJ7I8vo7kVrOCk=
 github.com/neelance/astrewrite v0.0.0-20160511093645-99348263ae86/go.mod h1:kHJEU3ofeGjhHklVoIGuVj85JJwZ6kWPaJwCIxgnFmo=
 github.com/neelance/sourcemap v0.0.0-20151028013722-8c68805598ab/go.mod h1:Qr6/a/Q4r9LP1IltGz7tA7iOK1WonHEYhu1HRBA7ZiM=
 github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d/go.mod h1:YUTz3bUH2ZwIWBy3CJBeOBEugqcmXREj14T+iG/4k4U=

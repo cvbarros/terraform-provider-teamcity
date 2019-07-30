@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform/helper/validation"
 
-	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
+	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 

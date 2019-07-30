@@ -6,7 +6,7 @@ resource "teamcity_vcs_root_git" "project_vcs" {
   name       = "Application"
   project_id = "${teamcity_project.project.id}"
 
-  url    = "https://github.com/cvbarros/go-teamcity-sdk"
+  url    = "https://github.com/cvbarros/go-teamcity"
   branch = "refs/head/master"
 }
 resource "teamcity_buildconfiguration" "triggered_build" {

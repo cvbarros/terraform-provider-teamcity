@@ -38,7 +38,7 @@ The following arguments are supported:
 
 * `build_config_id`: (Required) ID of the build configuration which this requirement will be configured.
 
-* `condition`: (Required) A string operator to match the `name` variable to the `value` which will satistfy the requirement. Possible [values are documented](https://godoc.org/github.com/cvbarros/go-teamcity-sdk/pkg/teamcity#pkg-variables) in the TeamCity API.
+* `condition`: (Required) A string operator to match the `name` variable to the `value` which will satistfy the requirement. Possible [values are documented](https://godoc.org/github.com/cvbarros/go-teamcity/pkg/teamcity#pkg-variables) in the TeamCity API.
 
 * `value`: (Required) Right-side operand of the condition to be checked against the parameter.
 
