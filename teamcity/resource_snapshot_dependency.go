@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	runBuildOptions = []string{"RUN_ADD_PROBLEM", "RUN", "MAKE_FAILED_TO_START", "CANCEL"}
+	runBuildOptions  = []string{"RUN_ADD_PROBLEM", "RUN", "MAKE_FAILED_TO_START", "CANCEL"}
+	snapshotIDFormat = "%s %s" // "<build_config_id> <snapshot dependency ID>"
 )
 
 func resourceSnapshotDependency() *schema.Resource {
@@ -92,7 +93,9 @@ func resourceSnapshotDependencyCreate(d *schema.ResourceData, meta interface{}) 
 		return err
 	}
 
-	d.SetId(out.ID)
+	// Since snapshote dependencies are sub-resources of build_configs, the
+	// buildConfigID is included as part of the snapshot dependency's ID.
+	d.SetId(fmt.Sprintf(snapshotIDFormat, buildConfigID, out.ID))
 
 	return resourceSnapshotDependencyRead(d, meta)
 }
@@ -165,9 +168,9 @@ func setSnapshotDependencyBoolProperty(d *schema.ResourceData, p *api.Properties
 }
 
 func resourceSnapshotDependencyRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*api.Client).DependencyService(d.Get("build_config_id").(string))
+	depService := meta.(*api.Client).DependencyService(d.Get("build_config_id").(string))
 
-	dt, err := getSnapshotDependency(client, d.Id())
+	dt, err := getSnapshotDependency(depService, d.Id())
 	if err != nil {
 		return err
 	}
@@ -184,14 +187,28 @@ func resourceSnapshotDependencyRead(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceSnapshotDependencyDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*api.Client)
-	dep := client.DependencyService(d.Get("build_config_id").(string))
+	depService := meta.(*api.Client).DependencyService(d.Get("build_config_id").(string))
 
-	return dep.DeleteSnapshot(d.Id())
+	dt, err := getSnapshotDependency(depService, d.Id())
+	if err != nil {
+		if strings.Contains(err.Error(), "404 Not Found") {
+			// This dependency was deleted out-of-band
+			return nil
+		}
+		return err
+	}
+
+	return depService.DeleteSnapshot(dt.ID)
 }
 
-func getSnapshotDependency(c *api.DependencyService, id string) (*api.SnapshotDependency, error) {
-	dt, err := c.GetSnapshotByID(id)
+func getSnapshotDependency(depService *api.DependencyService, id string) (*api.SnapshotDependency, error) {
+	var buildConfigID, snapshotID string
+	if n, err := fmt.Sscanf(id, snapshotIDFormat, &buildConfigID, &snapshotID); err != nil {
+		return nil, fmt.Errorf("invalid snapshot_dependency ID '%s' - %v", buildConfigID, err)
+	} else if n != 2 {
+		return nil, fmt.Errorf("invalid snapshot_dependency ID '%s' - Unrecognized format", buildConfigID)
+	}
+	dt, err := depService.GetSnapshotByID(snapshotID)
 	if err != nil {
 		return nil, err
 	}

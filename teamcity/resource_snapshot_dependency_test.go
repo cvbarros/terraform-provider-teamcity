@@ -118,8 +118,13 @@ func snapshotDependencyDestroyHelper(s *terraform.State, bt *string, client *api
 			continue
 		}
 
+		var buildConfigID, snapshotID string
+		if _, err := fmt.Sscanf(r.Primary.ID, "%s %s", &buildConfigID, &snapshotID); err != nil {
+			return fmt.Errorf("Failed to parse ID '%s': %v", r.Primary.ID, err)
+		}
+
 		dep := client.DependencyService(*bt)
-		_, err := dep.GetSnapshotByID(r.Primary.ID)
+		_, err := dep.GetSnapshotByID(snapshotID)
 
 		if err != nil {
 			if strings.Contains(err.Error(), "404") {
@@ -150,8 +155,13 @@ func teamcitySnapshotDependencyExistsHelper(n string, bt *string, s *terraform.S
 		return fmt.Errorf("No ID is set")
 	}
 
+	var buildConfigID, snapshotID string
+	if _, err := fmt.Sscanf(rs.Primary.ID, "%s %s", &buildConfigID, &snapshotID); err != nil {
+		return fmt.Errorf("Failed to parse ID '%s': %v", rs.Primary.ID, err)
+	}
+
 	dep := client.DependencyService(*bt)
-	out, err := dep.GetSnapshotByID(rs.Primary.ID)
+	out, err := dep.GetSnapshotByID(snapshotID)
 	if err != nil {
 		return fmt.Errorf("Received an error retrieving snapshot dependency: %s", err)
 	}
