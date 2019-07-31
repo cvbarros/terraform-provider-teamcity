@@ -25,9 +25,9 @@ func resourceBuildConfig() *schema.Resource {
 			if diff.HasChange("settings") {
 				o, n := diff.GetChange("settings")
 
-				os := o.(*schema.Set)
-				ns := n.(*schema.Set)
-				if os.Len() == 0 || ns.Len() == 0 {
+				os := o.([]interface{})
+				ns := n.([]interface{})
+				if len(os) == 0 || len(ns) == 0 {
 					return nil
 				}
 				osi, err := expandBuildConfigOptionsRaw(os)
@@ -142,10 +142,10 @@ func resourceBuildConfig() *schema.Resource {
 				Optional: true,
 			},
 			"settings": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
-				Computed: true,
 				MaxItems: 1,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"configuration_type": {
@@ -515,11 +515,11 @@ func expandBuildConfigOptions(d *schema.ResourceData) (*api.BuildTypeOptions, er
 		return nil, nil
 	}
 
-	return expandBuildConfigOptionsRaw(v.(*schema.Set))
+	return expandBuildConfigOptionsRaw(v.([]interface{}))
 }
 
-func expandBuildConfigOptionsRaw(v *schema.Set) (*api.BuildTypeOptions, error) {
-	raw := v.List()[0].(map[string]interface{})
+func expandBuildConfigOptionsRaw(v []interface{}) (*api.BuildTypeOptions, error) {
+	raw := v[0].(map[string]interface{})
 	opt := api.NewBuildTypeOptionsWithDefaults()
 
 	if v, ok := raw["configuration_type"]; ok {
