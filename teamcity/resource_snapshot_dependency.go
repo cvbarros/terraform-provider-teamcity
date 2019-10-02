@@ -168,10 +168,13 @@ func setSnapshotDependencyBoolProperty(d *schema.ResourceData, p *api.Properties
 }
 
 func resourceSnapshotDependencyRead(d *schema.ResourceData, meta interface{}) error {
-	depService := meta.(*api.Client).DependencyService(d.Get("build_config_id").(string))
-
-	dt, err := getSnapshotDependency(depService, d.Id())
+	_, dt, err := getSnapshotDependency(meta.(*api.Client), d.Id())
 	if err != nil {
+		if strings.Contains(err.Error(), "404") {
+			// This dependency was deleted out-of-band
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
@@ -187,11 +190,9 @@ func resourceSnapshotDependencyRead(d *schema.ResourceData, meta interface{}) er
 }
 
 func resourceSnapshotDependencyDelete(d *schema.ResourceData, meta interface{}) error {
-	depService := meta.(*api.Client).DependencyService(d.Get("build_config_id").(string))
-
-	dt, err := getSnapshotDependency(depService, d.Id())
+	depService, dt, err := getSnapshotDependency(meta.(*api.Client), d.Id())
 	if err != nil {
-		if strings.Contains(err.Error(), "404 Not Found") {
+		if strings.Contains(err.Error(), "404") {
 			// This dependency was deleted out-of-band
 			return nil
 		}
@@ -201,17 +202,20 @@ func resourceSnapshotDependencyDelete(d *schema.ResourceData, meta interface{}) 
 	return depService.DeleteSnapshot(dt.ID)
 }
 
-func getSnapshotDependency(depService *api.DependencyService, id string) (*api.SnapshotDependency, error) {
+func getSnapshotDependency(client *api.Client, id string) (*api.DependencyService, *api.SnapshotDependency, error) {
 	var buildConfigID, snapshotID string
 	if n, err := fmt.Sscanf(id, snapshotIDFormat, &buildConfigID, &snapshotID); err != nil {
-		return nil, fmt.Errorf("invalid snapshot_dependency ID '%s' - %v", buildConfigID, err)
+		return nil, nil, fmt.Errorf("invalid snapshot_dependency ID '%s' - %v", id, err)
 	} else if n != 2 {
-		return nil, fmt.Errorf("invalid snapshot_dependency ID '%s' - Unrecognized format", buildConfigID)
-	}
-	dt, err := depService.GetSnapshotByID(snapshotID)
-	if err != nil {
-		return nil, err
+		return nil, nil, fmt.Errorf("invalid snapshot_dependency ID '%s' - Unrecognized format", id)
 	}
 
-	return dt, nil
+	depService := client.DependencyService(buildConfigID)
+
+	dt, err := depService.GetSnapshotByID(snapshotID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return depService, dt, nil
 }
