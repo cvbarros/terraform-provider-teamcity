@@ -13,7 +13,7 @@ func resourceBuildTriggerVcs() *schema.Resource {
 		Read:   resourceBuildTriggerVcsRead,
 		Delete: resourceBuildTriggerVcsDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: subresourceImporter(resourceBuildTriggerVcsRead),
 		},
 
 		Schema: map[string]*schema.Schema{
