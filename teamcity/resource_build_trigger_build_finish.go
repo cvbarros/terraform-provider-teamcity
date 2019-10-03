@@ -14,7 +14,7 @@ func resourceBuildTriggerBuildFinish() *schema.Resource {
 		Read:   resourceBuildTriggerBuildFinishRead,
 		Delete: resourceBuildTriggerBuildFinishDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: subresourceImporter(resourceBuildTriggerBuildFinishRead),
 		},
 
 		Schema: map[string]*schema.Schema{

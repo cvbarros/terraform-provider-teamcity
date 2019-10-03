@@ -2,6 +2,7 @@ package teamcity
 
 import (
 	"fmt"
+	"strings"
 
 	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -14,7 +15,7 @@ func resourceArtifactDependency() *schema.Resource {
 		Read:   resourceArtifactDependencyRead,
 		Delete: resourceArtifactDependencyDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: subresourceImporter(resourceArtifactDependencyRead),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -101,6 +102,11 @@ func resourceArtifactDependencyRead(d *schema.ResourceData, meta interface{}) er
 
 	dt, err := getArtifactDependency(client, d.Id())
 	if err != nil {
+		if strings.Contains(err.Error(), "404") {
+			// This dependency was deleted out-of-band
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
