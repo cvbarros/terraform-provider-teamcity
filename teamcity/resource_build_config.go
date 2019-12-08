@@ -69,6 +69,10 @@ func resourceBuildConfig() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"is_template": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"project_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -196,6 +200,11 @@ func resourceBuildConfig() *schema.Resource {
 					},
 				},
 			},
+			"templates": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 		},
 	}
 }
@@ -214,6 +223,11 @@ func buildCounterChange(o *api.BuildTypeOptions, n *api.BuildTypeOptions) bool {
 func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	var projectID, name string
+	isTemplate := false
+
+	if err := validateBuildConfig(d); err != nil {
+		return err
+	}
 
 	if v, ok := d.GetOk("project_id"); ok {
 		projectID = v.(string)
@@ -223,11 +237,23 @@ func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 		name = v.(string)
 	}
 
-	bt, err := api.NewBuildType(projectID, name)
+	var bt *api.BuildType
+	var err error
+
+	if v, ok := d.GetOk("is_template"); ok {
+		isTemplate = v.(bool)
+	}
+
+	if isTemplate {
+		bt, err = api.NewBuildTypeTemplate(projectID, name)
+	} else {
+		bt, err = api.NewBuildType(projectID, name)
+	}
 	if err != nil {
 		return err
 	}
 
+	//BuildType templates don't support description
 	if v, ok := d.GetOk("description"); ok {
 		bt.Description = v.(string)
 	}
@@ -311,6 +337,7 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 		d.SetPartial("vcs_root")
 	}
+
 	if d.HasChange("step") {
 		o, n := d.GetChange("step")
 		os := o.(*schema.Set)
@@ -339,6 +366,24 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.SetPartial("step")
 	}
 
+	if d.HasChange("templates") {
+		remove, add := getChangeExpandedStringList(d.GetChange("templates"))
+		buildTemplateService := client.BuildTemplateService(d.Id())
+		for _, a := range add {
+			_, err := buildTemplateService.Attach(a)
+			if err != nil {
+				return err
+			}
+		}
+		for _, r := range remove {
+			err := buildTemplateService.Detach(r)
+			if err != nil {
+				return err
+			}
+		}
+		d.SetPartial("templates")
+	}
+
 	d.Partial(false)
 
 	return resourceBuildConfigRead(d, meta)
@@ -365,11 +410,18 @@ func resourceBuildConfigRead(d *schema.ResourceData, meta interface{}) error {
 	if err := d.Set("project_id", dt.ProjectID); err != nil {
 		return err
 	}
+	if err := d.Set("is_template", dt.IsTemplate); err != nil {
+		return err
+	}
 	err = flattenParameterCollection(d, dt.Parameters)
 	if err != nil {
 		return err
 	}
 	err = flattenBuildConfigOptions(d, dt.Options)
+	if err != nil {
+		return err
+	}
+	err = flattenTemplates(d, dt.Templates)
 	if err != nil {
 		return err
 	}
@@ -412,6 +464,19 @@ func resourceBuildConfigRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+func validateBuildConfig(d *schema.ResourceData) error {
+	if v, ok := d.GetOk("is_template"); ok {
+		isTemplate := v.(bool)
+
+		if isTemplate {
+			if _, isSet := d.GetOkExists("description"); isSet {
+				return fmt.Errorf("'description' field is not supported for Build Configuration Templates. See issue https://youtrack.jetbrains.com/issue/TW-63617 for details")
+			}
+		}
+	}
+	return nil
+}
+
 func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
 	dt, err := c.BuildTypes.GetByID(id)
 	if err != nil {
@@ -424,6 +489,22 @@ func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
 var stepTypeMap = map[string]string{
 	api.StepTypePowershell:  "powershell",
 	api.StepTypeCommandLine: "cmd_line",
+}
+
+func flattenTemplates(d *schema.ResourceData, templates *api.Templates) error {
+	if templates == nil {
+		return nil
+	}
+	if templates.Count > 0 {
+		templateIds := make([]string, templates.Count)
+		for i, v := range templates.Items {
+			templateIds[i] = v.ID
+		}
+		if err := d.Set("templates", flattenStringSlice(templateIds)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func flattenParameterCollection(d *schema.ResourceData, params *api.Parameters) error {

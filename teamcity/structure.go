@@ -42,3 +42,12 @@ func flattenStringSlice(list []string) []interface{} {
 	}
 	return vs
 }
+
+func getChangeExpandedStringList(oraw interface{}, nraw interface{}) (remove []string, add []string) {
+	o := oraw.([]interface{})
+	n := nraw.([]interface{})
+
+	remove = expandStringSlice(o)
+	add = expandStringSlice(n)
+	return
+}
