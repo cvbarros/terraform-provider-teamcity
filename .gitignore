@@ -27,6 +27,8 @@ data_dir/
 
 #Terraform
 .terraform/
+*.tfstate
+*.tfstate.backup
 
 #Local Testing environment
 .test.env
