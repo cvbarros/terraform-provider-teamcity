@@ -10,6 +10,7 @@ jobs:
     env:
       GO111MODULE: on
     steps:
+      - uses: actions/checkout@v1
       - uses: ./.github/builder
   publish:
     name: Publish
