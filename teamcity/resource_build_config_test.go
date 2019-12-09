@@ -2,13 +2,13 @@ package teamcity_test
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/terraform"
 	"regexp"
 	"strings"
 	"testing"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccBuildConfig_Basic(t *testing.T) {
@@ -533,8 +533,8 @@ func TestAccBuildConfig_AttachTemplates(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(template3, &t3),
 					resource.TestCheckResourceAttr(resName, "templates.#", "2"),
-					resource.TestCheckResourceAttr(resName, "templates.0", t1.ID),
-					resource.TestCheckResourceAttr(resName, "templates.1", t3.ID),
+					resource.TestCheckResourceAttrPtr(resName, "templates.0", &t1.ID),
+					resource.TestCheckResourceAttrPtr(resName, "templates.1", &t3.ID),
 				),
 			},
 		},
@@ -956,23 +956,28 @@ resource "teamcity_project" "build_config_project_test" {
   name = "build_config_project_test"
 }
 
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = teamcity_project.build_config_project_test.id
+
+	templates = [ teamcity_build_config.build_configuration_template1.id, teamcity_build_config.build_configuration_template2.id ]
+
+	depends_on = [
+		teamcity_build_config.build_configuration_template1,
+		teamcity_build_config.build_configuration_template2,
+	]
+}
+
 resource "teamcity_build_config" "build_configuration_template1" {
 	name = "build template 1"
 	is_template = true
-	project_id = "${teamcity_project.build_config_project_test.id}"
+	project_id = teamcity_project.build_config_project_test.id
 }
 
 resource "teamcity_build_config" "build_configuration_template2" {
 	name = "build template 2"
 	is_template = true
-	project_id = "${teamcity_project.build_config_project_test.id}"
-}
-
-resource "teamcity_build_config" "build_configuration_test" {
-	name = "build config test"
-	project_id = "${teamcity_project.build_config_project_test.id}"
-
-	templates = ["${teamcity_build_config.build_configuration_template1.id}", "${teamcity_build_config.build_configuration_template2.id}"]
+	project_id = teamcity_project.build_config_project_test.id
 }
 `
 
@@ -981,23 +986,30 @@ resource "teamcity_project" "build_config_project_test" {
   name = "build_config_project_test"
 }
 
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = teamcity_project.build_config_project_test.id
+
+	templates = [ teamcity_build_config.build_configuration_template1.id, teamcity_build_config.build_configuration_template3.id ]
+}
+
 resource "teamcity_build_config" "build_configuration_template1" {
 	name = "build template 1"
 	is_template = true
-	project_id = "${teamcity_project.build_config_project_test.id}"
+	project_id = teamcity_project.build_config_project_test.id
+}
+
+# Need to keep this around here or Terraform is trying to destroy template2 before updating the dependant resource
+resource "teamcity_build_config" "build_configuration_template2" {
+	name = "build template 2"
+	is_template = true
+	project_id = teamcity_project.build_config_project_test.id
 }
 
 resource "teamcity_build_config" "build_configuration_template3" {
 	name = "build template 3"
 	is_template = true
-	project_id = "${teamcity_project.build_config_project_test.id}"
-}
-
-resource "teamcity_build_config" "build_configuration_test" {
-	name = "build config test"
-	project_id = "${teamcity_project.build_config_project_test.id}"
-
-	templates = ["${teamcity_build_config.build_configuration_template1.id}", "${teamcity_build_config.build_configuration_template3.id}"]
+	project_id = teamcity_project.build_config_project_test.id
 }
 `
 
