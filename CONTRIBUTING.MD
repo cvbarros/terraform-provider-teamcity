@@ -13,7 +13,7 @@ Feature requests are welcome, still, try to be as specific as possible about wha
 ## Developing ##
 If you want to contribute in form of development, you may fork this repo, clone it locally then create a branch to work on. [This link](https://opensource.guide/how-to-contribute/#opening-a-pull-request) has helpful information to get started.
 
-You'll first need [Go](https://golang.org/doc/install) installed on your machine (version 1.11+ is *required*).  
+You'll first need [Go](https://golang.org/doc/install) installed on your machine (version 1.12+ is *required*).
 
 > This project makes use of [Go Modules](https://github.com/golang/go/wiki/Modules). If you clone it inside `$GOPATH`, make sure you have `GO111MODULE=on` before using any `go` commands. The default is `auto`, which will disable modules support inside `$GOPATH`.
 
