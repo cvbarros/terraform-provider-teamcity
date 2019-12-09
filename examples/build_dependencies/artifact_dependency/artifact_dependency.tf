@@ -1,28 +1,34 @@
-resource "teamcity_project" "nocode" {
-  name = "No Code"
+# This configuration sample shows how to create build chains with artifact dependency link
+provider "teamcity" {
+  address  = var.teamcity_url
+  username = var.teamcity_username
+  password = var.teamcity_password
 }
 
-resource "teamcity_buildconfiguration" "dependency_source_build" {
-  project_id          = "${teamcity_project.nocode.id}"
-  name                = "Source Build"
-  description         = "Source build that produces artifacts"
-  build_number_format = "0.0.%build.counter%"
-  artifact_paths      = [""]
+resource "teamcity_project" "project" {
+  name = "Samples - Artifact Dependency Project"
 }
 
-resource "teamcity_buildconfiguration" "dependency_dependent_build" {
-  project_id          = "${teamcity_project.nocode.id}"
-  name                = "Dependent Build"
-  description         = "Build that has artifact dependency on other build"
-  build_number_format = "0.0.%build.counter%"
-  artifact_paths      = [""]
+resource "teamcity_build_config" "dependency_source_build" {
+  project_id  = teamcity_project.project.id
+  name        = "Source Build"
+  description = "Source build that produces artifacts"
+  settings {
+    artifact_paths = ["+:*.json => /config/*.json"]
+  }
 }
 
-resource "teamcity_artifact_dependency" "buildrelease_schedule_trigger" {
+resource "teamcity_build_config" "dependency_dependent_build" {
+  project_id  = teamcity_project.project.id
+  name        = "Dependent Build"
+  description = "Build that has artifact dependency on other build"
+}
+
+resource "teamcity_artifact_dependency" "artifact_dependency" {
   #Required
-  build_config_id        = "${teamcity_buildconfiguration.dependency_dependent_build.id}"
+  build_config_id = teamcity_build_config.dependency_dependent_build.id
   #Required
-  source_build_config_id = "${teamcity_buildconfiguration.dependency_source_build.id}"
+  source_build_config_id = teamcity_build_config.dependency_source_build.id
 
   #Controls from which source build it should get the artifacts
   #It can be "lastSuccessful", "lastPinned", "lastFinished", "sameChainOrLastFinished", "buildNumber" or "buildTag"

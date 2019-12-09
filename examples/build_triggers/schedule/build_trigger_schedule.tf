@@ -1,35 +1,29 @@
+# This configuration sample shows how to setup a build configuration
+# to be triggered on a schedule
+provider "teamcity" {
+  address  = var.teamcity_url
+  username = var.teamcity_username
+  password = var.teamcity_password
+}
+
 resource "teamcity_project" "project" {
-  name = "Go TeamCity SDK"
+  name = "Samples - Build Trigger - Schedule Project"
 }
 
-resource "teamcity_vcs_root_git" "project_vcs" {
-  name       = "Application"
-  project_id = "${teamcity_project.project.id}"
-
-  url    = "https://github.com/cvbarros/go-teamcity"
-  branch = "refs/head/master"
+resource "teamcity_build_config" "triggered" {
+  project_id  = teamcity_project.project.id
+  name        = "Triggered Build"
+  description = "Build triggered on schedule"
 }
-resource "teamcity_buildconfiguration" "triggered_build" {
-  project_id          = "${teamcity_project.project.id}"
-  name                = "Triggered Build"
-  description         = "Build triggered on schedules"
-  build_number_format = "0.0.%build.counter%"
-  artifact_paths      = [""]
 
-  step {
-    type = "command_line"
-    file = "build.sh"
-    args = "-t buildrelease"
-  }
-
-  vcs_root {
-    id             = "${teamcity_vcs_root_git.project_vcs}"
-    checkout_rules = ["+:*"]
-  }
+resource "teamcity_build_config" "watched" {
+  project_id  = teamcity_project.project.id
+  name        = "Watched Build"
+  description = "Trigger will only fire if watched build has pending changes"
 }
 
 resource "teamcity_build_trigger_schedule" "schedule_trigger" {
-  build_config_id = "${teamcity_buildconfiguration.triggered_build.id}"
+  build_config_id = teamcity_build_config.triggered.id
 
   #daily, weekly (cron yet not supported)
   schedule = "daily"
@@ -59,7 +53,7 @@ resource "teamcity_build_trigger_schedule" "schedule_trigger" {
   with_pending_changes_only = true
 
   #Promote watched build if there is a dependency (snapshot or artifact) on its build configuration. Default: true
-  promote_watched_build = false
+  promote_watched_build = true
 
   #Delete all files in checkout directory before the build - Default: false
   enforce_clean_checkout = true
@@ -71,7 +65,7 @@ resource "teamcity_build_trigger_schedule" "schedule_trigger" {
   only_if_watched_changes = true
 
   #Configures the watched build for this trigger
-  watched_build_config_id = "${teamcity_build_config.watched.id}"
+  watched_build_config_id = teamcity_build_config.watched.id
 
   #Specify which version of the watched build should be considered. "lastFinished", "lastPinned", "lastSuccessful", "buildTag"
   revision = "lastFinished"

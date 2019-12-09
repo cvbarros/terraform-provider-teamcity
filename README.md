@@ -34,6 +34,17 @@ Using the provider
 
 If you're building the provider, follow the instructions to [install it as a plugin.](https://www.terraform.io/docs/plugins/basics.html#installing-a-plugin) After placing it into your plugins directory, run `terraform init` to initialize it.
 
+Example Configurations
+----------------------
+You can find several sample configurations under `/examples`. As a best effort basis, the samples will be following 
+the same terraform version as the provider is built against.  
+
+There is a `.terraform-version` file that indicates the 
+minimum terraform version to which the samples are compatible. Use of [tfenv](https://github.com/tfutils/tfenv) is recommended so you can run multiple
+versions of terraform locally and switch based on the `.terraform-version` file.  
+
+Please feel free to open an issue if you encounter any problems, or contribute to new sample configurations.
+
 Developing
 ---------------------------
 

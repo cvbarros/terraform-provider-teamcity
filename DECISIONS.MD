@@ -1,3 +1,7 @@
+# 2019-12-08
+All samples have been converted to TF 0.12 syntax.
+Samples have also been organized in separate folders to make it easy to apply configurations.
+
 # 2019-07-30
 Project has been converted to use Go Modules. This follows on other major providers and Terraform project itself.
 
@@ -43,7 +47,7 @@ resource "teamcity_build_configuration" "pull_request" {
 resource "teamcity_feature_commit_status_publisher" "github_commit_update" {
    build_config_id = "${teamcity_build_configuration.pull_request.id}
    publisher = "github"
-   
+
    github {
       auth_type = "password"
       host = "https://api.github.com"

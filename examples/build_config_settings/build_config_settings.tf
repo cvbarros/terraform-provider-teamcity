@@ -1,17 +1,24 @@
-resource "teamcity_project" "nocode" {
-  name = "No Code"
+# This configuration sample shows how to manage Build Configuration Settings
+provider "teamcity" {
+  address  = var.teamcity_url
+  username = var.teamcity_username
+  password = var.teamcity_password
+}
+
+resource "teamcity_project" "project" {
+  name = "Samples - Build Config Settings Project"
 }
 
 
-resource "teamcity_buildconfiguration" "nocode_config" {
-  name = "SimpleConfig"
+resource "teamcity_build_config" "nocode_config" {
+  name        = "SimpleConfig"
   description = "Configuration to showcase build configuration settings"
-  project_id = "${teamcity_project.nocode.id}"
+  project_id  = teamcity_project.project.id
 
   #These settings appear on "General Settings" for build configurations in TeamCity's UI
   settings {
     #Type of build configuration: "regular" (default), "composite" or "deployment"
-    configuration_type = "regular"
+    configuration_type = "REGULAR"
 
     #The format may include '%build.counter%' as a placeholder for the build counter value, for example, 1.%build.counter%.
     #It may also contain a reference to any other available parameter, for example, %build.vcs.number.VCSRootName%.
