@@ -42,3 +42,34 @@ func flattenStringSlice(list []string) []interface{} {
 	}
 	return vs
 }
+
+func getChangeExpandedStringList(oraw interface{}, nraw interface{}) (remove []string, add []string) {
+	old := oraw.([]interface{})
+	new := nraw.([]interface{})
+
+	remove = make([]string, 0)
+	add = make([]string, 0)
+
+	for _, n := range new {
+		if _, contains := sliceContainsString(old, n.(string)); !contains {
+			add = append(add, n.(string))
+		}
+	}
+	for _, o := range old {
+		if _, contains := sliceContainsString(new, o.(string)); !contains {
+			remove = append(remove, o.(string))
+		}
+	}
+
+	return
+}
+
+func sliceContainsString(slice []interface{}, s string) (int, bool) {
+	for idx, value := range slice {
+		v := value.(string)
+		if v == s {
+			return idx, true
+		}
+	}
+	return -1, false
+}

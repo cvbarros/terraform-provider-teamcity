@@ -1,4 +1,4 @@
-FROM golang:1.11
+FROM golang:1.12
 
 LABEL "name"="Go Builder"
 LABEL "version"="0.2.0"

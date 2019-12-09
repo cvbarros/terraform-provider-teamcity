@@ -69,6 +69,10 @@ func resourceBuildConfig() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"is_template": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"project_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -144,10 +148,11 @@ func resourceBuildConfig() *schema.Resource {
 				Optional: true,
 			},
 			"settings": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				MaxItems: 1,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				MaxItems:   1,
+				ConfigMode: schema.SchemaConfigModeAttr,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"configuration_type": {
@@ -196,6 +201,11 @@ func resourceBuildConfig() *schema.Resource {
 					},
 				},
 			},
+			"templates": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Optional: true,
+			},
 		},
 	}
 }
@@ -214,6 +224,11 @@ func buildCounterChange(o *api.BuildTypeOptions, n *api.BuildTypeOptions) bool {
 func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	var projectID, name string
+	isTemplate := false
+
+	if err := validateBuildConfig(d); err != nil {
+		return err
+	}
 
 	if v, ok := d.GetOk("project_id"); ok {
 		projectID = v.(string)
@@ -223,12 +238,27 @@ func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 		name = v.(string)
 	}
 
-	bt, err := api.NewBuildType(projectID, name)
+	log.Printf("[DEBUG] resourceBuildConfigCreate: starting create for build configuration named '%v'.", name)
+
+	var bt *api.BuildType
+	var err error
+
+	if v, ok := d.GetOk("is_template"); ok {
+		log.Printf("[DEBUG] resourceBuildConfigCreate: setting is_template = '%v'.", v.(bool))
+		isTemplate = v.(bool)
+	}
+
+	if isTemplate {
+		bt, err = api.NewBuildTypeTemplate(projectID, name)
+	} else {
+		bt, err = api.NewBuildType(projectID, name)
+	}
 	if err != nil {
 		return err
 	}
 
-	if v, ok := d.GetOk("description"); ok {
+	//BuildType templates don't support description
+	if v, ok := d.GetOk("description"); ok && !isTemplate {
 		bt.Description = v.(string)
 	}
 
@@ -251,9 +281,13 @@ func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	log.Printf("[DEBUG] resourceBuildConfigCreate: sucessfully created build configuration with id = '%v'. Marking new resource.", created.ID)
+
 	d.MarkNewResource()
 	d.SetId(created.ID)
 	d.Partial(true)
+
+	log.Printf("[DEBUG] resourceBuildConfigCreate: initial creation finished. Calling resourceBuildConfigUpdate to update the rest of resource.")
 
 	return resourceBuildConfigUpdate(d, meta)
 }
@@ -261,12 +295,15 @@ func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	dt, err := getBuildConfiguration(client, d.Id())
+	log.Printf("[DEBUG] resourceBuildConfigUpdate started for resouceId: %v", d.Id())
+
 	if err != nil {
 		return err
 	}
 
 	var changed bool
 	if d.HasChange("sys_params") || d.HasChange("config_params") || d.HasChange("env_params") {
+		log.Printf("[DEBUG] resourceBuildConfigUpdate: change detected for params")
 		dt.Parameters, err = expandParameterCollection(d)
 		if err != nil {
 			return err
@@ -275,11 +312,13 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if v, ok := d.GetOk("description"); ok {
 		if d.HasChange("description") {
+			log.Printf("[DEBUG] resourceBuildConfigUpdate: change detected for description")
 			dt.Description = v.(string)
 			changed = true
 		}
 	}
 	if d.HasChange("settings") {
+		log.Printf("[DEBUG] resourceBuildConfigUpdate: change detected for settings")
 		if _, ok := d.GetOk("settings"); ok {
 			dt.Options, err = expandBuildConfigOptions(d)
 			changed = true
@@ -304,14 +343,16 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 			toAttach := buildVcsRootEntry(raw)
 
 			err := client.BuildTypes.AttachVcsRootEntry(dt.ID, toAttach)
-
 			if err != nil {
 				return err
 			}
+			log.Printf("[DEBUG] resourceBuildConfigUpdate: attached vcsRoot '%v' to build configuration", toAttach.ID)
 		}
 		d.SetPartial("vcs_root")
 	}
+
 	if d.HasChange("step") {
+		log.Printf("[DEBUG] resourceBuildConfigUpdate: change detected for steps")
 		o, n := d.GetChange("step")
 		os := o.(*schema.Set)
 		ns := n.(*schema.Set)
@@ -339,28 +380,58 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.SetPartial("step")
 	}
 
-	d.Partial(false)
+	if d.HasChange("templates") {
+		log.Printf("[DEBUG] resourceBuildConfigUpdate: change detected for templates")
+		remove, add := getChangeExpandedStringList(d.GetChange("templates"))
+		buildTemplateService := client.BuildTemplateService(d.Id())
+		for _, a := range add {
+			_, err := buildTemplateService.Attach(a)
+			log.Printf("[DEBUG] resourceBuildConfigUpdate: attached template '%v' to build configuration", a)
+			if err != nil {
+				return err
+			}
+		}
+		for _, r := range remove {
+			err := buildTemplateService.Detach(r)
+			if err != nil {
+				return err
+			}
+			log.Printf("[DEBUG] resourceBuildConfigUpdate: detached template '%v' from build configuration", r)
+		}
+		d.SetPartial("templates")
+	}
 
+	d.Partial(false)
+	log.Printf("[DEBUG] resourceBuildConfigUpdate: updated finished. Calling 'read' to refresh state.")
 	return resourceBuildConfigRead(d, meta)
 }
 
 func resourceBuildConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
+	log.Printf("[DEBUG] resourceBuildConfigDelete: destroying build configuration '%v'.", d.Id())
 	return client.BuildTypes.Delete(d.Id())
 }
 
 func resourceBuildConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
+	log.Printf("[DEBUG] resourceBuildConfigRead started for resouceId: %v", d.Id())
 	dt, err := getBuildConfiguration(client, d.Id())
 	if err != nil {
 		return err
 	}
+	log.Printf("[DEBUG] BuildConfiguration '%v' retrieved successfully", dt.Name)
 	if err := d.Set("name", dt.Name); err != nil {
 		return err
 	}
-	if err := d.Set("description", dt.Description); err != nil {
+	if err := d.Set("is_template", dt.IsTemplate); err != nil {
 		return err
+	}
+	//description not supported for templates.
+	if !dt.IsTemplate {
+		if err := d.Set("description", dt.Description); err != nil {
+			return err
+		}
 	}
 	if err := d.Set("project_id", dt.ProjectID); err != nil {
 		return err
@@ -370,6 +441,10 @@ func resourceBuildConfigRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 	err = flattenBuildConfigOptions(d, dt.Options)
+	if err != nil {
+		return err
+	}
+	err = flattenTemplates(d, dt.Templates)
 	if err != nil {
 		return err
 	}
@@ -412,6 +487,19 @@ func resourceBuildConfigRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
+func validateBuildConfig(d *schema.ResourceData) error {
+	if v, ok := d.GetOk("is_template"); ok {
+		isTemplate := v.(bool)
+
+		if isTemplate {
+			if _, isSet := d.GetOkExists("description"); isSet {
+				return fmt.Errorf("'description' field is not supported for Build Configuration Templates. See issue https://youtrack.jetbrains.com/issue/TW-63617 for details")
+			}
+		}
+	}
+	return nil
+}
+
 func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
 	dt, err := c.BuildTypes.GetByID(id)
 	if err != nil {
@@ -424,6 +512,22 @@ func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
 var stepTypeMap = map[string]string{
 	api.StepTypePowershell:  "powershell",
 	api.StepTypeCommandLine: "cmd_line",
+}
+
+func flattenTemplates(d *schema.ResourceData, templates *api.Templates) error {
+	if templates == nil {
+		return nil
+	}
+	templateIds := make([]string, templates.Count)
+	if templates.Count > 0 {
+		for i, v := range templates.Items {
+			templateIds[i] = v.ID
+		}
+	}
+	if err := d.Set("templates", templateIds); err != nil {
+		return err
+	}
+	return nil
 }
 
 func flattenParameterCollection(d *schema.ResourceData, params *api.Parameters) error {

@@ -35,6 +35,38 @@ resource "teamcity_build_config" "build" {
 }
 ```
 
+## Build Configuration Templates
+Build Configurations can be managed with the same resource for both regular and templates.
+To manage it as a template, specify the `is_template` attribute as `true`.
+To associate templates with a given build configuration, use the `templates` list attribute.
+
+```hcl
+resource "teamcity_project" "project" {
+  name = "My Project"
+}
+
+resource "teamcity_build_config" "build" {
+  name = "MainBuildConfiguration"
+  description = "Build 'My Project'"
+  project_id = teamcity_project.project.id
+
+  templates = [ teamcity_build_config.template1.id, teamcity_build_config.template2.id ]
+}
+
+resource "teamcity_build_config", "template1" {
+  name = "Build Config Template 1"
+  # Description is not supported for Build Configuration Templates! https://youtrack.jetbrains.com/issue/TW-63617
+  project_id = teamcity_project.project.id
+  is_template = true
+}
+
+resource "teamcity_build_config", "template2" {
+  name = "Build Config Template 2"
+  project_id = teamcity_project.project.id
+  is_template = true
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -45,11 +77,15 @@ The following arguments are supported:
 
 * `project_id`: (Required) ID of the project under which this build configuration will be created.
 
+* `is_template`: (Optional) If true, the build configuration will be managed as a template. Defaults to `false`. **Note**: If set to `true`, the `description` property must not be used. This is due https://youtrack.jetbrains.com/issue/TW-63617. 
+
 * `env_params`: (Optional) A map of parameters of type `Environment Variables`. Environment variables will be added to the environment of the processes launched by the build runner (without env. prefix).
 
 * `config_params`: (Optional) A map of parameters of type `Configuration Parameters`. Configuration parameters are not passed into build, can be used in references only.
 
 * `sys_params`: (Optional) A map of parameters of type `System Properties`. System properties will be passed into the build (without system. prefix), they are only supported by the build runners that understand the property notion.
+
+* `templates`: (Optional) A list of Build Configuration Template IDs to associate to this build configuration.
 
 The `vcs_root` block is used to manage attaching VCS Roots to this build configuration. For every attachment, use a `vcs_root` block to configure it:
 

@@ -2,12 +2,13 @@ package teamcity_test
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/terraform"
+	"regexp"
 	"strings"
 	"testing"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccBuildConfig_Basic(t *testing.T) {
@@ -25,6 +26,41 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "name", "build config test"),
 					resource.TestCheckResourceAttr(resName, "description", "build config test desc"),
 					resource.TestCheckResourceAttr(resName, "project_id", "BuildConfigProjectTest"),
+					resource.TestCheckResourceAttr(resName, "is_template", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_TemplateDoesNotSupportDescription(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config:      TestAccBuildConfigTemplateWithDescription,
+				ExpectError: regexp.MustCompile("'description' field is not supported for Build Configuration Templates. See issue https://youtrack.jetbrains.com/issue/TW-63617 for details"),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_Template(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccBuildConfigTemplate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "name", "build config template"),
+					resource.TestCheckResourceAttr(resName, "project_id", "BuildConfigProjectTest"),
+					resource.TestCheckResourceAttr(resName, "is_template", "true"),
 				),
 			},
 		},
@@ -469,6 +505,42 @@ func TestAccBuildConfig_VcsRoot(t *testing.T) {
 	})
 }
 
+func TestAccBuildConfig_AttachTemplates(t *testing.T) {
+	var bc, t1, t2 api.BuildType
+	var t3 api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	template1 := "teamcity_build_config.build_configuration_template1"
+	template2 := "teamcity_build_config.build_configuration_template2"
+	template3 := "teamcity_build_config.build_configuration_template3"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: TestAccBuildConfigAttachTemplates,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					testAccCheckBuildConfigExists(template1, &t1),
+					testAccCheckBuildConfigExists(template2, &t2),
+					resource.TestCheckResourceAttr(resName, "templates.#", "2"),
+					resource.TestCheckResourceAttrPtr(resName, "templates.0", &t1.ID),
+					resource.TestCheckResourceAttrPtr(resName, "templates.1", &t2.ID),
+				),
+			},
+			{
+				Config: TestAccBuildConfigUpdatedTemplates,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(template3, &t3),
+					resource.TestCheckResourceAttr(resName, "templates.#", "2"),
+					resource.TestCheckResourceAttrPtr(resName, "templates.0", &t1.ID),
+					resource.TestCheckResourceAttrPtr(resName, "templates.1", &t3.ID),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckStepRemoved(buildTypeID *string, stepRemoved map[string]string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(*api.Client)
@@ -700,6 +772,31 @@ resource "teamcity_build_config" "build_configuration_test" {
 }
 `
 
+const TestAccBuildConfigTemplateWithDescription = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config template"
+	is_template = "true"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	description = "build config template desc"
+}
+`
+
+const TestAccBuildConfigTemplate = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config template"
+	is_template = "true"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+}
+`
+
 const TestAccBuildConfigBasicUpdated = `
 resource "teamcity_project" "build_config_project_test" {
   name = "build_config_project_test"
@@ -851,6 +948,68 @@ resource "teamcity_build_config" "build_configuration_test" {
 		id = "${teamcity_vcs_root_git.build_config_vcsroot_test.id}"
 		checkout_rules = ["+:*", "-:README.MD"]
 	}
+}
+`
+
+const TestAccBuildConfigAttachTemplates = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = teamcity_project.build_config_project_test.id
+
+	templates = [ teamcity_build_config.build_configuration_template1.id, teamcity_build_config.build_configuration_template2.id ]
+
+	depends_on = [
+		teamcity_build_config.build_configuration_template1,
+		teamcity_build_config.build_configuration_template2,
+	]
+}
+
+resource "teamcity_build_config" "build_configuration_template1" {
+	name = "build template 1"
+	is_template = true
+	project_id = teamcity_project.build_config_project_test.id
+}
+
+resource "teamcity_build_config" "build_configuration_template2" {
+	name = "build template 2"
+	is_template = true
+	project_id = teamcity_project.build_config_project_test.id
+}
+`
+
+const TestAccBuildConfigUpdatedTemplates = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = teamcity_project.build_config_project_test.id
+
+	templates = [ teamcity_build_config.build_configuration_template1.id, teamcity_build_config.build_configuration_template3.id ]
+}
+
+resource "teamcity_build_config" "build_configuration_template1" {
+	name = "build template 1"
+	is_template = true
+	project_id = teamcity_project.build_config_project_test.id
+}
+
+# Need to keep this around here or Terraform is trying to destroy template2 before updating the dependant resource
+resource "teamcity_build_config" "build_configuration_template2" {
+	name = "build template 2"
+	is_template = true
+	project_id = teamcity_project.build_config_project_test.id
+}
+
+resource "teamcity_build_config" "build_configuration_template3" {
+	name = "build template 3"
+	is_template = true
+	project_id = teamcity_project.build_config_project_test.id
 }
 `
 
