@@ -12,15 +12,20 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - uses: ./.github/builder
+      - uses: actions/upload-artifact@v1
+        with:
+          name: binaries
+          path: .release
   publish:
     name: Publish
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: Dump gitconfig
-        run: |
-          cat ./.git/config
+      - uses: actions/download-artifact@v1
+        with:
+          name: binaries
+          path: .release
       - name: github-upload-release
         uses: docker://moonswitch/github-upload-release:master
         env:
