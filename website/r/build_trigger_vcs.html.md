@@ -25,8 +25,8 @@ resource "teamcity_vcs_root_git" "vcs" {
   branch = "refs/head/master"
 }
 
-resource "teamcity_buildconfiguration" "triggered_build" {
-  project_id          = "${teamcity_project.project.id}"
+resource "teamcity_build_config" "triggered_build" {
+  project_id          = teamcity_project.project.id
   name                = "Triggered Build"
 
   step {
@@ -37,7 +37,7 @@ resource "teamcity_buildconfiguration" "triggered_build" {
 }
 
 resource "teamcity_build_trigger_vcs" "vcs_trigger" {
-    build_config_id = "${teamcity_buildconfiguration.triggered_build.id}"
+    build_config_id = teamcity_build_config.triggered_build.id
 
     rules = ["-:*.md"]
     branch_filter = ["master"]
@@ -50,7 +50,7 @@ The following arguments are supported:
 
 * `build_config_id`: (Required) ID of the build configuration which this trigger will be configured.
 
-* `rules`: (Optional) A list of rules: +|-:[Ant-like wildcard] that can make this trigger fire.
+* `rules`: (Required) A list of rules: +|-:[Ant-like wildcard] that can make this trigger fire.
 
 * `branch_filter`: (Optional) A list of branches. Only changes in the scoped branches will fire this trigger.
 

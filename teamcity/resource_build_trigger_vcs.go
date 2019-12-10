@@ -59,7 +59,7 @@ func resourceBuildTriggerVcsCreate(d *schema.ResourceData, meta interface{}) err
 			return err
 		}
 	} else {
-		return fmt.Errorf("Error getting required property 'rules' for vcs trigger")
+		return fmt.Errorf("error getting required property 'rules' for vcs trigger")
 	}
 
 	if v, ok := d.GetOk("branch_filter"); ok {
