@@ -298,7 +298,7 @@ resource "teamcity_project" "vcs_root_project" {
 
 resource "teamcity_vcs_root_git" "git_test" {
 	name = "application"
-	project_id = "${teamcity_project.vcs_root_project.id}"
+	project_id = teamcity_project.vcs_root_project.id
 	fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
 	default_branch = "refs/head/master"
 	branches = [

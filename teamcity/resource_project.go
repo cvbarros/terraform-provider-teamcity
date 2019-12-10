@@ -1,10 +1,10 @@
 package teamcity
 
 import (
-	"log"
-
+	"fmt"
 	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
+	"log"
 )
 
 func resourceProject() *schema.Resource {
@@ -125,14 +125,15 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	flattenParameterCollection(d, dt.Parameters)
-
-	log.Printf("[DEBUG] Project: %v", dt)
 	return nil
 }
 
 func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
-	return client.Projects.Delete(d.Id())
+	log.Print(fmt.Sprintf("[DEBUG]: resourceProjectDelete - Destroying project %v", d.Id()))
+	err := client.Projects.Delete(d.Id())
+	log.Print(fmt.Sprintf("[INFO]: resourceProjectDelete - Destroyed project %v", d.Id()))
+	return err
 }
 
 func resourceProjectImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
