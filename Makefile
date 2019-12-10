@@ -7,6 +7,15 @@ BUILDER_IMAGE=cvbarros/terraform-provider-teamcity-builder
 
 default: test
 
+build:
+	go build -o ./bin/terraform-provider-teamcity_${VERSION}
+
+install: build
+	cp ./bin/terraform-provider-teamcity_${VERSION} ~/.terraform.d/plugins/
+
+clean:
+	rm -rf ./bin
+
 builder-action:
 	docker run -e GITHUB_WORKSPACE='/github/workspace' -e GITHUB_REPOSITORY='terraform-provider-teamcity' -e GITHUB_REF='v0.0.1-alpha' --name terraform-provider-teamcity-builder $(BUILDER_IMAGE):latest
 

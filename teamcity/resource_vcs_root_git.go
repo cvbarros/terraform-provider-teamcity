@@ -332,7 +332,7 @@ func resourceVcsRootGitRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if len(dt.Options.BranchSpec) > 0 {
-		if err := d.Set("branches", dt.Options.BranchSpec); err != nil {
+		if err := d.Set("branches", flattenStringSlice(dt.Options.BranchSpec)); err != nil {
 			return err
 		}
 	}
@@ -351,10 +351,8 @@ func resourceVcsRootGitRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if d.HasChange("username_style") {
-		if err := d.Set("username_style", flattenUsernameStyleMap[string(dt.Options.UsernameStyle)]); err != nil {
-			return err
-		}
+	if err := d.Set("username_style", flattenUsernameStyleMap[string(dt.Options.UsernameStyle)]); err != nil {
+		return err
 	}
 
 	if agent, err := flattenGitAgentSettings(d, dt.Options.AgentSettings); err != nil {

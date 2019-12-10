@@ -11,6 +11,25 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
+func TestAccVcsRootGit_Import(t *testing.T) {
+	resName := "teamcity_vcs_root_git.git_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckVcsRootGitDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccVcsRootGitBasic,
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccVcsRootGit_Basic(t *testing.T) {
 	var vcs api.GitVcsRoot
 	resName := "teamcity_vcs_root_git.git_test"
@@ -35,6 +54,10 @@ func TestAccVcsRootGit_Basic(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "username_style", "userid"),
 					resource.TestCheckResourceAttr(resName, "modification_check_interval", "60"),
 				),
+			},
+			resource.TestStep{
+				Config:             testAccVcsRootGitBasic,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
@@ -72,14 +95,19 @@ func TestAccVcsRootGit_UpdateBasic(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "name", "application_updated"),
 					resource.TestCheckResourceAttr(resName, "fetch_url", "https://github.com/cvbarros/go-teamcity"),
 					resource.TestCheckResourceAttr(resName, "default_branch", "refs/head/develop"),
-					resource.TestCheckResourceAttr(resName, "branches.#", "1"),
+					resource.TestCheckResourceAttr(resName, "branches.#", "2"),
 					resource.TestCheckResourceAttr(resName, "branches.0", "+:refs/heads/master"),
+					resource.TestCheckResourceAttr(resName, "branches.1", "-:refs/(pull/*)/head"),
 					resource.TestCheckResourceAttr(resName, "project_id", "VcsRootProjectNew"),
 					resource.TestCheckResourceAttr(resName, "enable_branch_spec_tags", "false"),
 					resource.TestCheckResourceAttr(resName, "submodule_checkout", "IGNORE"),
 					resource.TestCheckResourceAttr(resName, "username_style", "author_name"),
 					resource.TestCheckResourceAttr(resName, "modification_check_interval", "180"),
 				),
+			},
+			resource.TestStep{
+				Config:             testAccVcsRootGitUpdated,
+				ExpectNonEmptyPlan: false,
 			},
 		},
 	})
@@ -274,8 +302,8 @@ resource "teamcity_vcs_root_git" "git_test" {
 	fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
 	default_branch = "refs/head/master"
 	branches = [
-    "+:refs/(pull/*)/head",
-    "+:refs/heads/develop",
+    	"+:refs/(pull/*)/head",
+    	"+:refs/heads/develop",
   	]
 	username_style = "userid"
 	submodule_checkout = "checkout"
@@ -300,6 +328,7 @@ resource "teamcity_vcs_root_git" "git_test" {
 	default_branch = "refs/head/develop"
 	branches = [
     	"+:refs/heads/master",
+		"-:refs/(pull/*)/head"
   	]
 	username_style = "author_name"
 	submodule_checkout = "ignore"
