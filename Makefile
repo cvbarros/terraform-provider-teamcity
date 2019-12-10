@@ -8,7 +8,7 @@ BUILDER_IMAGE=cvbarros/terraform-provider-teamcity-builder
 default: test
 
 build:
-	go build -o ./bin/terraform-provider-teamcity_${VERSION}
+	GO111MODULE=on go build -o ./bin/terraform-provider-teamcity_${VERSION}
 
 install: build
 	cp ./bin/terraform-provider-teamcity_${VERSION} ~/.terraform.d/plugins/
