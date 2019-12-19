@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
+	api "github.com/yext/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 )

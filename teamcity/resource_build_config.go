@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
+	api "github.com/yext/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 )
@@ -66,7 +66,6 @@ func resourceBuildConfig() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"project_id": {
 				Type:     schema.TypeString,
@@ -261,6 +260,14 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	dt, err := getBuildConfiguration(client, d.Id())
 	if err != nil {
 		return err
+	}
+
+	if d.HasChange("name") {
+		v := d.Get("name")
+		err = client.BuildTypes.Rename(d.Id(), v.(string))
+		if err != nil {
+			return err
+		}
 	}
 
 	var changed bool
