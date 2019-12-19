@@ -3,7 +3,7 @@ package teamcity
 import (
 	"log"
 
-	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
+	api "github.com/yext/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -21,7 +21,6 @@ func resourceProject() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -83,6 +82,14 @@ func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	dt, err := client.Projects.GetByID(d.Id())
 	if err != nil {
 		return err
+	}
+
+	if d.HasChange("name") {
+		v := d.Get("name")
+		err = client.Projects.Rename(d.Id(), v.(string))
+		if err != nil {
+			return err
+		}
 	}
 
 	if v, ok := d.GetOk("description"); ok {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	api "github.com/cvbarros/go-teamcity-sdk/teamcity"
+	api "github.com/yext/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
