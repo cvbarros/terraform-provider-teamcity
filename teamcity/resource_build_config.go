@@ -1,14 +1,15 @@
 package teamcity
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
 	"strings"
 
-	api "github.com/yext/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
+	api "github.com/yext/go-teamcity/teamcity"
 )
 
 func resourceBuildConfig() *schema.Resource {
@@ -124,6 +125,22 @@ func resourceBuildConfig() *schema.Resource {
 						"code": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+					},
+				},
+			},
+			"feature": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"properties": {
+							Type:     schema.TypeMap,
+							Required: true,
 						},
 					},
 				},
@@ -341,6 +358,28 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.SetPartial("step")
 	}
 
+	if d.HasChange("feature") {
+		srv := client.BuildFeatureService(d.Id())
+		err := srv.DeleteAll()
+		if err != nil {
+			return err
+		}
+		add, err := expandBuildFeatures(d.Get("feature").([]interface{}))
+		if err != nil {
+			return err
+		}
+		if len(add) > 0 {
+			for i, s := range add {
+				_, err := srv.Create(s)
+				log.Printf("[INFO] Adding build feature '%v' with order = %v", s.Type(), i+1)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		d.SetPartial("feature")
+	}
+
 	d.Partial(false)
 
 	return resourceBuildConfigRead(d, meta)
@@ -409,6 +448,13 @@ func resourceBuildConfigRead(d *schema.ResourceData, meta interface{}) error {
 		if err := d.Set("step", stepsToSave); err != nil {
 			return err
 		}
+	}
+
+	srv := client.BuildFeatureService(d.Id())
+	buildFeatures, err := srv.GetBuildFeatures()
+	buildFeaturesToSave, err := flattenBuildFeatures(buildFeatures)
+	if err := d.Set("feature", buildFeaturesToSave); err != nil {
+		return err
 	}
 
 	return nil
@@ -628,6 +674,59 @@ func flattenBuildStepCmdLine(s *api.StepCommandLine) map[string]interface{} {
 	m["type"] = "cmd_line"
 
 	return m
+}
+
+func flattenBuildFeatures(bfs []api.BuildFeature) ([]map[string]interface{}, error) {
+	var bfsToSave []map[string]interface{}
+	for _, bf := range bfs {
+		bfToSave := make(map[string]interface{})
+		gbf := bf.(*api.GenericBuildFeature)
+		bfToSave["type"] = gbf.Type()
+
+		props := gbf.Properties()
+		bfToSave["properties"] = make(map[string]string)
+		if props != nil && props.Count > 0 {
+			propertyMap := bfToSave["properties"].(map[string]string)
+			for _, property := range props.Items {
+				propertyMap[property.Name] = property.Value
+			}
+		}
+		bfsToSave = append(bfsToSave, bfToSave)
+	}
+	return bfsToSave, nil
+}
+
+func expandBuildFeatures(list interface{}) ([]api.BuildFeature, error) {
+	var out []api.BuildFeature
+	rawBuildFeatures := list.([]interface{})
+	for _, rawBF := range rawBuildFeatures {
+		expandedBF, err := expandBuildFeature(rawBF)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, expandedBF)
+	}
+
+	return out, nil
+}
+
+func expandBuildFeature(raw interface{}) (api.BuildFeature, error) {
+	feature := raw.(map[string]interface{})
+	var featureType string
+	var properties map[string]interface{}
+	if v, _ := feature["type"]; len(v.(string)) > 0 {
+		featureType = v.(string)
+	} else {
+		return nil, errors.New("feature type cannot be empty")
+	}
+	if v, ok := feature["properties"]; ok {
+		properties = v.(map[string]interface{})
+	}
+	bf, err := api.NewGenericBuildFeature(featureType, properties)
+	if err != nil {
+		return nil, err
+	}
+	return bf, nil
 }
 
 func expandBuildSteps(list interface{}) ([]api.Step, error) {
