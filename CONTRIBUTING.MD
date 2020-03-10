@@ -30,13 +30,13 @@ You are expected to fully run these tests and make sure your changes do not brea
 In order to run it locally you can first start a warmed-up TeamCity container, from the repository root folder:
 
 ```bash
-$ ./start_teamcity.sh
+$ ./integration_tests/start_teamcity.sh
 ```
 
 This will start the needed dependencies to run all tests in your local machine as per [this configuration](./integration_tests/docker-compose.yml). After your environment is running, you may set the `TEAMCITY_ADDR`, `TEAMCITY_USER` and `TEAMCITY_PASSWORD` environment variables to the corresponding values (defaults to `admin`, `admin`, `http://127.0.0.1:8112`, respectively) and `TF_ACC` environment variable to `1` to enable Terraform acceptance tests:
 
 ```bash
-$ export TEAMCITY_ADDR=localhost:8112
+$ export TEAMCITY_ADDR=http://localhost:8112
 $ export TEAMCITY_USER=admin
 $ export TEAMCITY_PASSWORD=admin
 $ export TF_ACC=1
