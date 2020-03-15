@@ -101,7 +101,7 @@ func resourceBuildConfig() *schema.Resource {
 				Set: vcsRootHash,
 			},
 			"step": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -133,7 +133,6 @@ func resourceBuildConfig() *schema.Resource {
 						},
 					},
 				},
-				Set: stepSetHash,
 			},
 			"env_params": {
 				Type:     schema.TypeMap,
@@ -354,10 +353,17 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("step") {
 		log.Printf("[DEBUG] resourceBuildConfigUpdate: change detected for steps")
 		o, n := d.GetChange("step")
-		os := o.(*schema.Set)
-		ns := n.(*schema.Set)
-		remove, _ := expandBuildSteps(os.Difference(ns).List())
-		add, err := expandBuildSteps(ns.Difference(os).List())
+		os := o.([]interface{})
+		ns := n.([]interface{})
+
+		log.Printf("[INFO] old set: %v", os)
+		log.Printf("[INFO] new set: %v", ns)
+		remove, _ := expandBuildSteps(os)
+		add, err := expandBuildSteps(ns)
+
+		//add := make([]api.Step, 0)
+		//remove := make([]api.Step, 0)
+
 		if err != nil {
 			return err
 		}

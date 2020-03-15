@@ -1,6 +1,7 @@
 package teamcity_test
 
 import (
+	"errors"
 	"fmt"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -19,7 +20,7 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -38,7 +39,7 @@ func TestAccBuildConfig_TemplateDoesNotSupportDescription(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config:      TestAccBuildConfigTemplateWithDescription,
 				ExpectError: regexp.MustCompile("'description' field is not supported for Build Configuration Templates. See issue https://youtrack.jetbrains.com/issue/TW-63617 for details"),
 			},
@@ -54,7 +55,7 @@ func TestAccBuildConfig_Template(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigTemplate,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -75,7 +76,7 @@ func TestAccBuildConfig_BasicBuildCounter(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -84,7 +85,7 @@ func TestAccBuildConfig_BasicBuildCounter(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "project_id", "BuildConfigProjectTest"),
 				),
 			},
-			resource.TestStep{
+			{
 				PreConfig:          func() { updateBuildCounter(&bc, 10) }, //Simulate external computed
 				Config:             TestAccBuildConfigBasic,
 				ExpectNonEmptyPlan: false,
@@ -102,21 +103,21 @@ func TestAccBuildConfig_UpdateBuildCounter(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigBuildCounter,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
 					resource.TestCheckResourceAttr(resName, "settings.3691833092.build_counter", "2"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigBuildCounterUpdated,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
 					resource.TestCheckResourceAttr(resName, "settings.1862934543.build_counter", "10"),
 				),
 			},
-			resource.TestStep{
+			{
 				PreConfig:          func() { updateBuildCounter(&bc, 20) }, //Simulate external computed
 				Config:             TestAccBuildConfigBuildCounterUpdated,
 				ExpectNonEmptyPlan: false,
@@ -134,7 +135,7 @@ func TestAccBuildConfig_UpdateOtherSetting(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -142,7 +143,7 @@ func TestAccBuildConfig_UpdateOtherSetting(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "settings.2597056888.build_counter", "0"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigBasicUpdated,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -162,7 +163,7 @@ func TestAccBuildConfig_NestedProject(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigurationIdWithParent,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -181,7 +182,7 @@ func TestAccBuildConfig_UpdateBasic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -190,12 +191,110 @@ func TestAccBuildConfig_UpdateBasic(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "project_id", "BuildConfigProjectTest"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigBasicUpdated,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
 					resource.TestCheckResourceAttr(resName, "description", "build config test desc updated"),
 				),
+			},
+		},
+	})
+}
+
+const TestAccBuildConfigAddAndRemoveSteps = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+
+	step {
+		type = "powershell"
+		name = "build_script"
+		file = "build.ps1"
+		args = "-Target buildrelease"
+	}
+
+	step {
+		type = "cmd_line"
+		name = "removed_step"
+		code = "echo"
+	}
+}
+`
+
+const TestAccBuildConfigAddAndRemoveStepsUpdated = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config test"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+
+	step {
+		type = "powershell"
+		name = "build_script"
+		file = "build.ps1"
+		args = "-Target buildrelease"
+	}
+
+	step {
+		type = "powershell"
+		name = "build_code"
+		code = "Get-Date"
+	}
+}
+`
+
+func TestAccBuildConfig_StepsAddAndRemove(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	scriptStep := map[string]string{
+		"name": "build_script",
+		"type": api.StepTypePowershell,
+		"file": "build.ps1",
+		"args": "-Target buildrelease",
+	}
+	codeStep := map[string]string{
+		"type": api.StepTypePowershell,
+		"name": "build_code",
+		"code": "Get-Date",
+	}
+	removedStep := map[string]string{
+		"type": api.StepTypeCommandLine,
+		"name": "removed_step",
+		"code": "echo",
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckBuildConfigDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: TestAccBuildConfigAddAndRemoveSteps,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttrSet(resName, "step.0.step_id"),
+					resource.TestCheckResourceAttrSet(resName, "step.1.step_id"),
+					testAccCheckStepExists(&bc.ID, scriptStep),
+					testAccCheckStepExists(&bc.ID, removedStep)),
+			},
+			{
+				Config: TestAccBuildConfigAddAndRemoveStepsUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttrSet(resName, "step.0.step_id"),
+					resource.TestCheckResourceAttr(resName, "step.0.name", "build_script"),
+					resource.TestCheckResourceAttrSet(resName, "step.1.step_id"),
+					resource.TestCheckResourceAttr(resName, "step.1.name", "build_code"),
+					testAccCheckStepExists(&bc.ID, scriptStep),
+					testAccCheckStepExists(&bc.ID, codeStep),
+					testAccCheckStepRemoved(&bc.ID, removedStep)),
 			},
 		},
 	})
@@ -222,12 +321,12 @@ func TestAccBuildConfig_StepsPowershell(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigStepsPowershell,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
-					resource.TestCheckResourceAttrSet(resName, "step.2032957957.step_id"),
-					resource.TestCheckResourceAttrSet(resName, "step.2405117611.step_id"),
+					resource.TestCheckResourceAttrSet(resName, "step.0.step_id"),
+					resource.TestCheckResourceAttrSet(resName, "step.1.step_id"),
 					testAccCheckStepExists(&bc.ID, scriptStep),
 					testAccCheckStepExists(&bc.ID, codeStep),
 				),
@@ -264,7 +363,7 @@ func TestAccBuildConfig_UpdateSteps(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigStepsPowershell,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -272,13 +371,13 @@ func TestAccBuildConfig_UpdateSteps(t *testing.T) {
 					testAccCheckStepExists(&bc.ID, codeStep),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigStepsPowershellUpdated,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckStepExists(&bc.ID, scriptStepUpdate),
 					testAccCheckStepRemoved(&bc.ID, codeStep),
-					resource.TestCheckResourceAttr(resName, "step.531649812.file", "updated.ps1"),
-					resource.TestCheckResourceAttr(resName, "step.531649812.name", "updated_script"),
+					resource.TestCheckResourceAttr(resName, "step.0.file", "updated.ps1"),
+					resource.TestCheckResourceAttr(resName, "step.0.name", "updated_script"),
 				),
 			},
 		},
@@ -307,7 +406,7 @@ func TestAccBuildConfig_StepsCmdLine(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigStepsCmdLine,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -339,19 +438,19 @@ func TestAccBuildConfig_StepsCmdLineUpdateSteps(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigStepsCmdLine,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
 					testAccCheckStepExists(&bc.ID, scriptStep),
-					resource.TestCheckResourceAttr(resName, "step.266212651.code", "echo \"Hello World\""),
+					resource.TestCheckResourceAttr(resName, "step.0.code", "echo \"Hello World\""),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigStepsCmdLineUpdated,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckStepExists(&bc.ID, scriptStepUpdate),
-					resource.TestCheckResourceAttr(resName, "step.451335694.code", "echo \"Hello Foo\""),
+					resource.TestCheckResourceAttr(resName, "step.0.code", "echo \"Hello Foo\""),
 				),
 			},
 		},
@@ -366,7 +465,7 @@ func TestAccBuildConfig_Parameters(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigParams,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -388,7 +487,7 @@ func TestAccBuildConfig_UpdateParameters(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigParams,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -401,7 +500,7 @@ func TestAccBuildConfig_UpdateParameters(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "sys_params.system_param", "system_value"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigParamsUpdated,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -425,7 +524,7 @@ func TestAccBuildConfig_Settings(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigSettings,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -452,7 +551,7 @@ func TestAccBuildConfig_SettingsUpdate(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigSettings,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -467,7 +566,7 @@ func TestAccBuildConfig_SettingsUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.status_widget", "false"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigSettingsUpdated,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -494,7 +593,7 @@ func TestAccBuildConfig_VcsRoot(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckBuildConfigDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: TestAccBuildConfigVcsRoot,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
@@ -573,80 +672,66 @@ func testStepExists(client *api.Client, buildTypeID string, stepExpected map[str
 		}
 	}
 
-	return false, fmt.Errorf("Step named '%s' was not found", stepExpected["name"])
+	return false, fmt.Errorf("the step named '%s' was not found", stepExpected["name"])
 }
 
 func assertStepProperties(actual api.Step, expected map[string]string) error {
 	stepType := actual.Type()
 	if actual.Type() != expected["type"] {
-		return fmt.Errorf("Found step %s but types differ, actual: %s, expected: %s", expected["name"], actual.Type(), expected["type"])
+		return fmt.Errorf("found step %s but types differ, actual: %s, expected: %s", expected["name"], actual.Type(), expected["type"])
 	}
 
-	if stepType == string(api.StepTypePowershell) {
+	if stepType == api.StepTypePowershell {
 		dt := actual.(*api.StepPowershell)
 		if p, ok := expected["file"]; ok {
 			if p != dt.ScriptFile {
-				return fmt.Errorf("Property 'file' differs, actual: %s, expected: %s", dt.ScriptFile, p)
+				return fmt.Errorf("property 'file' differs, actual: %s, expected: %s", dt.ScriptFile, p)
 			}
 		}
 
 		if p, ok := expected["args"]; ok {
 			if p != dt.ScriptArgs {
-				return fmt.Errorf("Property 'args' differs, actual: %s, expected: %s", dt.ScriptArgs, p)
+				return fmt.Errorf("property 'args' differs, actual: %s, expected: %s", dt.ScriptArgs, p)
 			}
 		}
 
 		if p, ok := expected["code"]; ok {
 			if p != dt.Code {
-				return fmt.Errorf("Property 'code' differs, actual: %s, expected: %s", dt.Code, p)
+				return fmt.Errorf("property 'code' differs, actual: %s, expected: %s", dt.Code, p)
 			}
 		}
 		return nil
 	}
 
-	if stepType == string(api.StepTypeCommandLine) {
+	if stepType == api.StepTypeCommandLine {
 		dt := actual.(*api.StepCommandLine)
 		if p, ok := expected["file"]; ok {
 			if p != dt.CommandExecutable {
-				return fmt.Errorf("Property 'file' differs, actual: %s, expected: %s", dt.CommandExecutable, p)
+				return fmt.Errorf("property 'file' differs, actual: %s, expected: %s", dt.CommandExecutable, p)
 			}
 		}
 
 		if p, ok := expected["args"]; ok {
 			if p != dt.CommandParameters {
-				return fmt.Errorf("Property 'args' differs, actual: %s, expected: %s", dt.CommandParameters, p)
+				return fmt.Errorf("property 'args' differs, actual: %s, expected: %s", dt.CommandParameters, p)
 			}
 		}
 
 		if p, ok := expected["code"]; ok {
 			if p != dt.CustomScript {
-				return fmt.Errorf("Property 'code' differs, actual: %s, expected: %s", dt.CustomScript, p)
+				return fmt.Errorf("property 'code' differs, actual: %s, expected: %s", dt.CustomScript, p)
 			}
 		}
 		return nil
 	}
 
-	return fmt.Errorf("Unexpected step type found: %s", stepType)
-}
-
-func getPropertyOk(p *api.Properties, key string) (string, bool) {
-	if len(p.Items) == 0 {
-		return "", false
-	}
-
-	for _, v := range p.Items {
-		if v.Name == key {
-			return v.Value, true
-		}
-	}
-
-	return "", false
+	return fmt.Errorf("unexpected step type found: %s", stepType)
 }
 
 func testAccCheckVcsRootAttached(vcs *[]*api.VcsRootEntry, n string, co string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		if *vcs == nil {
-			return fmt.Errorf("VcsRootEntries must not be nil")
+			return errors.New("variable VcsRootEntries must not be nil")
 		}
 
 		for _, v := range *vcs {
@@ -657,7 +742,7 @@ func testAccCheckVcsRootAttached(vcs *[]*api.VcsRootEntry, n string, co string) 
 			}
 		}
 
-		return fmt.Errorf("VCS Root with name '%s' and checkout rules '%s' was not found", n, co)
+		return fmt.Errorf("the VCS Root with name '%s' and checkout rules '%s' was not found", n, co)
 	}
 }
 
@@ -687,17 +772,17 @@ func updateBuildCounter(buildType *api.BuildType, counter int) {
 func buildConfigExistsHelper(n string, s *terraform.State, client *api.Client, out *api.BuildType) error {
 	rs, ok := s.RootModule().Resources[n]
 	if !ok {
-		return fmt.Errorf("Not found: %s", n)
+		return fmt.Errorf("resource not found: %s", n)
 	}
 
 	if rs.Primary.ID == "" {
-		return fmt.Errorf("No id for %s is set", n)
+		return fmt.Errorf("no id for %s is set", n)
 	}
 
 	resp, err := client.BuildTypes.GetByID(rs.Primary.ID)
 
 	if err != nil {
-		return fmt.Errorf("Received an error retrieving Build Configurationt: %s", err)
+		return fmt.Errorf("received an error retrieving Build Configurationt: %s", err)
 	}
 
 	*out = *resp
@@ -722,39 +807,12 @@ func buildConfigDestroyHelper(s *terraform.State, client *api.Client) error {
 			if strings.Contains(err.Error(), "404") {
 				continue
 			}
-			return fmt.Errorf("Received an error retrieving the Build Configuration: %s", err)
+			return fmt.Errorf("received an error retrieving the Build Configuration: %s", err)
 		}
 
-		return fmt.Errorf("Build Configuration still exists")
+		return errors.New("build configuration still exists")
 	}
 	return nil
-}
-
-// testAccCheckProperties can be used to check the property value for a resource
-func testAccCheckProperties(
-	props **api.Parameters, key string, value string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		if props == nil {
-			return fmt.Errorf("Parameters must not be nil")
-		}
-
-		m := (*props).Properties().Map()
-		v, ok := m[key]
-		if value != "" && !ok {
-			return fmt.Errorf("Missing parameter: %s", key)
-		} else if value == "" && ok {
-			return fmt.Errorf("Extra parameter: %s", key)
-		}
-		if value == "" {
-			return nil
-		}
-
-		if v != value {
-			return fmt.Errorf("%s: bad value: %s", key, v)
-		}
-
-		return nil
-	}
 }
 
 const TestAccBuildConfigBasic = `
