@@ -206,6 +206,14 @@ func resourceBuildConfig() *schema.Resource {
 				Optional: true,
 			},
 		},
+		SchemaVersion: 1,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type:    resourceBuildConfigInstanceResourceV0().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceBuildConfigInstanceStateUpgradeV0,
+				Version: 0,
+			},
+		},
 	}
 }
 
@@ -356,13 +364,8 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 		os := o.([]interface{})
 		ns := n.([]interface{})
 
-		log.Printf("[INFO] old set: %v", os)
-		log.Printf("[INFO] new set: %v", ns)
 		remove, _ := expandBuildSteps(os)
 		add, err := expandBuildSteps(ns)
-
-		//add := make([]api.Step, 0)
-		//remove := make([]api.Step, 0)
 
 		if err != nil {
 			return err
@@ -694,7 +697,7 @@ func flattenBuildStep(s api.Step) (map[string]interface{}, error) {
 	case "cmd_line":
 		out, err = flattenBuildStepCmdLine(s.(*api.StepCommandLine)), nil
 	default:
-		return nil, fmt.Errorf("Build step type '%s' not supported", s.Type())
+		return nil, fmt.Errorf("build step type '%s' not supported", s.Type())
 	}
 	out["step_id"] = s.GetID()
 	return out, err
@@ -761,7 +764,7 @@ func expandBuildStep(raw interface{}) (api.Step, error) {
 	case "cmd_line":
 		return expandStepCmdLine(localStep)
 	default:
-		return nil, fmt.Errorf("Unsupported step type '%s'", t)
+		return nil, fmt.Errorf("unsupported step type '%s'", t)
 	}
 }
 
@@ -873,4 +876,163 @@ func stepSetHash(v interface{}) int {
 	}
 
 	return hashcode.String(buf.String())
+}
+
+func resourceBuildConfigInstanceResourceV0() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"is_template": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"project_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"vcs_root": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"checkout_rules": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+				Set: vcsRootHash,
+			},
+			"step": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"step_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"type": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringInSlice([]string{"powershell", "cmd_line"}, false),
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"file": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"args": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"code": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+				Set: stepSetHash,
+			},
+			"env_params": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"config_params": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"sys_params": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"settings": {
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Computed:   true,
+				MaxItems:   1,
+				ConfigMode: schema.SchemaConfigModeAttr,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"configuration_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"REGULAR", "DEPLOYMENT", "COMPOSITE"}, false),
+							Default:      "REGULAR",
+						},
+						"build_number_format": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "%build.counter%",
+						},
+						"build_counter": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntAtLeast(0),
+							Computed:     true,
+						},
+						"allow_personal_builds": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+						"artifact_paths": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"detect_hanging": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+						"status_widget": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"concurrent_limit": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: validation.IntAtLeast(0),
+							Default:      0,
+						},
+					},
+				},
+			},
+			"templates": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Optional: true,
+			},
+		},
+	}
+}
+
+func resourceBuildConfigInstanceStateUpgradeV0(rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+	if raw, ok := rawState["steps"]; ok {
+		s := raw.(*schema.Set)
+		list := s.List()
+		rawState["steps"] = list
+	}
+
+	return rawState, nil
 }
