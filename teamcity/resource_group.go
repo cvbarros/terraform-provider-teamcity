@@ -98,6 +98,10 @@ func resourceGroupRead(d *schema.ResourceData, meta interface{}) error {
 
 	dt, err := client.Groups.GetByKey(d.Id())
 	if err != nil {
+		if strings.Contains(err.Error(), "404") {
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 	if err := d.Set("key", dt.Key); err != nil {
