@@ -19,6 +19,7 @@ func Provider() terraform.ResourceProvider {
 			"teamcity_build_trigger_schedule":          resourceBuildTriggerSchedule(),
 			"teamcity_agent_requirement":               resourceAgentRequirement(),
 			"teamcity_feature_commit_status_publisher": resourceFeatureCommitStatusPublisher(),
+			"teamcity_group":                           resourceGroup(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"teamcity_project": dataSourceProject(),
