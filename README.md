@@ -1,6 +1,6 @@
 Terraform Provider TeamCity
 ==================
-[![Build Status](https://travis-ci.com/cvbarros/terraform-provider-teamcity.svg?branch=master)](https://travis-ci.org/cvbarros/terraform-provider-teamcity)
+[![Build Status](https://travis-ci.com/cvbarros/terraform-provider-teamcity.svg?branch=master)](https://travis-ci.com/cvbarros/terraform-provider-teamcity)
 
 Motivation:
 
