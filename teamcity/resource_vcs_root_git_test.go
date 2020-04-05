@@ -11,24 +11,25 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-func TestAccVcsRootGit_Import(t *testing.T) {
-	resName := "teamcity_vcs_root_git.git_test"
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckVcsRootGitDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccVcsRootGitBasic,
-			},
-			{
-				ResourceName:      resName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
+//Remove this test due to https://github.com/hashicorp/terraform/issues/23635
+//func TestAccVcsRootGit_Import(t *testing.T) {
+//	resName := "teamcity_vcs_root_git.git_test"
+//	resource.Test(t, resource.TestCase{
+//		PreCheck:     func() { testAccPreCheck(t) },
+//		Providers:    testAccProviders,
+//		CheckDestroy: testAccCheckVcsRootGitDestroy,
+//		Steps: []resource.TestStep{
+//			{
+//				Config: testAccVcsRootGitBasic,
+//			},
+//			{
+//				ResourceName:      resName,
+//				ImportState:       true,
+//				ImportStateVerify: true,
+//			},
+//		},
+//	})
+//}
 
 func TestAccVcsRootGit_Basic(t *testing.T) {
 	var vcs api.GitVcsRoot
