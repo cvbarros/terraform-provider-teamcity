@@ -3,7 +3,7 @@ module github.com/cvbarros/terraform-provider-teamcity
 go 1.12
 
 require (
-	github.com/cvbarros/go-teamcity v0.5.1
+	github.com/cvbarros/go-teamcity v1.0.0
 	github.com/dghubble/sling v1.3.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/hil v0.0.0-20190212132231-97b3a9cdfa93 // indirect

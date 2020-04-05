@@ -6,7 +6,7 @@ services:
   - docker
 language: go
 go:
- - "1.12.x"
+ - "1.13.x"
 env:
   global:
     - GO111MODULE=on
@@ -14,7 +14,9 @@ env:
     - TF_ACC=1
     - TEAMCITY_USER=admin
     - TEAMCITY_PASSWORD=admin
-
+before_install:
+  - sudo apt-get update
+  - sudo apt-get -y install bsdtar
 script:
   # run acceptance tests
  - ./integration_tests/start_teamcity.sh  # start and wait for TeamCity
