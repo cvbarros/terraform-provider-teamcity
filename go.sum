@@ -98,6 +98,8 @@ github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d/go.mod h1:F5haX7
 github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f/go.mod h1:E3G3o1h8I7cfcXa63jLwjI0eiQQMgzzUDFVpN/nH/eA=
 github.com/cvbarros/go-teamcity v0.5.1 h1:J1ROlrKbd0Po7czImT1a307CdyDfcvf7X6GotDNR3TU=
 github.com/cvbarros/go-teamcity v0.5.1/go.mod h1:wQxn54gP1RHaDYuwwud9MRA+Y8VXfD3d5+ZjZCZLVVU=
+github.com/cvbarros/go-teamcity v1.0.0 h1:heOLoeAsWxmcMNqceNy2kGfFniZEnECvT47THFthDJs=
+github.com/cvbarros/go-teamcity v1.0.0/go.mod h1:rV0+Oe8VMB2m3mWKN/glUnzzh/4EB57i70W154tqYxo=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
