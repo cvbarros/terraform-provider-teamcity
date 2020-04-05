@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccTeamcityBuildTriggerBuildFinish_Basic(t *testing.T) {
