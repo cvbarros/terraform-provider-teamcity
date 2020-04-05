@@ -3,7 +3,7 @@ package teamcity_test
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
 func TestAccDataSourceProject_Root(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"log"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func resourceBuildTriggerBuildFinish() *schema.Resource {
