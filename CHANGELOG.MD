@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.0.0 (Unreleased)
+## [1.0.0]
 
 This release is the first major release and includes an upgrade to TeamCity 2019.2.2 as the supported version.
 Whenever a major version is bumped, backwards compatibility with previous TeamCity versions aren't guaranteed.
