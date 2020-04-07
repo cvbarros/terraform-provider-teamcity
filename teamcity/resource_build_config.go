@@ -126,6 +126,16 @@ func resourceBuildConfig() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								api.StepExecuteModeDefault,
+								api.StepExecuteModeOnlyIfBuildIsSuccessful,
+								api.StepExecuteModeEvenWhenFailed,
+								api.StepExecuteAlways,
+							}, false),
+						},
 					},
 				},
 			},
@@ -649,6 +659,9 @@ func flattenBuildStepPowershell(s *api.StepPowershell) map[string]interface{} {
 	if s.Code != "" {
 		m["code"] = s.Code
 	}
+	if s.ExecuteMode != "" {
+		m["mode"] = s.ExecuteMode
+	}
 	if s.Name != "" {
 		m["name"] = s.Name
 	}
@@ -667,6 +680,9 @@ func flattenBuildStepCmdLine(s *api.StepCommandLine) map[string]interface{} {
 	}
 	if s.CustomScript != "" {
 		m["code"] = s.CustomScript
+	}
+	if s.ExecuteMode != "" {
+		m["mode"] = s.ExecuteMode
 	}
 	if s.Name != "" {
 		m["name"] = s.Name
@@ -788,6 +804,9 @@ func expandStepCmdLine(dt map[string]interface{}) (*api.StepCommandLine, error) 
 	if v, ok := dt["step_id"]; ok {
 		s.ID = v.(string)
 	}
+	if v, ok := dt["mode"]; ok {
+		s.ExecuteMode = v.(string)
+	}
 	return s, nil
 }
 
@@ -820,6 +839,9 @@ func expandStepPowershell(dt map[string]interface{}) (*api.StepPowershell, error
 
 	if v, ok := dt["step_id"]; ok {
 		s.ID = v.(string)
+	}
+	if v, ok := dt["mode"]; ok {
+		s.ExecuteMode = v.(string)
 	}
 	return s, nil
 }
