@@ -24,7 +24,7 @@ func TestAccVcsRootGit_Basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVcsRootGitExists(resName, &vcs),
 					resource.TestCheckResourceAttr(resName, "name", "application"),
-					resource.TestCheckResourceAttr(resName, "fetch_url", "https://github.com/cvbarros/terraform-provider-teamcity"),
+					resource.TestCheckResourceAttr(resName, "fetch_url", "https://github.com/yext/terraform-provider-teamcity"),
 					resource.TestCheckResourceAttr(resName, "default_branch", "refs/head/master"),
 					resource.TestCheckResourceAttr(resName, "branches.#", "2"),
 					resource.TestCheckResourceAttr(resName, "branches.0", "+:refs/(pull/*)/head"),
@@ -53,7 +53,7 @@ func TestAccVcsRootGit_UpdateBasic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVcsRootGitExists(resName, &vcs),
 					resource.TestCheckResourceAttr(resName, "name", "application"),
-					resource.TestCheckResourceAttr(resName, "fetch_url", "https://github.com/cvbarros/terraform-provider-teamcity"),
+					resource.TestCheckResourceAttr(resName, "fetch_url", "https://github.com/yext/terraform-provider-teamcity"),
 					resource.TestCheckResourceAttr(resName, "default_branch", "refs/head/master"),
 					resource.TestCheckResourceAttr(resName, "branches.#", "2"),
 					resource.TestCheckResourceAttr(resName, "branches.0", "+:refs/(pull/*)/head"),
@@ -271,7 +271,7 @@ resource "teamcity_project" "vcs_root_project" {
 resource "teamcity_vcs_root_git" "git_test" {
 	name = "application"
 	project_id = "${teamcity_project.vcs_root_project.id}"
-	fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
+	fetch_url = "https://github.com/yext/terraform-provider-teamcity"
 	default_branch = "refs/head/master"
 	branches = [
     "+:refs/(pull/*)/head",
@@ -316,7 +316,7 @@ resource "teamcity_project" "vcs_root_project" {
 resource "teamcity_vcs_root_git" "git_test" {
 	name = "application"
 	project_id = "${teamcity_project.vcs_root_project.id}"
-	fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
+	fetch_url = "https://github.com/yext/terraform-provider-teamcity"
 	default_branch = "refs/head/master"
 
 	auth {
@@ -335,7 +335,7 @@ resource "teamcity_project" "vcs_root_project" {
 resource "teamcity_vcs_root_git" "git_test" {
 	name = "application"
 	project_id = "${teamcity_project.vcs_root_project.id}"
-	fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
+	fetch_url = "https://github.com/yext/terraform-provider-teamcity"
 	default_branch = "refs/head/master"
 
 	auth {
@@ -356,7 +356,7 @@ resource "teamcity_project" "vcs_root_project" {
 resource "teamcity_vcs_root_git" "git_test" {
 	name = "application"
 	project_id = "${teamcity_project.vcs_root_project.id}"
-	fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
+	fetch_url = "https://github.com/yext/terraform-provider-teamcity"
 	default_branch = "refs/head/master"
 
 	agent {

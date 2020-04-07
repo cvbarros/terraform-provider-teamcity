@@ -15,17 +15,17 @@ Requirements
 Building The Provider
 ---------------------
 
-Clone repository to: `$GOPATH/src/github.com/cvbarros/terraform-provider-teamcity`
+Clone repository to: `$GOPATH/src/github.com/yext/terraform-provider-teamcity`
 
 ```sh
-$ mkdir -p $GOPATH/src/github.com/cvbarros/terraform-provider-teamcity; cd $GOPATH/src/github.com/cvbarros
+$ mkdir -p $GOPATH/src/github.com/yext/terraform-provider-teamcity; cd $GOPATH/src/github.com/cvbarros
 $ git clone git@github.com:cvbarros/terraform-provider-teamcity
 ```
 
 Enter the provider directory and build the provider
 
 ```sh
-$ cd $GOPATH/src/github.com/cvbarros/terraform-provider-teamcity
+$ cd $GOPATH/src/github.com/yext/terraform-provider-teamcity
 $ go build -o $GOPATH/bin/terraform-provider-teamcity
 ```
 
