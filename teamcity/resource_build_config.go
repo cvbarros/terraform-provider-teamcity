@@ -129,6 +129,7 @@ func resourceBuildConfig() *schema.Resource {
 						"mode": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Default:  "default",
 							ValidateFunc: validation.StringInSlice([]string{
 								api.StepExecuteModeDefault,
 								api.StepExecuteModeOnlyIfBuildIsSuccessful,
