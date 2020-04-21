@@ -18,15 +18,15 @@ resource "teamcity_project" "project" {
 }
 
 resource "teamcity_build_config" "build" {
-  name = "source"
+  name       = "source"
   project_id = teamcity_project.project.id
 }
 
 resource "teamcity_agent_requirement" "requirement" {
   build_config_id = teamcity_build_config.build.id
-  name = "teamcity.agent.env"
-  condition = "equals"
-  value = "testing"
+  name            = "teamcity.agent.env"
+  condition       = "equals"
+  value           = "testing"
 }
 ```
 

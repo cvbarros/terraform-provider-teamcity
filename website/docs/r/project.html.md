@@ -16,26 +16,26 @@ The Project resource allows managing a Projects. It is the base resource needed 
 
 ```hcl
 resource "teamcity_project" "parent" {
-    name = "Parent"
-    description = "Parent Project, will be created under the 'Root' project"
+  name        = "Parent"
+  description = "Parent Project, will be created under the 'Root' project"
 }
 
 resource "teamcity_project" "child" {
-    name = "Child"
-    description = "Child Project, will be created under 'Parent' project"
-    parent_id = teamcity_project.parent.id
+  name        = "Child"
+  description = "Child Project, will be created under 'Parent' project"
+  parent_id   = teamcity_project.parent.id
 
-    config_params = {
-        variable1 = "config_value1"
-    }
+  config_params = {
+    variable1 = "config_value1"
+  }
 
-    env_params = {
-        variable1 = "env_value1"
-    }
+  env_params = {
+    variable1 = "env_value1"
+  }
 
-    sys_params = {
-        variable1 = "system_value1"
-    }
+  sys_params = {
+    variable1 = "system_value1"
+  }
 }
 ```
 

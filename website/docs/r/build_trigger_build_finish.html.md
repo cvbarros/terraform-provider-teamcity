@@ -20,13 +20,13 @@ resource "teamcity_project" "project" {
 resource "teamcity_vcs_root_git" "vcs" {
   name       = "Application"
   project_id = teamcity_project.project.id
-  url    = "https://github.com/cvbarros/go-teamcity"
-  branch = "refs/head/master"
+  url        = "https://github.com/cvbarros/go-teamcity"
+  branch     = "refs/head/master"
 }
 
 resource "teamcity_build_config" "build_release" {
-  project_id          = teamcity_project.project.id
-  name                = "Build Release"
+  project_id = teamcity_project.project.id
+  name       = "Build Release"
 
   step {
     type = "command_line"
@@ -41,9 +41,9 @@ resource "teamcity_build_config" "build_release" {
 }
 
 resource "teamcity_build_config" "triggered_build" {
-  project_id          = teamcity_project.project.id
-  name                = "Triggered Build"
-  description         = "Build triggered when 'Build Release' is finished"
+  project_id  = teamcity_project.project.id
+  name        = "Triggered Build"
+  description = "Build triggered when 'Build Release' is finished"
 
   step {
     type = "command_line"

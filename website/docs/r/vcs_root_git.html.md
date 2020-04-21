@@ -20,9 +20,9 @@ resource "teamcity_project" "project" {
 }
 
 resource "teamcity_vcs_root_git" "vcsroot" {
-  name       = "Application"
-  project_id = teamcity_project.project.id
-  fetch_url = "https://github.com/cvbarros/terraform-provider-teamcity"
+  name           = "Application"
+  project_id     = teamcity_project.project.id
+  fetch_url      = "https://github.com/cvbarros/terraform-provider-teamcity"
   default_branch = "refs/head/master"
 
   branches = [
@@ -30,8 +30,8 @@ resource "teamcity_vcs_root_git" "vcsroot" {
     "refs/heads/develop",
   ]
   enable_branch_spec_tags = false
-  username_style = "userid"
-  submodule_checkout = true
+  username_style          = "userid"
+  submodule_checkout      = true
 
   # Auth block configures the authentication to Git VCS
   auth {
@@ -44,10 +44,10 @@ resource "teamcity_vcs_root_git" "vcsroot" {
 
   # Configure agent settings
   agent {
-    git_path = "/usr/bin/git"
-    clean_policy = "branch_change"
+    git_path           = "/usr/bin/git"
+    clean_policy       = "branch_change"
     clean_files_policy = "untracked"
-    use_mirrors = true
+    use_mirrors        = true
   }
 }
 ```

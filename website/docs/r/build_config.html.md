@@ -26,12 +26,12 @@ resource "teamcity_build_config" "build" {
     build_number_format = "1.2.%build.counter%"
   }
 
-	step {
-		type = "cmd_line"
-		name = "build_script"
-		file = "./build.sh"
-		args = "default_target --verbose"
-	}
+  step {
+    type = "cmd_line"
+    name = "build_script"
+    file = "./build.sh"
+    args = "default_target --verbose"
+  }
 }
 ```
 
@@ -49,23 +49,23 @@ resource "teamcity_project" "project" {
 }
 
 resource "teamcity_build_config" "build" {
-  name = "MainBuildConfiguration"
+  name        = "MainBuildConfiguration"
   description = "Build 'My Project'"
-  project_id = teamcity_project.project.id
+  project_id  = teamcity_project.project.id
 
-  templates = [ teamcity_build_config.template1.id, teamcity_build_config.template2.id ]
+  templates = [teamcity_build_config.template1.id, teamcity_build_config.template2.id]
 }
 
 resource "teamcity_build_config" "template1" {
   name = "Build Config Template 1"
   # Description is not supported for Build Configuration Templates! https://youtrack.jetbrains.com/issue/TW-63617
-  project_id = teamcity_project.project.id
+  project_id  = teamcity_project.project.id
   is_template = true
 }
 
 resource "teamcity_build_config" "template2" {
-  name = "Build Config Template 2"
-  project_id = teamcity_project.project.id
+  name        = "Build Config Template 2"
+  project_id  = teamcity_project.project.id
   is_template = true
 }
 ```

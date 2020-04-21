@@ -20,8 +20,8 @@ resource "teamcity_project" "project" {
 resource "teamcity_vcs_root_git" "project_vcs" {
   name       = "Application"
   project_id = teamcity_project.project.id
-  url    = "https://github.com/cvbarros/go-teamcity"
-  branch = "refs/head/master"
+  url        = "https://github.com/cvbarros/go-teamcity"
+  branch     = "refs/head/master"
 }
 
 resource "teamcity_build_config" "triggered_build" {
@@ -45,9 +45,9 @@ resource "teamcity_build_config" "triggered_build" {
 
 resource "teamcity_build_trigger_schedule" "schedule_trigger" {
   build_config_id = teamcity_build_config.triggered_build.id
-  schedule = "daily"
-  hour = 12
-  minute = 37
+  schedule        = "daily"
+  hour            = 12
+  minute          = 37
 }
 ```
 

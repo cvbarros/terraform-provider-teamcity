@@ -18,18 +18,18 @@ resource "teamcity_project" "project" {
 }
 
 resource "teamcity_build_config" "source" {
-  name = "source"
+  name       = "source"
   project_id = teamcity_project.project.id
 }
 
 resource "teamcity_build_config" "dependant" {
-  name = "dependant"
+  name       = "dependant"
   project_id = teamcity_project.project.id
 }
 
 resource "teamcity_snapshot_dependency" "dependency" {
   source_build_config_id = teamcity_build_config.source.id
-  build_config_id = teamcity_build_config.dependant.id
+  build_config_id        = teamcity_build_config.dependant.id
 }
 ```
 
