@@ -1,0 +1,65 @@
+
+<% wrap_layout :inner do %>
+    <% content_for :sidebar do %>
+        <div class="docs-sidebar hidden-print affix-top" role="complementary">
+          <ul class="nav docs-sidenav">
+            <li>
+              <a href="/docs/providers/index.html">All Providers</a>
+            </li>
+
+            <li>
+              <a href="#">Data Sources</a>
+              <ul class="nav">
+                <li>
+                    <a href="/docs/providers/teamcity/d/project.html">teamcity_project</a>
+                </li>
+              </ul>
+            </li>
+
+            <li>
+              <a href="#">Resources</a>
+              <ul class="nav">
+                <li>
+                  <a href="/docs/providers/teamcity/r/agent_requirement.html">teamcity_agent_requirement</a>
+                </li>
+
+                <li>
+                  <a href="/docs/providers/teamcity/r/artifact_dependency.html">teamcity_artifact_dependency</a>
+                </li>
+
+                <li>
+                  <a href="/docs/providers/teamcity/r/build_config.html">teamcity_build_config</a>
+                </li>
+
+                <li>
+                  <a href="/docs/providers/teamcity/r/build_trigger_build_finish.html">teamcity_build_trigger_build_finish</a>
+                </li>
+
+                <li>
+                  <a href="/docs/providers/teamcity/r/build_trigger_schedule.html">teamcity_build_trigger_schedule</a>
+                </li>
+
+                <li>
+                  <a href="/docs/providers/teamcity/r/build_trigger_vcs.html">teamcity_build_trigger_vcs</a>
+                </li>
+
+                <li>
+                  <a href="/docs/providers/teamcity/r/project.html">teamcity_project</a>
+                </li>
+
+                <li>
+                  <a href="/docs/providers/teamcity/r/snapshot_dependency.html">teamcity_snapshot_dependency</a>
+                </li>
+
+                <li>
+                  <a href="/docs/providers/teamcity/r/vcs_root_git.html">teamcity_vcs_root_git</a>
+                </li>
+              </ul>
+            </li>
+
+          </ul>
+        </div>
+    <% end %>
+
+    <%= yield %>
+<% end %>
