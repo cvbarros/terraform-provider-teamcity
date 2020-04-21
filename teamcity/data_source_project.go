@@ -67,9 +67,7 @@ func dataSourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(dt.ID)
 	d.Set("name", dt.Name)
 	d.Set("project_id", dt.ID)
-	if dt.ParentProject != nil {
-		d.Set("parent_project_id", dt.ParentProjectID)
-	}
+	d.Set("parent_project_id", dt.ParentProjectID)
 	d.Set("url", dt.WebURL)
 	return nil
 }

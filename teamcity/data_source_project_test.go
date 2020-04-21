@@ -12,12 +12,12 @@ func TestAccDataSourceProject_Root(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDataSourceProjectRoot,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resName, "name", "<Root project>"),
 					resource.TestCheckResourceAttr(resName, "project_id", "_Root"),
-					resource.TestCheckNoResourceAttr(resName, "parent_project_id"),
+					resource.TestCheckResourceAttr(resName, "parent_project_id", ""),
 					resource.TestCheckResourceAttr(resName, "url", "http://127.0.0.1:8112/project.html?projectId=_Root"),
 				),
 			},
@@ -31,10 +31,10 @@ func TestAccDataSourceProject_Basic(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccDataSourceProject,
 			},
-			resource.TestStep{
+			{
 				Config: testAccDataSourceProject,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resName, "name", "Test Project"),
@@ -59,6 +59,6 @@ resource "teamcity_project" "project" {
 }
 
 data "teamcity_project" "project" {
-  name = "${teamcity_project.project.name}"
+  name = teamcity_project.project.name
 }
 `
