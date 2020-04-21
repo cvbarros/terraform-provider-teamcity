@@ -39,4 +39,4 @@ In addition to all arguments above, the following attributes are exported:
 
 * `description` - A description assigned to this Project.
 
-* `parent_id` - The ID of the Parent Project this Project is nested under.
+* `parent_project_id` - The ID of the Parent Project this Project is nested under.
