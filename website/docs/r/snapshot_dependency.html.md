@@ -1,12 +1,12 @@
 ---
+subcategory: "Build Configurations"
 layout: teamcity
-page_title: "TeamCity: teamciy_snapshot_dependency resource"
-sidebar_current: "docs-teamcity-snapshot-dependency"
+page_title: "TeamCity: Resource - teamcity_snapshot_dependency"
 description: |-
   Manages TeamCity snapshot dependencies
 ---
 
-# teamcity\_snapshot\_dependency
+# teamcity_snapshot_dependency
 
 The Snapshot Dependency resource allows managing build dependencies of "Snapshot" type.
 
@@ -19,17 +19,17 @@ resource "teamcity_project" "project" {
 
 resource "teamcity_build_config" "source" {
   name = "source"
-  project_id = "${teamcity_project.project.id}"
+  project_id = teamcity_project.project.id
 }
 
 resource "teamcity_build_config" "dependant" {
   name = "dependant"
-  project_id = "${teamcity_project.project.id}"
+  project_id = teamcity_project.project.id
 }
 
 resource "teamcity_snapshot_dependency" "dependency" {
-  source_build_config_id = "${teamcity_build_config.source.id}"
-  build_config_id = "${teamcity_build_config.dependant.id}"
+  source_build_config_id = teamcity_build_config.source.id
+  build_config_id = teamcity_build_config.dependant.id
 }
 ```
 
@@ -37,11 +37,12 @@ resource "teamcity_snapshot_dependency" "dependency" {
 
 The following arguments are supported:
 
-* `source_build_config_id`: (Required) The ID of build configuration this dependency relates to.
+* `build_config_id` - (Required) The ID of build configuration this dependency will be created.
 
-* `build_config_id`: (Required) The ID of build configuration this dependency will be created.
+* `source_build_config_id` - (Required) The ID of build configuration this dependency relates to.
 
 ## Attributes Reference
+
 In addition to all arguments above, the following attributes are exported:
 
-* `id`: The auto-generated ID of the dependency.
+* `id` - The auto-generated ID of the dependency.
