@@ -27,7 +27,7 @@ The provider configuration block accepts the following arguments. In general, it
 ## Example Usage
 
 ```hcl
-provider "teamcity": {
+provider "teamcity" {
   # It is strongly recommended to configure this provider through the
   # environment variables described above, so that each user can have
   # separate credentials set in the environment.
