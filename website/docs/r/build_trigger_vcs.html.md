@@ -1,12 +1,12 @@
 ---
+subcategory: "Build Configurations"
 layout: teamcity
-page_title: "TeamCity: teamcity_build_trigger_vcs resource"
-sidebar_current: "docs-teamcity-build-trigger-vcs"
+page_title: "TeamCity: Resource - teamcity_build_trigger_vcs"
 description: |-
   Manages TeamCity build configuration "VCS" build triggers.
 ---
 
-# teamcity\_build\_trigger\_vcs
+# teamcity_build_trigger_vcs
 
 The Build Trigger VCS resource allows managing build configuration triggers of type "VCS", that will fire builds when VCS changes are detected.
 
@@ -19,8 +19,7 @@ resource "teamcity_project" "project" {
 
 resource "teamcity_vcs_root_git" "vcs" {
   name       = "Application"
-  project_id = "${teamcity_project.project.id}"
-
+  project_id = teamcity_project.project.id
   url    = "https://github.com/cvbarros/go-teamcity"
   branch = "refs/head/master"
 }
@@ -38,7 +37,6 @@ resource "teamcity_build_config" "triggered_build" {
 
 resource "teamcity_build_trigger_vcs" "vcs_trigger" {
     build_config_id = teamcity_build_config.triggered_build.id
-
     rules = ["-:*.md"]
     branch_filter = ["master"]
 }
@@ -48,13 +46,13 @@ resource "teamcity_build_trigger_vcs" "vcs_trigger" {
 
 The following arguments are supported:
 
-* `build_config_id`: (Required) ID of the build configuration which this trigger will be configured.
+* `build_config_id` - (Required) ID of the build configuration which this trigger will be configured.
 
-* `rules`: (Required) A list of rules: +|-:[Ant-like wildcard] that can make this trigger fire.
+* `rules` - (Required) A list of rules: `+|-:[Ant-like wildcard]` that can make this trigger fire.
 
-* `branch_filter`: (Optional) A list of branches. Only changes in the scoped branches will fire this trigger.
+* `branch_filter` - (Optional) A list of branches. Only changes in the scoped branches will fire this trigger.
 
 ## Attributes Reference
 In addition to all arguments above, the following attributes are exported:
 
-* `id`: The auto-generated ID of the agent requirement.
+* `id` - The auto-generated ID of the agent requirement.
