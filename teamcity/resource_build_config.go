@@ -540,23 +540,21 @@ func flattenTemplates(d *schema.ResourceData, templates *api.Templates) error {
 }
 
 func flattenParameterCollection(d *schema.ResourceData, params *api.Parameters) error {
-	var configParams, sysParams, envParams = flattenParameters(params)
+	configParams := flattenParameters(params, api.ParameterTypes.Configuration)
+	if err := d.Set("config_params", configParams); err != nil {
+		return err
+	}
 
-	if len(envParams) > 0 {
-		if err := d.Set("env_params", envParams); err != nil {
-			return err
-		}
+	envParams := flattenParameters(params, api.ParameterTypes.EnvironmentVariable)
+	if err := d.Set("env_params", envParams); err != nil {
+		return err
 	}
-	if len(sysParams) > 0 {
-		if err := d.Set("sys_params", sysParams); err != nil {
-			return err
-		}
+
+	systemParams := flattenParameters(params, api.ParameterTypes.System)
+	if err := d.Set("sys_params", systemParams); err != nil {
+		return err
 	}
-	if len(configParams) > 0 {
-		if err := d.Set("config_params", configParams); err != nil {
-			return err
-		}
-	}
+
 	return nil
 }
 
@@ -600,19 +598,21 @@ func expandParameterCollection(d *schema.ResourceData) (*api.Parameters, error) 
 	return out, nil
 }
 
-func flattenParameters(dt *api.Parameters) (config map[string]string, sys map[string]string, env map[string]string) {
-	env, sys, config = make(map[string]string), make(map[string]string), make(map[string]string)
-	for _, p := range dt.Items {
-		switch p.Type {
-		case api.ParameterTypes.Configuration:
-			config[p.Name] = p.Value
-		case api.ParameterTypes.EnvironmentVariable:
-			env[p.Name] = p.Value
-		case api.ParameterTypes.System:
-			sys[p.Name] = p.Value
-		}
+func flattenParameters(input *api.Parameters, paramType string) map[string]string {
+	output := make(map[string]string)
+	if input == nil {
+		return output
 	}
-	return config, sys, env
+
+	for _, p := range input.Items {
+		if p.Type != paramType {
+			continue
+		}
+
+		output[p.Name] = p.Value
+	}
+
+	return output
 }
 
 func expandParameters(raw map[string]interface{}, paramType string) (*api.Parameters, error) {
