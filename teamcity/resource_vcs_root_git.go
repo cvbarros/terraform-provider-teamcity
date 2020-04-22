@@ -291,6 +291,13 @@ func resourceVcsRootGitRead(d *schema.ResourceData, meta interface{}) error {
 
 	vcs, err := client.VcsRoots.GetByID(vcsID)
 	if err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] VCS Root was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 

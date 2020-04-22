@@ -425,6 +425,13 @@ func resourceBuildConfigRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[DEBUG] resourceBuildConfigRead started for resouceId: %v", d.Id())
 	dt, err := getBuildConfiguration(client, d.Id())
 	if err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] Build Configuration was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 	log.Printf("[DEBUG] BuildConfiguration '%v' retrieved successfully", dt.Name)

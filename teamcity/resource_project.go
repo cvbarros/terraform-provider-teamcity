@@ -104,8 +104,9 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 
 	dt, err := client.Projects.GetByID(d.Id())
 	if err != nil {
+		// handles this being deleted outside of TF
 		if isNotFoundError(err) {
-			log.Printf("[DEBUG] Project has been removed outside of Terraform - removing from state!")
+			log.Printf("[DEBUG] Project was not found - removing from state!")
 			d.SetId("")
 			return nil
 		}
