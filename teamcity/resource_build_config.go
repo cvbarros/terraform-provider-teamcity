@@ -283,14 +283,12 @@ func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	created, err := client.BuildTypes.Create(projectID, bt)
-
 	if err != nil {
 		return err
 	}
 
 	log.Printf("[DEBUG] resourceBuildConfigCreate: sucessfully created build configuration with id = '%v'. Marking new resource.", created.ID)
 
-	d.MarkNewResource()
 	d.SetId(created.ID)
 	d.Partial(true)
 

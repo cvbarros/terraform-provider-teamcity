@@ -65,7 +65,6 @@ func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.MarkNewResource()
 	d.SetId(created.ID)
 
 	return resourceProjectUpdate(d, client)

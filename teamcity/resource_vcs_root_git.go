@@ -14,9 +14,9 @@ import (
 
 func resourceVcsRootGit() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceVcsRootGitCreate,
+		Create: resourceVcsRootGitCreateUpdate,
 		Read:   resourceVcsRootGitRead,
-		Update: resourceVcsRootGitUpdate,
+		Update: resourceVcsRootGitCreateUpdate,
 		Delete: resourceVcsRootGitDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -182,12 +182,7 @@ var expandCleanFilesPolicyMap = map[string]string{
 
 var flattenCleanFilesPolicyMap = reverseMap(expandCleanFilesPolicyMap)
 
-func resourceVcsRootGitCreate(d *schema.ResourceData, meta interface{}) error {
-	d.MarkNewResource()
-	return resourceVcsRootGitUpdate(d, meta)
-}
-
-func resourceVcsRootGitUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceVcsRootGitCreateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	projectID := d.Get("project_id").(string)
 	var gitVcs *api.GitVcsRoot

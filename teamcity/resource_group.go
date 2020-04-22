@@ -75,7 +75,6 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.MarkNewResource()
 	d.SetId(created.Key)
 
 	return resourceGroupRead(d, meta)
