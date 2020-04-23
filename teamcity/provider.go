@@ -24,6 +24,7 @@ func Provider() terraform.ResourceProvider {
 			"teamcity_feature_commit_status_publisher": resourceFeatureCommitStatusPublisher(),
 			"teamcity_group":                           resourceGroup(),
 			"teamcity_group_role_assignment":           resourceGroupRoleAssignment(),
+			"teamcity_agent_pool_project_assignment":   resourceAgentPoolProjectAssignment(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"teamcity_agent_pool": dataSourceAgentPool(),
