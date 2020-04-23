@@ -40,7 +40,7 @@ func resourceAgentPool() *schema.Resource {
 func resourceAgentPoolCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
-	agentPool := api.AgentPool{
+	agentPool := api.CreateAgentPool{
 		Name: d.Get("name").(string),
 	}
 	if v := d.Get("max_agents").(int); v >= 0 {
@@ -52,7 +52,7 @@ func resourceAgentPoolCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.SetId(fmt.Sprintf("%s", createdAgentPool.ID))
+	d.SetId(fmt.Sprintf("%d", createdAgentPool.Id))
 
 	return resourceAgentPoolRead(d, client)
 }

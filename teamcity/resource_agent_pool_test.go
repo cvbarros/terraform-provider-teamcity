@@ -114,7 +114,7 @@ func testAccCheckTeamCityAgentPoolDestroy(s *terraform.State) error {
 func testAccTeamCityAgentPoolBasicConfig(name string) string {
 	return fmt.Sprintf(`
 resource "teamcity_agent_pool" "test" {
-  name = %s
+  name = %q
 }
 `, name)
 }
@@ -122,7 +122,7 @@ resource "teamcity_agent_pool" "test" {
 func testAccTeamCityAgentPoolCompleteConfig(name string) string {
 	return fmt.Sprintf(`
 resource "teamcity_agent_pool" "test" {
-  name       = %s
+  name       = %q
   max_agents = 5
 }
 `, name)
