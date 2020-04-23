@@ -88,8 +88,6 @@ func TestAccTeamcityProjectVersionedSettings_Update(t *testing.T) {
 }
 
 func TestAccTeamcityProjectVersionedSettings_CredentialsStorageTypeSettings(t *testing.T) {
-	t.Skip("requires https://github.com/cvbarros/go-teamcity/pull/76")
-
 	resName := "teamcity_project_feature_versioned_settings.test"
 
 	resource.Test(t, resource.TestCase{

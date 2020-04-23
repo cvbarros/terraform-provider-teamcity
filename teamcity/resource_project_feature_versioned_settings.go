@@ -51,15 +51,15 @@ func resourceProjectFeatureVersionedSettings() *schema.Resource {
 				}, false),
 			},
 
-			// TODO: once https://github.com/cvbarros/go-teamcity/pull/76 is available
-			//"credentials_storage_type": {
-			//	Type:     schema.TypeString,
-			//	Optional: true,
-			//	ValidateFunc: validation.StringInSlice([]string{
-			//		string(api.CredentialsStorageTypeCredentialsJSON),
-			//		"scrambled", // isn't returned, this is a fake value for convenience in configs
-			//	}, false),
-			//},
+			"credentials_storage_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "scrambled",
+				ValidateFunc: validation.StringInSlice([]string{
+					string(api.CredentialsStorageTypeCredentialsJSON),
+					"scrambled", // isn't returned, this is a fake value for convenience in configs
+				}, false),
+			},
 
 			"enabled": {
 				Type:     schema.TypeBool,
@@ -97,9 +97,9 @@ func resourceProjectFeatureVersionedSettingsCreate(d *schema.ResourceData, meta 
 		VcsRootID:      d.Get("vcs_root_id").(string),
 	})
 
-	//if v := d.Get("credentials_storage_type").(string); v == string(api.CredentialsStorageTypeCredentialsJSON) {
-	//	feature.Options.CredentialsStorageType = api.CredentialsStorageTypeCredentialsJSON
-	//}
+	if v := d.Get("credentials_storage_type").(string); v == string(api.CredentialsStorageTypeCredentialsJSON) {
+		feature.Options.CredentialsStorageType = api.CredentialsStorageTypeCredentialsJSON
+	}
 
 	createdFeature, err := service.Create(feature)
 	if err != nil {
@@ -133,14 +133,14 @@ func resourceProjectFeatureVersionedSettingsUpdate(d *schema.ResourceData, meta 
 	if d.HasChange("build_settings") {
 		vcsFeature.Options.BuildSettings = api.VersionedSettingsBuildSettings(d.Get("build_settings").(string))
 	}
-	//if d.HasChange("credentials_storage_type") {
-	//	v := d.Get("credentials_storage_type").(string)
-	//	if v == string(api.CredentialsStorageTypeCredentialsJSON) {
-	//		feature.Options.CredentialsStorageType = api.CredentialsStorageTypeCredentialsJSON
-	//	} else {
-	//		feature.Options.CredentialsStorageType = api.CredentialsStorageTypeScrambledInVcs
-	//	}
-	//}
+	if d.HasChange("credentials_storage_type") {
+		v := d.Get("credentials_storage_type").(string)
+		if v == string(api.CredentialsStorageTypeCredentialsJSON) {
+			vcsFeature.Options.CredentialsStorageType = api.CredentialsStorageTypeCredentialsJSON
+		} else {
+			vcsFeature.Options.CredentialsStorageType = api.CredentialsStorageTypeScrambledInVcs
+		}
+	}
 	if d.HasChange("enabled") {
 		vcsFeature.Options.Enabled = d.Get("enabled").(bool)
 	}
@@ -197,11 +197,11 @@ func resourceProjectFeatureVersionedSettingsRead(d *schema.ResourceData, meta in
 	d.Set("use_relative_ids", vcsFeature.Options.UseRelativeIds)
 	d.Set("vcs_root_id", vcsFeature.Options.VcsRootID)
 
-	//credentialsStorageType := "scrambled"
-	//if vcsFeature.Options.CredentialsStorageType != "" {
-	//	credentialsStorageType = string(vcsFeature.Options.CredentialsStorageType)
-	//}
-	//d.Set("credentials_storage_type", credentialsStorageType)
+	credentialsStorageType := "scrambled"
+	if vcsFeature.Options.CredentialsStorageType != "" {
+		credentialsStorageType = string(vcsFeature.Options.CredentialsStorageType)
+	}
+	d.Set("credentials_storage_type", credentialsStorageType)
 
 	return nil
 }
