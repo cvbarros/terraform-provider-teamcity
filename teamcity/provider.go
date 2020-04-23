@@ -22,7 +22,8 @@ func Provider() terraform.ResourceProvider {
 			"teamcity_group":                           resourceGroup(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"teamcity_project": dataSourceProject(),
+			"teamcity_agent_pool": dataSourceAgentPool(),
+			"teamcity_project":    dataSourceProject(),
 		},
 		Schema: map[string]*schema.Schema{
 			"address": &schema.Schema{
