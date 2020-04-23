@@ -7,7 +7,7 @@ import (
 )
 
 func TestAccDataSourceAgentPool_Basic(t *testing.T) {
-	resName := "data.teamcity_agent_pool.project"
+	resName := "data.teamcity_agent_pool.test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },

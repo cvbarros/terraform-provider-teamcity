@@ -1,6 +1,8 @@
 package teamcity
 
 import (
+	"fmt"
+
 	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -30,7 +32,7 @@ func dataSourceAgentPoolRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.SetId(agentPool.ID)
+	d.SetId(fmt.Sprintf("%d", agentPool.Id))
 	d.Set("name", agentPool.Name)
 	maxAgents := -1
 	if agentPool.MaxAgents != nil {
