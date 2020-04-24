@@ -94,7 +94,7 @@ func TestAccTeamcityProject_Update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckTeamcityProjectDestroy,
 		Steps: []resource.TestStep{
-			resource.TestStep{
+			{
 				Config: testAccTeamcityProjectFull,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckTeamcityProjectExists(resName, &p),
@@ -113,10 +113,11 @@ func TestAccTeamcityProject_Update(t *testing.T) {
 					testAccCheckProjectParameter(&p, api.ParameterTypes.System, "param6", "sys_value2"),
 				),
 			},
-			resource.TestStep{
+			{
 				Config: testAccTeamcityProjectFullUpdated,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckTeamcityProjectExists(resName, &p),
+					resource.TestCheckResourceAttr(resName, "description", "updated project"),
 					resource.TestCheckResourceAttr(resName, "description", "Test Project Updated"),
 					resource.TestCheckResourceAttr(resName, "config_params.param1", "config_value1"),
 					resource.TestCheckResourceAttr(resName, "config_params.param2", "config_value2"),
@@ -240,7 +241,7 @@ resource "teamcity_project" "testproj" {
 
 const testAccTeamcityProjectFullUpdated = `
 resource "teamcity_project" "testproj" {
-	name = "test_project"
+	name = "updated project"
 	description = "Test Project Updated"
 
 	config_params = {
