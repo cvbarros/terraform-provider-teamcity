@@ -102,6 +102,7 @@ func resourceBuildConfig() *schema.Resource {
 			"step": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"step_id": {
