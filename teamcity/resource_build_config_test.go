@@ -3,11 +3,12 @@ package teamcity_test
 import (
 	"errors"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
 )
@@ -195,6 +196,7 @@ func TestAccBuildConfig_UpdateBasic(t *testing.T) {
 				Config: TestAccBuildConfigBasicUpdated,
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "name", "build config updated"),
 					resource.TestCheckResourceAttr(resName, "description", "build config test desc updated"),
 				),
 			},
@@ -861,7 +863,7 @@ resource "teamcity_project" "build_config_project_test" {
 }
 
 resource "teamcity_build_config" "build_configuration_test" {
-	name = "build config test"
+	name = "build config updated"
 	project_id = "${teamcity_project.build_config_project_test.id}"
 	description = "build config test desc updated"
 	settings {
