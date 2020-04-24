@@ -79,9 +79,20 @@ func resourceFeatureGolangRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceFeatureGolangDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
-	svr := client.BuildFeatureService(d.Get("build_config_id").(string))
 
-	return svr.Delete(d.Id())
+	id, err := ParseFeatureGolangID(d.Id())
+	if err != nil {
+		return err
+	}
+
+	service := client.BuildFeatureService(id.BuildConfigID)
+	if err := service.Delete(id.FeatureID); err != nil {
+		if !isNotFoundError(err) {
+			return err
+		}
+	}
+
+	return nil
 }
 
 type FeatureGolangId struct {
