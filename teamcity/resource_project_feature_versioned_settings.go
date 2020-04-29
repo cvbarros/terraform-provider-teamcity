@@ -108,12 +108,13 @@ func resourceProjectFeatureVersionedSettingsCreate(d *schema.ResourceData, meta 
 		feature.Options.CredentialsStorageType = api.CredentialsStorageTypeCredentialsJSON
 	}
 
-	createdFeature, err := service.Create(feature)
-	if err != nil {
+	// however the ID returned eventually gets overwritten
+	// so we need to look it up using the type
+	if _, err := service.Create(feature); err != nil {
 		return err
 	}
 
-	d.SetId(fmt.Sprintf("%s|%s", projectId, createdFeature.ID()))
+	d.SetId(projectId)
 
 	return resourceProjectFeatureVersionedSettingsRead(d, meta)
 }
@@ -121,13 +122,9 @@ func resourceProjectFeatureVersionedSettingsCreate(d *schema.ResourceData, meta 
 func resourceProjectFeatureVersionedSettingsUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
-	id, err := ParseProjectFeatureId(d.Id())
-	if err != nil {
-		return err
-	}
-
-	service := client.ProjectFeatureService(id.ProjectId)
-	feature, err := service.GetByID(id.FeatureId)
+	projectId := d.Id()
+	service := client.ProjectFeatureService(projectId)
+	feature, err := service.GetByType("versionedSettings")
 	if err != nil {
 		return err
 	}
@@ -178,13 +175,9 @@ func resourceProjectFeatureVersionedSettingsUpdate(d *schema.ResourceData, meta 
 func resourceProjectFeatureVersionedSettingsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
-	id, err := ParseProjectFeatureId(d.Id())
-	if err != nil {
-		return err
-	}
-
-	service := client.ProjectFeatureService(id.ProjectId)
-	feature, err := service.GetByID(id.FeatureId)
+	projectId := d.Id()
+	service := client.ProjectFeatureService(projectId)
+	feature, err := service.GetByType("versionedSettings")
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {
 			log.Printf("[DEBUG] Project Feature Versioned Settings was not found - removing from state!")
@@ -203,7 +196,7 @@ func resourceProjectFeatureVersionedSettingsRead(d *schema.ResourceData, meta in
 	d.Set("build_settings", string(vcsFeature.Options.BuildSettings))
 	d.Set("enabled", vcsFeature.Options.Enabled)
 	d.Set("format", string(vcsFeature.Options.Format))
-	d.Set("project_id", id.ProjectId)
+	d.Set("project_id", projectId)
 	d.Set("show_changes", vcsFeature.Options.ShowChanges)
 	d.Set("use_relative_ids", vcsFeature.Options.UseRelativeIds)
 	d.Set("vcs_root_id", vcsFeature.Options.VcsRootID)
@@ -225,32 +218,19 @@ func resourceProjectFeatureVersionedSettingsRead(d *schema.ResourceData, meta in
 func resourceProjectFeatureVersionedSettingsDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
-	id, err := ParseProjectFeatureId(d.Id())
+	projectId := d.Id()
+	service := client.ProjectFeatureService(projectId)
+	feature, err := service.GetByType("versionedSettings")
 	if err != nil {
+		if strings.Contains(err.Error(), "404") {
+			// already gone
+			return nil
+		}
+
 		return err
 	}
 
-	service := client.ProjectFeatureService(id.ProjectId)
-	return service.Delete(id.FeatureId)
-}
-
-type projectFeatureId struct {
-	FeatureId string
-	ProjectId string
-}
-
-func ParseProjectFeatureId(input string) (*projectFeatureId, error) {
-	segments := strings.Split(input, "|")
-	if len(segments) != 2 {
-		return nil, fmt.Errorf("Expected a string in the format 'ProjectID|FeatureID' but got %q", input)
-	}
-
-	// format is: 'ProjectID|FeatureID'
-	id := projectFeatureId{
-		ProjectId: segments[0],
-		FeatureId: segments[1],
-	}
-	return &id, nil
+	return service.Delete(feature.ID())
 }
 
 func expandContextParameters(input map[string]interface{}) map[string]string {

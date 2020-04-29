@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
-	"github.com/cvbarros/terraform-provider-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
@@ -191,13 +190,8 @@ func testAccCheckTeamCityProjectVersionedSettingsExists(resourceName string) res
 			return fmt.Errorf("Not found: %s", resourceName)
 		}
 
-		id, err := teamcity.ParseProjectFeatureId(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		service := client.ProjectFeatureService(id.ProjectId)
-		feature, err := service.GetByID(id.FeatureId)
+		service := client.ProjectFeatureService(rs.Primary.ID)
+		feature, err := service.GetByType("versionedSettings")
 		if err != nil {
 			return fmt.Errorf("Received an error retrieving project versioned settings: %s", err)
 		}
@@ -216,14 +210,8 @@ func testAccCheckTeamCityProjectVersionedSettingsDestroy(s *terraform.State) err
 		if r.Type != "teamcity_project_feature_versioned_settings" {
 			continue
 		}
-
-		id, err := teamcity.ParseProjectFeatureId(r.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		service := client.ProjectFeatureService(id.ProjectId)
-		if _, err := service.GetByID(id.FeatureId); err != nil {
+		service := client.ProjectFeatureService(r.Primary.ID)
+		if _, err := service.GetByType("versionedSettings"); err != nil {
 			if strings.Contains(err.Error(), "404") {
 				// expected, since it's gone
 				continue

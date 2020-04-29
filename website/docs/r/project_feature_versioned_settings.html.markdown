@@ -62,10 +62,8 @@ In addition to all arguments above, the following attributes are exported:
 
 ## Import
 
-Project Versioned Settings can be imported using their ID, e.g.
+Project Versioned Settings can be imported using the ID of the Project, e.g.
 
 ```
-$ terraform import teamcity_project_versioned_settings.example "ProjectID|FeatureID"
+$ terraform import teamcity_project_versioned_settings.example ProjectID
 ```
-
-~> **Note:** This is a Terraform specific Resource ID in the format `ProjectID|FeatureID`
