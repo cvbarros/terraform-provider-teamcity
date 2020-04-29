@@ -208,7 +208,7 @@ func resourceProjectFeatureVersionedSettingsRead(d *schema.ResourceData, meta in
 	d.Set("use_relative_ids", vcsFeature.Options.UseRelativeIds)
 	d.Set("vcs_root_id", vcsFeature.Options.VcsRootID)
 
-	flattenedContextParameters = flattenContextParameters(vcsFeature.Options.ContextParameters)
+	flattenedContextParameters := flattenContextParameters(vcsFeature.Options.ContextParameters)
 	if err := d.Set("context_parameters", flattenedContextParameters); err != nil {
 		return fmt.Errorf("Error setting `context_parameters`: %+v", err)
 	}
