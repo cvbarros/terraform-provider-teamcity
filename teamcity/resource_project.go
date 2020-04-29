@@ -85,14 +85,16 @@ func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if v, ok := d.GetOk("description"); ok {
-		dt.Description = v.(string)
+	if d.HasChange("description") {
+		dt.Description = d.Get("description").(string)
 	}
 
-	if v, ok := d.GetOk("parent_id"); ok {
-		if v != "" {
-			dt.SetParentProject(v.(string))
+	if d.HasChange("parent_id") {
+		parentId := d.Get("parent_id").(string)
+		if parentId == "" {
+			parentId = "_Root"
 		}
+		dt.SetParentProject(parentId)
 	}
 
 	dt.Parameters, err = expandParameterCollection(d)
