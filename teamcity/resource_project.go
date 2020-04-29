@@ -2,9 +2,10 @@ package teamcity
 
 import (
 	"fmt"
+	"log"
+
 	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"log"
 )
 
 func resourceProject() *schema.Resource {
@@ -30,7 +31,6 @@ func resourceProject() *schema.Resource {
 			"parent_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			"env_params": {
 				Type:     schema.TypeMap,
@@ -124,8 +124,15 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	flattenParameterCollection(d, dt.Parameters)
-	return nil
+	d.Set("name", dt.Name)
+	d.Set("description", dt.Description)
+	parentProjectId := dt.ParentProjectID
+	if parentProjectId == "_Root" {
+		parentProjectId = ""
+	}
+	d.Set("parent_id", parentProjectId)
+
+	return flattenParameterCollection(d, dt.Parameters)
 }
 
 func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
