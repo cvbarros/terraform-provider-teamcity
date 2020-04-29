@@ -87,6 +87,54 @@ func TestAccTeamcityProjectVersionedSettings_Update(t *testing.T) {
 	})
 }
 
+func TestAccTeamcityProjectVersionedSettings_ContextParameters(t *testing.T) {
+	resName := "teamcity_project_feature_versioned_settings.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamCityProjectVersionedSettingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				// single
+				Config: testAccTeamCityProjectVersionedSettingsContextParametersConfig("PREFER_VCS", "kotlin"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// multiple
+				Config: testAccTeamCityProjectVersionedSettingsContextParametersUpdatedConfig("PREFER_VCS", "kotlin"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				// removed
+				Config: testAccTeamCityProjectVersionedSettingsBasicConfig("PREFER_VCS", "kotlin"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccTeamcityProjectVersionedSettings_CredentialsStorageTypeSettings(t *testing.T) {
 	resName := "teamcity_project_feature_versioned_settings.test"
 
@@ -198,6 +246,41 @@ resource "teamcity_project_feature_versioned_settings" "test" {
   vcs_root_id    = teamcity_vcs_root_git.test.id
   build_settings = "%s"
   format         = "%s"
+}
+`, testAccTeamCityProjectVersionedSettingsTemplate, buildSettings, format)
+}
+
+func testAccTeamCityProjectVersionedSettingsContextParametersConfig(buildSettings string, format string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "teamcity_project_feature_versioned_settings" "test" {
+  project_id     = teamcity_project.test.id
+  vcs_root_id    = teamcity_vcs_root_git.test.id
+  build_settings = "%s"
+  format         = "%s"
+
+  context_parameters = {
+    Hello = "World"
+  }
+}
+`, testAccTeamCityProjectVersionedSettingsTemplate, buildSettings, format)
+}
+
+func testAccTeamCityProjectVersionedSettingsContextParametersUpdatedConfig(buildSettings string, format string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "teamcity_project_feature_versioned_settings" "test" {
+  project_id     = teamcity_project.test.id
+  vcs_root_id    = teamcity_vcs_root_git.test.id
+  build_settings = "%s"
+  format         = "%s"
+
+  context_parameters = {
+    Hello = "World"
+    abc   = 123
+  }
 }
 `, testAccTeamCityProjectVersionedSettingsTemplate, buildSettings, format)
 }

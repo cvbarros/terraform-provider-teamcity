@@ -51,6 +51,11 @@ func resourceProjectFeatureVersionedSettings() *schema.Resource {
 				}, false),
 			},
 
+			"context_parameters": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+
 			"credentials_storage_type": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -88,13 +93,15 @@ func resourceProjectFeatureVersionedSettingsCreate(d *schema.ResourceData, meta 
 	projectId := d.Get("project_id").(string)
 	service := client.ProjectFeatureService(projectId)
 
+	contextParametersRaw := d.Get("context_parameters").(map[string]interface{})
 	feature := api.NewProjectFeatureVersionedSettings(projectId, api.ProjectFeatureVersionedSettingsOptions{
-		BuildSettings:  api.VersionedSettingsBuildSettings(d.Get("build_settings").(string)),
-		Enabled:        d.Get("enabled").(bool),
-		Format:         api.VersionedSettingsFormat(d.Get("format").(string)),
-		ShowChanges:    d.Get("show_changes").(bool),
-		UseRelativeIds: d.Get("use_relative_ids").(bool),
-		VcsRootID:      d.Get("vcs_root_id").(string),
+		BuildSettings:     api.VersionedSettingsBuildSettings(d.Get("build_settings").(string)),
+		ContextParameters: expandContextParameters(contextParametersRaw),
+		Enabled:           d.Get("enabled").(bool),
+		Format:            api.VersionedSettingsFormat(d.Get("format").(string)),
+		ShowChanges:       d.Get("show_changes").(bool),
+		UseRelativeIds:    d.Get("use_relative_ids").(bool),
+		VcsRootID:         d.Get("vcs_root_id").(string),
 	})
 
 	if v := d.Get("credentials_storage_type").(string); v == string(api.CredentialsStorageTypeCredentialsJSON) {
@@ -132,6 +139,10 @@ func resourceProjectFeatureVersionedSettingsUpdate(d *schema.ResourceData, meta 
 
 	if d.HasChange("build_settings") {
 		vcsFeature.Options.BuildSettings = api.VersionedSettingsBuildSettings(d.Get("build_settings").(string))
+	}
+	if d.HasChange("context_parameters") {
+		contextParametersRaw := d.Get("context_parameters").(map[string]interface{})
+		vcsFeature.Options.ContextParameters = expandContextParameters(contextParametersRaw)
 	}
 	if d.HasChange("credentials_storage_type") {
 		v := d.Get("credentials_storage_type").(string)
@@ -197,6 +208,11 @@ func resourceProjectFeatureVersionedSettingsRead(d *schema.ResourceData, meta in
 	d.Set("use_relative_ids", vcsFeature.Options.UseRelativeIds)
 	d.Set("vcs_root_id", vcsFeature.Options.VcsRootID)
 
+	flattenedContextParameters = flattenContextParameters(vcsFeature.Options.ContextParameters)
+	if err := d.Set("context_parameters", flattenedContextParameters); err != nil {
+		return fmt.Errorf("Error setting `context_parameters`: %+v", err)
+	}
+
 	credentialsStorageType := "scrambled"
 	if vcsFeature.Options.CredentialsStorageType != "" {
 		credentialsStorageType = string(vcsFeature.Options.CredentialsStorageType)
@@ -235,4 +251,20 @@ func ParseProjectFeatureId(input string) (*projectFeatureId, error) {
 		FeatureId: segments[1],
 	}
 	return &id, nil
+}
+
+func expandContextParameters(input map[string]interface{}) map[string]string {
+	output := make(map[string]string)
+	for k, v := range input {
+		output[k] = v.(string)
+	}
+	return output
+}
+
+func flattenContextParameters(input map[string]string) map[string]interface{} {
+	output := make(map[string]interface{})
+	for k, v := range input {
+		output[k] = v
+	}
+	return output
 }
