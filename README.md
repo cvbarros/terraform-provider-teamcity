@@ -68,7 +68,7 @@ All provider attributes above can be configured via environment variables. This 
 |-----------|----------------------|
 | address   | TEAMCITY_ADDR        |
 | username  | TEAMCITY_USER        |
-| password  | TEAMCITY_PASS        |
+| password  | TEAMCITY_PASSWORD    |
 
 > By using these variables, you may omit the attributes on the provider configuration, as they will be read from environment.
 
