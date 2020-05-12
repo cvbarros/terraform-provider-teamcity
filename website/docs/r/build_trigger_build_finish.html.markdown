@@ -29,7 +29,7 @@ resource "teamcity_build_config" "build_release" {
   name       = "Build Release"
 
   step {
-    type = "command_line"
+    type = "cmd_line"
     file = "build.sh"
     args = "-t buildrelease"
   }
@@ -53,9 +53,10 @@ resource "teamcity_build_config" "triggered_build" {
 }
 
 resource "teamcity_build_trigger_build_finish" "buildrelease_finish_trigger" {
-  build_config_id       = teamcity_build_config.build_release.id
-  after_successful_only = true
-  branch_filter         = ["master", "feature"]
+  build_config_id        = teamcity_build_config.build_release.id
+  source_build_config_id = teamcity_build_config.triggered_build.id
+  after_successful_only  = true
+  branch_filter          = ["master", "feature"]
 }
 ```
 

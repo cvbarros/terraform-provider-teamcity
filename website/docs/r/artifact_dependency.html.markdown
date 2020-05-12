@@ -30,6 +30,7 @@ resource "teamcity_build_config" "dependant" {
 resource "teamcity_artifact_dependency" "dependency" {
   source_build_config_id = teamcity_build_config.source.id
   build_config_id        = teamcity_build_config.dependant.id
+  path_rules             = ["+:**/* => target_dir", "-:**/folder1 => target_dir"]
 }
 ```
 
@@ -45,7 +46,7 @@ The following arguments are supported:
 
 * `revision` - (Optional) If using `buildNumber`, this is the parameter for which specific build number to consider. In case of `buildTag`, this refers to the tag name. Required in these cases.
 
-* `path_rules` - (Optional) A list of rules to match files that will have to be dowloaded from the source build that output artifacts. They can be specified in the format [+:|-:]SourcePath[!ArchivePath][=>DestinationPath].
+* `path_rules` - (Required) A list of rules to match files that will have to be dowloaded from the source build that output artifacts. They can be specified in the format [+:|-:]SourcePath[!ArchivePath][=>DestinationPath].
 
 * `clean_destination` - (Optional) If true, this will clean destination paths before downloading artifacts.
 
