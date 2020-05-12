@@ -2,9 +2,7 @@
 set -e
 
 pushd integration_tests/
-
-# using tar which is readily available whereas bsdtar is not even available on some linux distros
-tar -xzf teamcity_data.tar.gz
+bsdtar -xzf teamcity_data.tar.gz
 
 docker-compose up -d
 
