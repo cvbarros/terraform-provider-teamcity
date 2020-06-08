@@ -168,6 +168,18 @@ func resourceBuildConfig() *schema.Resource {
 				Type:     schema.TypeMap,
 				Optional: true,
 			},
+			"env_params_specs": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"config_params_specs": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"sys_params_specs": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
 			"settings": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -299,7 +311,8 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	var changed bool
-	if d.HasChange("sys_params") || d.HasChange("config_params") || d.HasChange("env_params") {
+	if d.HasChange("config_params") || d.HasChange("env_params") || d.HasChange("sys_params") ||
+		d.HasChange("config_params_specs") || d.HasChange("env_params_specs") || d.HasChange("sys_params_specs") {
 		dt.Parameters, err = expandParameterCollection(d)
 		if err != nil {
 			return err
@@ -324,8 +337,11 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 		d.SetPartial("settings")
 		d.SetPartial("description")
 		d.SetPartial("config_params")
-		d.SetPartial("sys_params")
 		d.SetPartial("env_params")
+		d.SetPartial("sys_params")
+		d.SetPartial("config_params_specs")
+		d.SetPartial("env_params_specs")
+		d.SetPartial("sys_params_specs")
 		if err != nil {
 			return err
 		}
@@ -486,8 +502,13 @@ var stepTypeMap = map[string]string{
 }
 
 func flattenParameterCollection(d *schema.ResourceData, params *api.Parameters) error {
-	var configParams, sysParams, envParams = flattenParameters(params)
+	var configParams, envParams, sysParams, configSpecs, envSpecs, sysSpecs = flattenParameters(params)
 
+	if len(configParams) > 0 {
+		if err := d.Set("config_params", configParams); err != nil {
+			return err
+		}
+	}
 	if len(envParams) > 0 {
 		if err := d.Set("env_params", envParams); err != nil {
 			return err
@@ -498,8 +519,18 @@ func flattenParameterCollection(d *schema.ResourceData, params *api.Parameters) 
 			return err
 		}
 	}
-	if len(configParams) > 0 {
-		if err := d.Set("config_params", configParams); err != nil {
+	if len(configSpecs) > 0 {
+		if err := d.Set("config_params_specs", configSpecs); err != nil {
+			return err
+		}
+	}
+	if len(envSpecs) > 0 {
+		if err := d.Set("env_params_specs", envSpecs); err != nil {
+			return err
+		}
+	}
+	if len(sysSpecs) > 0 {
+		if err := d.Set("sys_params_specs", sysSpecs); err != nil {
 			return err
 		}
 	}
@@ -509,7 +540,8 @@ func flattenParameterCollection(d *schema.ResourceData, params *api.Parameters) 
 func expandParameterCollection(d *schema.ResourceData) (*api.Parameters, error) {
 	var config, system, env *api.Parameters
 	if v, ok := d.GetOk("env_params"); ok {
-		p, err := expandParameters(v.(map[string]interface{}), api.ParameterTypes.EnvironmentVariable)
+		specs := d.Get("env_params_specs")
+		p, err := expandParameters(v.(map[string]interface{}), specs, api.ParameterTypes.EnvironmentVariable)
 		if err != nil {
 			return nil, err
 		}
@@ -517,7 +549,8 @@ func expandParameterCollection(d *schema.ResourceData) (*api.Parameters, error) 
 	}
 
 	if v, ok := d.GetOk("sys_params"); ok {
-		p, err := expandParameters(v.(map[string]interface{}), api.ParameterTypes.System)
+		specs := d.Get("sys_params_specs")
+		p, err := expandParameters(v.(map[string]interface{}), specs, api.ParameterTypes.System)
 		if err != nil {
 			return nil, err
 		}
@@ -525,7 +558,8 @@ func expandParameterCollection(d *schema.ResourceData) (*api.Parameters, error) 
 	}
 
 	if v, ok := d.GetOk("config_params"); ok {
-		p, err := expandParameters(v.(map[string]interface{}), api.ParameterTypes.Configuration)
+		specs := d.Get("config_params_specs")
+		p, err := expandParameters(v.(map[string]interface{}), specs, api.ParameterTypes.Configuration)
 		if err != nil {
 			return nil, err
 		}
@@ -546,27 +580,51 @@ func expandParameterCollection(d *schema.ResourceData) (*api.Parameters, error) 
 	return out, nil
 }
 
-func flattenParameters(dt *api.Parameters) (config map[string]string, sys map[string]string, env map[string]string) {
-	env, sys, config = make(map[string]string), make(map[string]string), make(map[string]string)
+func flattenParameters(dt *api.Parameters) (config, env, sys, configSpecs, envSpecs, sysSpecs map[string]string) {
+	config, env, sys, configSpecs, envSpecs, sysSpecs = make(map[string]string), make(map[string]string),
+		make(map[string]string), make(map[string]string), make(map[string]string), make(map[string]string)
 	for _, p := range dt.Items {
 		switch p.Type {
 		case api.ParameterTypes.Configuration:
 			config[p.Name] = p.Value
+			if p.Specs != nil {
+				configSpecs[p.Name] = p.Specs.RawValue
+			}
 		case api.ParameterTypes.EnvironmentVariable:
 			env[p.Name] = p.Value
+			if p.Specs != nil {
+				envSpecs[p.Name] = p.Specs.RawValue
+			}
 		case api.ParameterTypes.System:
 			sys[p.Name] = p.Value
+			if p.Specs != nil {
+				sysSpecs[p.Name] = p.Specs.RawValue
+			}
 		}
 	}
-	return config, sys, env
+	return config, env, sys, configSpecs, envSpecs, sysSpecs
 }
 
-func expandParameters(raw map[string]interface{}, paramType string) (*api.Parameters, error) {
+func expandParameters(raw map[string]interface{}, specs interface{}, paramType string) (*api.Parameters, error) {
+	var specMap map[string]interface{}
+	if specs != nil {
+		specMap = specs.(map[string]interface{})
+	}
+
+	for k := range specMap {
+		if _, ok := raw[k]; !ok {
+			return nil, fmt.Errorf("invalid spec %v", k)
+		}
+	}
+
 	out := api.NewParametersEmpty()
 	for k, v := range raw {
 		p, err := api.NewParameter(paramType, k, v.(string))
 		if err != nil {
 			return nil, err
+		}
+		if spec, ok := specMap[k]; ok {
+			p.AddParameterSpecs(spec.(string))
 		}
 		out.AddOrReplaceParameter(p)
 	}

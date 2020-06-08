@@ -43,6 +43,18 @@ func resourceProject() *schema.Resource {
 				Type:     schema.TypeMap,
 				Optional: true,
 			},
+			"config_params_specs": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"env_params_specs": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"sys_params_specs": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -131,7 +143,10 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	flattenParameterCollection(d, dt.Parameters)
+	err = flattenParameterCollection(d, dt.Parameters)
+	if err != nil {
+		return err
+	}
 
 	log.Printf("[DEBUG] Project: %v", dt)
 	return nil
