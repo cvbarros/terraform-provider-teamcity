@@ -65,4 +65,22 @@ If using an editor such as **Visual Studio Code** with `Go` integration, you can
 }
 ```
 
+####Using local [go-teamcity](https://github.com/cvbarros/go-teamcity) code
+
+Add the following line to the go.mod file ```replace github.com/cvbarros/go-teamcity => <local path to repo>``` eg. ```replace github.com/cvbarros/go-teamcity => ~/Development/go-teamcity```
+
+#### Running terraform examples
+
+The terraform examples are in the /examples folder.  To apply an example to a local TeamCity server:
+1. Build the terraform-provider-teamcity plugin: ```go build -o examples/<example folder>/terraform-provider-teamcity```
+ eg. ```go build -o examples/groups/terraform-provider-teamcity```
+2. Run teamcity server: ```./integration_tests/start_teamcity.sh```
+3. Run example:
+   1. cd examples/groups
+   2. source .envrc
+   3. ```terraform init```
+   4. export TF_LOG=DEBUG
+   5. ```terraform apply```
+4. To undo changes made with terraform run ```terraform destroy```
+
 If you have followed the steps but still need help to setup a development, help us by opening an issue so we can improve the documentation and the process for setting up the development environment. :+1:

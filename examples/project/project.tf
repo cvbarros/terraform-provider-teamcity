@@ -30,3 +30,19 @@ resource "teamcity_project" "child" {
     variable2 = "system_value2"
   }
 }
+
+resource "teamcity_root_project" "root" {
+  config_params = {
+      variable1 = "config_value1"
+      variable2 = "config_value2"
+  }
+
+  sys_params = {
+      variable4 = "system_value1"
+  }
+
+  env_params = {
+    foo = "env_value1"
+    bar = "env_value2"
+  }
+}
