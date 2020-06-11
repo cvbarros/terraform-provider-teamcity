@@ -36,6 +36,8 @@ github.com/cheggaaa/pb v1.0.27/go.mod h1:pQciLPpbU0oxA0h+VJYYLxO+XeDQb5pZijXscXH
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cvbarros/go-teamcity v1.1.0 h1:Gh8hIbpMJwsLTsF/10yFxs3zEptn8jfmKckJR+CD8vU=
 github.com/cvbarros/go-teamcity v1.1.0/go.mod h1:rV0+Oe8VMB2m3mWKN/glUnzzh/4EB57i70W154tqYxo=
+github.com/cvbarros/go-teamcity v1.2.0 h1:O4g/WBP9DUKUl6eK/GeAkbkMoZ7y0nA0beHukKNC+e4=
+github.com/cvbarros/go-teamcity v1.2.0/go.mod h1:rV0+Oe8VMB2m3mWKN/glUnzzh/4EB57i70W154tqYxo=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
