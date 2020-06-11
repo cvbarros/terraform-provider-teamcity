@@ -67,7 +67,6 @@ func resourceBuildConfig() *schema.Resource {
 			"name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"is_template": {
 				Type:     schema.TypeBool,
@@ -103,6 +102,7 @@ func resourceBuildConfig() *schema.Resource {
 			"step": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"step_id": {
@@ -306,6 +306,10 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if err != nil {
 		return err
+	}
+
+	if d.HasChange("name") {
+		dt.Name = d.Get("name").(string)
 	}
 
 	var changed bool
