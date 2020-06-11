@@ -31,7 +31,7 @@ resource "teamcity_vcs_root_git" "vcsroot" {
   ]
   enable_branch_spec_tags = false
   username_style          = "userid"
-  submodule_checkout      = true
+  submodule_checkout      = "ignore"
 
   # Auth block configures the authentication to Git VCS
   auth {
