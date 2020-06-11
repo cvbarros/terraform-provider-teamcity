@@ -2,9 +2,10 @@ package teamcity
 
 import (
 	"fmt"
+	"log"
+
 	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"log"
 )
 
 func resourceProject() *schema.Resource {
@@ -50,19 +51,11 @@ func resourceProject() *schema.Resource {
 
 func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
-	var name, parentID string
 
-	if v, ok := d.GetOk("name"); ok {
-		name = v.(string)
-	}
+	name := d.Get("name").(string)
+	parentProjectId := d.Get("parent_id").(string)
 
-	if v, ok := d.GetOk("parent_id"); ok {
-		if v != "" {
-			parentID = v.(string)
-		}
-	}
-
-	newProj, err := api.NewProject(name, "", parentID)
+	newProj, err := api.NewProject(name, "", parentProjectId)
 	if err != nil {
 		return err
 	}
@@ -72,7 +65,6 @@ func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.MarkNewResource()
 	d.SetId(created.ID)
 
 	return resourceProjectUpdate(d, client)
@@ -110,22 +102,23 @@ func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
-	dt, err := getProject(client, d.Id())
+	dt, err := client.Projects.GetByID(d.Id())
 	if err != nil {
-		return err
-	}
-	if err := d.Set("name", dt.Name); err != nil {
-		return err
-	}
-	if err := d.Set("description", dt.Description); err != nil {
-		return err
-	}
-	if err := d.Set("parent_id", dt.ParentProject.ID); err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] Project was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 
-	flattenParameterCollection(d, dt.Parameters)
-	return nil
+	d.Set("name", dt.Name)
+	d.Set("description", dt.Description)
+	d.Set("parent_id", dt.ParentProjectID)
+
+	return flattenParameterCollection(d, dt.Parameters)
 }
 
 func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
@@ -141,13 +134,4 @@ func resourceProjectImport(d *schema.ResourceData, meta interface{}) ([]*schema.
 		return nil, err
 	}
 	return []*schema.ResourceData{d}, nil
-}
-
-func getProject(c *api.Client, id string) (*api.Project, error) {
-	dt, err := c.Projects.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return dt, nil
 }

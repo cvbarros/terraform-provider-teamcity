@@ -3,6 +3,7 @@ package teamcity
 import (
 	"fmt"
 	"hash/crc32"
+	"log"
 	"regexp"
 	"strings"
 
@@ -75,7 +76,6 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.MarkNewResource()
 	d.SetId(created.Key)
 
 	return resourceGroupRead(d, meta)
@@ -98,10 +98,13 @@ func resourceGroupRead(d *schema.ResourceData, meta interface{}) error {
 
 	dt, err := client.Groups.GetByKey(d.Id())
 	if err != nil {
-		if strings.Contains(err.Error(), "404") {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] User Group was not found - removing from state!")
 			d.SetId("")
 			return nil
 		}
+
 		return err
 	}
 	if err := d.Set("key", dt.Key); err != nil {

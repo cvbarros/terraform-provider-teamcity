@@ -2,6 +2,7 @@ package teamcity
 
 import (
 	"fmt"
+	"log"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -101,6 +102,13 @@ func resourceArtifactDependencyRead(d *schema.ResourceData, meta interface{}) er
 
 	dt, err := getArtifactDependency(client, d.Id())
 	if err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] Build Trigger Artifact Dependency was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 

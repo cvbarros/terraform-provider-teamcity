@@ -2,6 +2,7 @@ package teamcity
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -92,6 +93,13 @@ func resourceAgentRequirementRead(d *schema.ResourceData, meta interface{}) erro
 
 	dt, err := getAgentRequirement(client, d.Id())
 	if err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] Agent Requirement was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 
