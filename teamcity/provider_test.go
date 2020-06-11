@@ -34,10 +34,11 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("TEAMCITY_ADDR"); v == "" {
 		t.Fatal("TEAMCITY_ADDR must be set for acceptance tests")
 	}
-	if v := os.Getenv("TEAMCITY_USER"); v == "" {
-		t.Fatal("TEAMCITY_USER must be set for acceptance tests")
-	}
-	if v := os.Getenv("TEAMCITY_PASSWORD"); v == "" {
-		t.Fatal("TEAMCITY_PASSWORD must be set for acceptance tests")
+	hasToken := os.Getenv("TEAMCITY_TOKEN") != ""
+	hasUsername := os.Getenv("TEAMCITY_USER") != ""
+	hasPassword := os.Getenv("TEAMCITY_PASSWORD") != ""
+
+	if !hasToken && !(hasUsername && hasPassword) {
+		t.Fatal("Either `TEAMCITY_TOKEN` or `TEAMCITY_USER` and `TEAMCITY_PASSWORD` must be set for acceptance tests")
 	}
 }
