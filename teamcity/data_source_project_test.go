@@ -39,7 +39,7 @@ func TestAccDataSourceProject_Basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resName, "name", "Test Project"),
 					resource.TestCheckResourceAttr(resName, "project_id", "TestProject"),
-					resource.TestCheckResourceAttr(resName, "parent_project_id", "_Root"),
+					resource.TestCheckResourceAttr(resName, "parent_project_id", ""),
 					resource.TestCheckResourceAttr(resName, "url", "http://127.0.0.1:8112/project.html?projectId=TestProject"),
 				),
 			},

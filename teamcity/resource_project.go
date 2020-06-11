@@ -2,9 +2,10 @@ package teamcity
 
 import (
 	"fmt"
+	"log"
+
 	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"log"
 )
 
 func resourceProject() *schema.Resource {
@@ -30,7 +31,6 @@ func resourceProject() *schema.Resource {
 			"parent_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 			"env_params": {
 				Type:     schema.TypeMap,
@@ -85,14 +85,16 @@ func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	if v, ok := d.GetOk("description"); ok {
-		dt.Description = v.(string)
+	if d.HasChange("description") {
+		dt.Description = d.Get("description").(string)
 	}
 
-	if v, ok := d.GetOk("parent_id"); ok {
-		if v != "" {
-			dt.SetParentProject(v.(string))
+	if d.HasChange("parent_id") {
+		parentId := d.Get("parent_id").(string)
+		if parentId == "" {
+			parentId = "_Root"
 		}
+		dt.SetParentProject(parentId)
 	}
 
 	dt.Parameters, err = expandParameterCollection(d)
@@ -124,8 +126,15 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	flattenParameterCollection(d, dt.Parameters)
-	return nil
+	d.Set("name", dt.Name)
+	d.Set("description", dt.Description)
+	parentProjectId := dt.ParentProjectID
+	if parentProjectId == "_Root" {
+		parentProjectId = ""
+	}
+	d.Set("parent_id", parentProjectId)
+
+	return flattenParameterCollection(d, dt.Parameters)
 }
 
 func resourceProjectDelete(d *schema.ResourceData, meta interface{}) error {
