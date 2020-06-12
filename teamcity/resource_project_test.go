@@ -2,6 +2,7 @@ package teamcity_test
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -24,7 +25,71 @@ func TestAccTeamcityProject_Basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckTeamcityProjectExists(resName, &p),
 					resource.TestCheckResourceAttr(resName, "name", "testproj"),
+					resource.TestCheckResourceAttr(resName, "root", "false"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccTeamcityProject_Root(t *testing.T) {
+	resName := "teamcity_project.root"
+	var p api.Project
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: testAccTeamcityProjectRoot,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamcityProjectExists(resName, &p),
+					resource.TestCheckResourceAttr(resName, "name", "<Root project>"),
+					resource.TestCheckResourceAttr(resName, "description", "Contains all other projects"),
+					resource.TestCheckResourceAttr(resName, "root", "true"),
+					resource.TestCheckResourceAttr(resName, "config_params.param1", "config_value1"),
+					resource.TestCheckResourceAttr(resName, "config_params.param2", "config_value2"),
+					resource.TestCheckResourceAttr(resName, "env_params.param3", "env_value1"),
+					resource.TestCheckResourceAttr(resName, "env_params.param4", "env_value2"),
+					resource.TestCheckResourceAttr(resName, "sys_params.param5", "sys_value1"),
+					resource.TestCheckResourceAttr(resName, "sys_params.param6", "sys_value2"),
+					testAccCheckProjectParameter(&p, api.ParameterTypes.Configuration, "param1", "config_value1"),
+					testAccCheckProjectParameter(&p, api.ParameterTypes.Configuration, "param2", "config_value2"),
+					testAccCheckProjectParameter(&p, api.ParameterTypes.EnvironmentVariable, "param3", "env_value1"),
+					testAccCheckProjectParameter(&p, api.ParameterTypes.EnvironmentVariable, "param4", "env_value2"),
+					testAccCheckProjectParameter(&p, api.ParameterTypes.System, "param5", "sys_value1"),
+					testAccCheckProjectParameter(&p, api.ParameterTypes.System, "param6", "sys_value2"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccTeamcityProject_RootConflicts(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		IsUnitTest: true,
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: `resource "teamcity_project" "root_name" {
+				root = true
+				name = "testproj"
+				}`,
+				ExpectError: regexp.MustCompile("'name' cannot be defined for the root project"),
+			},
+			{
+				Config: `resource "teamcity_project" "root_description" {
+				root = true
+				description = "description"
+				}`,
+				ExpectError: regexp.MustCompile("'description' cannot be defined for the root project"),
+			},
+			{
+				Config: `resource "teamcity_project" "missing_name" {
+				root = false
+				}`,
+				ExpectError: regexp.MustCompile("'name' is required for non-root project"),
 			},
 		},
 	})
@@ -202,6 +267,27 @@ func teamcityProjectDestroyHelper(s *terraform.State, client *api.Client) error 
 const testAccTeamcityProjectConfig = `
 resource "teamcity_project" "testproj" {
   name = "testproj"
+}
+`
+
+const testAccTeamcityProjectRoot = `
+resource "teamcity_project" "root" {
+  	root = true
+
+	config_params = {
+		param1 = "config_value1"
+		param2 = "config_value2"
+	}
+
+	env_params = {
+		param3 = "env_value1"
+		param4 = "env_value2"
+	}
+
+	sys_params = {
+		param5 = "sys_value1"
+		param6 = "sys_value2"
+	}
 }
 `
 
