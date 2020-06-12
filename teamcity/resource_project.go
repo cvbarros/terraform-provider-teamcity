@@ -122,8 +122,10 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 	if err := d.Set("description", dt.Description); err != nil {
 		return err
 	}
-	if err := d.Set("parent_id", dt.ParentProject.ID); err != nil {
-		return err
+	if dt.ParentProject != nil {
+		if err := d.Set("parent_id", dt.ParentProject.ID); err != nil {
+			return err
+		}
 	}
 
 	d.Set("name", dt.Name)
