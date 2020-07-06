@@ -14,6 +14,7 @@ func resourceGroup() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceGroupCreate,
 		Read:   resourceGroupRead,
+		Update: resourceGroupUpdate,
 		Delete: resourceGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: resourceGroupImport,
@@ -36,6 +37,11 @@ func resourceGroup() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"import_if_exists": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -43,6 +49,7 @@ func resourceGroup() *schema.Resource {
 func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	var key, name, description string
+	var importIfExists bool
 
 	if v, ok := d.GetOk("key"); ok {
 		key = v.(string)
@@ -54,6 +61,10 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("description"); ok {
 		description = v.(string)
+	}
+
+	if v, ok := d.GetOk("import_if_exists"); ok {
+		importIfExists = v.(bool)
 	}
 
 	if key == "" {
@@ -71,12 +82,16 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	created, err := client.Groups.Create(newGroup)
-	if err != nil {
+	if err != nil && !(importIfExists && strings.Contains(err.Error(), "group with the same key already exists")) {
 		return err
 	}
 
-	d.MarkNewResource()
-	d.SetId(created.Key)
+	if created != nil {
+		d.MarkNewResource()
+		d.SetId(created.Key)
+	} else {
+		d.SetId(key)
+	}
 
 	return resourceGroupRead(d, meta)
 }
@@ -115,6 +130,12 @@ func resourceGroupRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	return nil
+}
+
+func resourceGroupUpdate(d *schema.ResourceData, meta interface{}) error {
+	// The only attribute in the schema that does not have "ForceNew: true" is "import_if_exists",
+	// so we are not actually updating any groups in TeamCity, we just need to read and return.
+	return resourceGroupRead(d, meta)
 }
 
 func resourceGroupDelete(d *schema.ResourceData, meta interface{}) error {
