@@ -2,17 +2,20 @@ package teamcity_test
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"net/http"
 	"strings"
 	"testing"
 
-	api "github.com/cvbarros/go-teamcity/teamcity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+
 	"hash/crc32"
 	"regexp"
+
+	api "github.com/cvbarros/go-teamcity/teamcity"
 )
 
-func TestAccGroupCreate_Basic(t *testing.T) {
+func TestAccGroup_Create(t *testing.T) {
 	var g api.Group
 	resName := "teamcity_group.test_group"
 
@@ -35,7 +38,7 @@ func TestAccGroupCreate_Basic(t *testing.T) {
 	})
 }
 
-func TestAccGroupCreate_BasicUpdate(t *testing.T) {
+func TestAccGroup_Update(t *testing.T) {
 	var g api.Group
 	resName := "teamcity_group.test_group"
 
@@ -66,6 +69,67 @@ func TestAccGroupCreate_BasicUpdate(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccGroup_DisallowImportOnCreate(t *testing.T) {
+	resName := "teamcity_group.test_group"
+	groupName := "test-group"
+	testGroupKey := generateKey(groupName)
+	groupDescription := "Description of test group"
+
+	createGroup(testGroupKey, groupName, groupDescription)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckGroupDestroy,
+
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccGroupConfigBasic,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resName, "key", testGroupKey),
+					resource.TestCheckResourceAttr(resName, "name", groupName),
+					resource.TestCheckResourceAttr(resName, "description", groupDescription),
+				),
+				ExpectError: regexp.MustCompile(".*group with the same key already exists.*"),
+			},
+		},
+	})
+}
+
+func TestAccGroup_AllowImportOnCreate(t *testing.T) {
+	resName := "teamcity_group.test_group"
+	groupName := "test-group"
+	testGroupKey := generateKey(groupName)
+	groupDescription := "Description of test group"
+	createGroup(testGroupKey, groupName, groupDescription)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckGroupDestroy,
+
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccGroupConfigBasicImport,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resName, "key", testGroupKey),
+					resource.TestCheckResourceAttr(resName, "name", groupName),
+					resource.TestCheckResourceAttr(resName, "description", groupDescription),
+				),
+			},
+		},
+	})
+}
+
+func createGroup(testGroupKey string, groupName string, groupDescription string) {
+	client, err := api.NewClient(api.BasicAuth("admin", "admin"), http.DefaultClient)
+	if err == nil {
+		newGroup, _ := api.NewGroup(testGroupKey, groupName, groupDescription)
+		client.Groups.Create(newGroup)
+		fmt.Sprintf("Made new group: %s", newGroup.Key)
+	}
 }
 
 func generateKey(name string) string {
@@ -137,5 +201,12 @@ const TestAccGroupConfigBasicUpdate = `
 resource "teamcity_group" "test_group" {
   name = "test-group-updated"
   description = "Updated description of test group"
+}
+`
+const TestAccGroupConfigBasicImport = `
+resource "teamcity_group" "test_group" {
+  name = "test-group"
+  description = "Description of test group"
+  import_if_exists = true
 }
 `
