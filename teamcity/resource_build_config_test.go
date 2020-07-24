@@ -533,6 +533,7 @@ func TestAccBuildConfig_Settings(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.artifact_paths.#", "1"),
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.artifact_paths.0", "+:*.json => /config/*.json"),
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.build_counter", "20"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.clean_build", "false"),
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.build_number_format", "1.0.%build.counter%"),
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.concurrent_limit", "10"),
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.detect_hanging", "true"),
@@ -560,6 +561,7 @@ func TestAccBuildConfig_SettingsUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.artifact_paths.#", "1"),
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.artifact_paths.0", "+:*.json => /config/*.json"),
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.build_counter", "20"),
+					resource.TestCheckResourceAttr(resName, "settings.3961488219.clean_build", "false"),
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.build_number_format", "1.0.%build.counter%"),
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.concurrent_limit", "10"),
 					resource.TestCheckResourceAttr(resName, "settings.3961488219.detect_hanging", "true"),
@@ -575,6 +577,7 @@ func TestAccBuildConfig_SettingsUpdate(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "settings.3684435053.artifact_paths.#", "1"),
 					resource.TestCheckResourceAttr(resName, "settings.3684435053.artifact_paths.0", "+:*.json => /artifacts/*.json"),
 					resource.TestCheckResourceAttr(resName, "settings.3684435053.build_counter", "25"),
+					resource.TestCheckResourceAttr(resName, "settings.3684435053.clean_build", "true"),
 					resource.TestCheckResourceAttr(resName, "settings.3684435053.build_number_format", "2.0.%build.counter%"),
 					resource.TestCheckResourceAttr(resName, "settings.3684435053.concurrent_limit", "0"),
 					resource.TestCheckResourceAttr(resName, "settings.3684435053.detect_hanging", "false"),
@@ -955,6 +958,7 @@ resource "teamcity_build_config" "build_configuration_test" {
 	configuration_type = "DEPLOYMENT"
     build_number_format = "1.0.%build.counter%"
     build_counter = 20
+    clean_build = false
     allow_personal_builds = true
     artifact_paths = ["+:*.json => /config/*.json"]
     detect_hanging = true
@@ -977,6 +981,7 @@ resource "teamcity_build_config" "build_configuration_test" {
 	configuration_type = "REGULAR"
     build_number_format = "2.0.%build.counter%"
     build_counter = 25
+    clean_build = true
     allow_personal_builds = false
     artifact_paths = ["+:*.json => /artifacts/*.json"]
     detect_hanging = false

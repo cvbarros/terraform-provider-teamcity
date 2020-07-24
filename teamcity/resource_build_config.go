@@ -171,6 +171,11 @@ func resourceBuildConfig() *schema.Resource {
 							ValidateFunc: validation.IntAtLeast(0),
 							Computed:     true,
 						},
+						"clean_build": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
 						"allow_personal_builds": {
 							Type:     schema.TypeBool,
 							Optional: true,
@@ -649,6 +654,9 @@ func expandBuildConfigOptionsRaw(v *schema.Set) (*api.BuildTypeOptions, error) {
 	if v, ok := raw["build_counter"]; ok {
 		opt.BuildCounter = v.(int)
 	}
+	if v, ok := raw["clean_build"]; ok {
+		opt.CleanBuild = v.(bool)
+	}
 	if v, ok := raw["allow_personal_builds"]; ok {
 		opt.AllowPersonalBuildTriggering = v.(bool)
 	}
@@ -678,6 +686,7 @@ func flattenBuildConfigOptionsRaw(dt *api.BuildTypeOptions) map[string]interface
 	m["configuration_type"] = dt.BuildConfigurationType
 	m["build_number_format"] = dt.BuildNumberFormat
 	m["build_counter"] = dt.BuildCounter
+	m["clean_build"] = dt.CleanBuild
 	m["allow_personal_builds"] = dt.AllowPersonalBuildTriggering
 	m["artifact_paths"] = flattenStringSlice(dt.ArtifactRules)
 	m["detect_hanging"] = dt.EnableHangingBuildsDetection
