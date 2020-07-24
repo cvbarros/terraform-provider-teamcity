@@ -998,11 +998,6 @@ func resourceBuildConfigInstanceResourceV0() *schema.Resource {
 							ValidateFunc: validation.IntAtLeast(0),
 							Computed:     true,
 						},
-						"clean_build": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Default:  false,
-						},
 						"allow_personal_builds": {
 							Type:     schema.TypeBool,
 							Optional: true,
