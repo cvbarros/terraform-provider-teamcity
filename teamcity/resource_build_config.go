@@ -347,19 +347,38 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	if v, ok := d.GetOk("vcs_root"); ok {
-		vcs := v.(*schema.Set).List()
-		for _, raw := range vcs {
-			toAttach := buildVcsRootEntry(raw)
+	if d.HasChange("vcs_root") {
+		oldVCSEntries, err := client.BuildTypes.GetVcsRootEntries(dt.ID)
 
-			err := client.BuildTypes.AttachVcsRootEntry(dt.ID, toAttach)
+		if err != nil {
+			return err
+		}
+
+		for _, old := range oldVCSEntries.Items {
+			err := client.BuildTypes.DetachVcsRootEntry(dt.ID, old.ID)
 
 			if err != nil {
 				return err
 			}
 		}
+
+		if v, ok := d.GetOk("vcs_root"); ok {
+			vcs := v.(*schema.Set).List()
+
+			for _, raw := range vcs {
+				toAttach := buildVcsRootEntry(raw)
+
+				err := client.BuildTypes.AttachVcsRootEntry(dt.ID, toAttach)
+
+				if err != nil {
+					return err
+				}
+			}
+		}
+
 		d.SetPartial("vcs_root")
 	}
+
 	if d.HasChange("step") {
 		add, err := expandBuildSteps(d.Get("step").([]interface{}))
 		if err != nil {
