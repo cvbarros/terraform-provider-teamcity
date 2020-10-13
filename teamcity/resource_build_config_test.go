@@ -34,19 +34,6 @@ func TestAccBuildConfig_Basic(t *testing.T) {
 	})
 }
 
-func TestAccBuildConfig_TemplateDoesNotSupportDescription(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config:      TestAccBuildConfigTemplateWithDescription,
-				ExpectError: regexp.MustCompile("'description' field is not supported for Build Configuration Templates. See issue https://youtrack.jetbrains.com/issue/TW-63617 for details"),
-			},
-		},
-	})
-}
-
 func TestAccBuildConfig_Template(t *testing.T) {
 	var bc api.BuildType
 	resName := "teamcity_build_config.build_configuration_test"
@@ -62,6 +49,67 @@ func TestAccBuildConfig_Template(t *testing.T) {
 					resource.TestCheckResourceAttr(resName, "name", "build config template"),
 					resource.TestCheckResourceAttr(resName, "project_id", "BuildConfigProjectTest"),
 					resource.TestCheckResourceAttr(resName, "is_template", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_TemplateDoesNotSupportDescription(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config:      TestAccBuildConfigTemplateWithDescription,
+				ExpectError: regexp.MustCompile("'description' field is not supported for Build Configuration Templates. See issue https://youtrack.jetbrains.com/issue/TW-63617 for details"),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_TemplateDisregardBuildCounter(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: TestAccBuildConfigTemplateBuildCounter,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckNoResourceAttr(resName, "settings.0.build_counter"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccBuildConfig_ChangeToTemplate(t *testing.T) {
+	var bc api.BuildType
+	resName := "teamcity_build_config.build_configuration_test"
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: TestAccBuildConfigChangeToTemplate,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckBuildConfigExists(resName, &bc),
+					resource.TestCheckResourceAttr(resName, "is_template", "false"),
+				),
+				Destroy: false,
+			},
+			{
+				Config:      TestAccBuildConfigChangeToTemplateUpdatedError,
+				ExpectError: regexp.MustCompile("'settings.build_counter' field is not supported for Build Configuration Templates, is_template = true"),
+			},
+			{
+				Config: TestAccBuildConfigChangeToTemplateUpdated,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resName, "is_template", "true"),
+					resource.TestCheckNoResourceAttr(resName, "settings.0.build_counter"),
 				),
 			},
 		},
@@ -840,6 +888,71 @@ resource "teamcity_build_config" "build_configuration_test" {
 	is_template = "true"
 	project_id = "${teamcity_project.build_config_project_test.id}"
 	description = "build config template desc"
+}
+`
+
+const TestAccBuildConfigTemplateBuildCounter = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config template with counter"
+	is_template = "true"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	settings {
+		build_number_format = "1.0.%build.counter%-%teamcity.build.branch%"
+		concurrent_limit    = 1
+  	}
+}
+`
+
+const TestAccBuildConfigChangeToTemplate = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config not template with counter"
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	settings {
+		build_number_format = "1.0.%build.counter%-%teamcity.build.branch%"
+		build_counter		= "10"
+		concurrent_limit    = 1
+  	}
+}
+`
+
+const TestAccBuildConfigChangeToTemplateUpdatedError = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config template with counter"
+	is_template = true
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	settings {
+		build_number_format = "1.0.%build.counter%-%teamcity.build.branch%"
+		build_counter		= "10"
+		concurrent_limit    = 1
+  	}
+}
+`
+
+const TestAccBuildConfigChangeToTemplateUpdated = `
+resource "teamcity_project" "build_config_project_test" {
+  name = "build_config_project_test"
+}
+
+resource "teamcity_build_config" "build_configuration_test" {
+	name = "build config template with counter"
+	is_template = true
+	project_id = "${teamcity_project.build_config_project_test.id}"
+	settings {
+		build_number_format = "1.0.%build.counter%-%teamcity.build.branch%"
+		concurrent_limit    = 1
+  	}
 }
 `
 
