@@ -2,6 +2,7 @@ package teamcity
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -56,7 +57,7 @@ func resourceBuildConfig() *schema.Resource {
 					}
 					if setComputed {
 						computed := flattenBuildConfigOptionsRaw(nsi)
-						diff.SetNew("settings", []map[string]interface{}{computed})
+						_ = diff.SetNew("settings", []map[string]interface{}{computed})
 					}
 				}
 			}
@@ -280,6 +281,7 @@ func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	if opt != nil {
 		bt.Options = opt
+		opt.Template = isTemplate
 	}
 
 	created, err := client.BuildTypes.Create(projectID, bt)
@@ -292,7 +294,6 @@ func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 
 	d.MarkNewResource()
 	d.SetId(created.ID)
-	d.Partial(true)
 
 	log.Printf("[DEBUG] resourceBuildConfigCreate: initial creation finished. Calling resourceBuildConfigUpdate to update the rest of resource.")
 
@@ -306,6 +307,13 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if err != nil {
 		return err
+	}
+
+	if d.HasChange("is_template") {
+		err := validateBuildConfig(d)
+		if err != nil {
+			return err
+		}
 	}
 
 	var changed bool
@@ -325,20 +333,22 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 	if d.HasChange("settings") {
+		isTemplate := false
+		if v, ok := d.GetOk("is_template"); ok {
+			log.Printf("[DEBUG] resourceBuildConfigCreate: setting is_template = '%v'.", v.(bool))
+			isTemplate = v.(bool)
+		}
+
 		log.Printf("[DEBUG] resourceBuildConfigUpdate: change detected for settings")
 		if _, ok := d.GetOk("settings"); ok {
 			dt.Options, err = expandBuildConfigOptions(d)
+			dt.Options.Template = isTemplate
 			changed = true
 		}
 	}
 
 	if changed {
 		_, err := client.BuildTypes.Update(dt)
-		d.SetPartial("settings")
-		d.SetPartial("description")
-		d.SetPartial("config_params")
-		d.SetPartial("sys_params")
-		d.SetPartial("env_params")
 		if err != nil {
 			return err
 		}
@@ -355,7 +365,6 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 			log.Printf("[DEBUG] resourceBuildConfigUpdate: attached vcsRoot '%v' to build configuration", toAttach.ID)
 		}
-		d.SetPartial("vcs_root")
 	}
 
 	if d.HasChange("step") {
@@ -386,7 +395,6 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 				}
 			}
 		}
-		d.SetPartial("step")
 	}
 
 	if d.HasChange("templates") {
@@ -407,10 +415,8 @@ func resourceBuildConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 			}
 			log.Printf("[DEBUG] resourceBuildConfigUpdate: detached template '%v' from build configuration", r)
 		}
-		d.SetPartial("templates")
 	}
 
-	d.Partial(false)
 	log.Printf("[DEBUG] resourceBuildConfigUpdate: updated finished. Calling 'read' to refresh state.")
 	return resourceBuildConfigRead(d, meta)
 }
@@ -501,8 +507,18 @@ func validateBuildConfig(d *schema.ResourceData) error {
 		isTemplate := v.(bool)
 
 		if isTemplate {
-			if _, isSet := d.GetOkExists("description"); isSet {
+			if _, ok := d.GetOk("description"); ok {
 				return fmt.Errorf("'description' field is not supported for Build Configuration Templates. See issue https://youtrack.jetbrains.com/issue/TW-63617 for details")
+			}
+			if _, ok := d.GetOk("settings"); ok {
+				opt, err := expandBuildConfigOptions(d)
+				if err != nil {
+					return err
+				}
+				// If there's build counter specified in the configuration
+				if opt.BuildCounter != 0 {
+					return errors.New("'settings.build_counter' field is not supported for Build Configuration Templates, is_template = true")
+				}
 			}
 		}
 	}
@@ -1027,7 +1043,7 @@ func resourceBuildConfigInstanceResourceV0() *schema.Resource {
 	}
 }
 
-func resourceBuildConfigInstanceStateUpgradeV0(rawState map[string]interface{}, meta interface{}) (map[string]interface{}, error) {
+func resourceBuildConfigInstanceStateUpgradeV0(rawState map[string]interface{}, _ interface{}) (map[string]interface{}, error) {
 	if raw, ok := rawState["steps"]; ok {
 		s := raw.(*schema.Set)
 		list := s.List()
