@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1]
+
+### Features
+- [#98] Provider is now available via [Terraform Registry](https://registry.terraform.io/providers/cvbarros/teamcity/latest) :tada: for Terraform v0.13+ users.
+
+### Fixes:
+- [#99] `r/teamcity_build_config`: Error when using `is_template = true` for `teamcity_build_config` due to `build_counter` being sent to the API.
+
 ## [1.0.0]
 
 This release is the first major release and includes an upgrade to TeamCity 2019.2.2 as the supported version.
@@ -21,6 +29,7 @@ Whenever a major version is bumped, backwards compatibility with previous TeamCi
 - Migrate to `terraform-plugin-sdk` instead of Terraform Core [#72]
 
 [//]: # (Release links)
+[1.0.1]: https://github.com/cvbarros/terraform-provider-teamcity/releases/tag/v1.0.1
 [1.0.0]: https://github.com/cvbarros/terraform-provider-teamcity/releases/tag/v1.0.0
 
 [//]: # (Issue/PR links)
@@ -29,3 +38,5 @@ Whenever a major version is bumped, backwards compatibility with previous TeamCi
 [#70]: https://github.com/cvbarros/terraform-provider-teamcity/pull/70
 [#71]: https://github.com/cvbarros/terraform-provider-teamcity/pull/71
 [#72]: https://github.com/cvbarros/terraform-provider-teamcity/pull/72
+[#98]: https://github.com/cvbarros/terraform-provider-teamcity/issues/98
+[#99]: https://github.com/cvbarros/terraform-provider-teamcity/issues/99
