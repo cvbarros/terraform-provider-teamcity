@@ -1,11 +1,3 @@
----
-subcategory: "Build Configurations"
-layout: teamcity
-page_title: "TeamCity: Resource - teamcity_build_config"
-description: |-
-  Manages TeamCity build configurations
----
-
 # teamcity_build_config
 
 The Build Configuration resource allows managing TeamCity build configurations.

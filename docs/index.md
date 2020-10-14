@@ -1,19 +1,10 @@
----
-layout: teamcity
-page_title: "Provider: TeamCity"
-sidebar_current: "docs-teamcity-index"
-description: |-
-  TeamCity provider is used to manage TeamCity resources. The provider must be configured with the proper credentials before it can be used.
-
-# TeamCity Provider
+# TeamCity Terraform Provider
 
 The [TeamCity](https://www.jetbrains.com/teamcity/) provider is used to interact with the
 resources supported by TeamCity. The provider needs to be configured
 with the proper credentials before it can be used.
 
 ~> Important Interacting with TeamCity from Terraform causes any sensitive parameters and variables to be persisted in both Terraform's state file and in any generated plan files. Whenever dealing with sensitive parameters in projects and/or build configurations, files should be treated as sensitive and protected accordingly
-
-This provider is meant primarily for enabling _pipelines as code_ for TeamCity.
 
 ## Provider Arguments
 

@@ -1,11 +1,3 @@
----
-subcategory: "Build Configurations"
-layout: teamcity
-page_title: "TeamCity: Resource - teamcity_build_trigger_schedule"
-description: |-
-  Manages TeamCity build configuration "Schedule" build triggers.
----
-
 # teamcity_build_trigger_schedule
 
 The Build Trigger Schedule resource allows managing build configuration scheduled triggers.

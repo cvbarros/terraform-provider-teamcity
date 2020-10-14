@@ -1,11 +1,3 @@
----
-subcategory: "VCS Roots"
-layout: teamcity
-page_title: "TeamCity: Resource - teamcity_vcs_root_git"
-description: |-
-  Manages TeamCity Git VCS Roots
----
-
 # teamcity_vcs_root_git
 
 The Git VCS Root resource allows managing VCS Roots with type `Git`.

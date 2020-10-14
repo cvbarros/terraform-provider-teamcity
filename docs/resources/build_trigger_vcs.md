@@ -1,11 +1,3 @@
----
-subcategory: "Build Configurations"
-layout: teamcity
-page_title: "TeamCity: Resource - teamcity_build_trigger_vcs"
-description: |-
-  Manages TeamCity build configuration "VCS" build triggers.
----
-
 # teamcity_build_trigger_vcs
 
 The Build Trigger VCS resource allows managing build configuration triggers of type "VCS", that will fire builds when VCS changes are detected.

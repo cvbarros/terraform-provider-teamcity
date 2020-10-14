@@ -1,11 +1,3 @@
----
-subcategory: "Artifact Dependencies"
-layout: teamcity
-page_title: "TeamCity: Resource - teamcity_artifact_dependency"
-description: |-
-  Manages TeamCity artifact dependencies
----
-
 # teamcity_artifact_dependency
 
 The Artifact Dependency resource allows managing build dependencies of "Artifact" type.

@@ -1,11 +1,3 @@
----
-subcategory: "Build Configurations"
-layout: teamcity
-page_title: "TeamCity: Resource - teamcity_snapshot_dependency"
-description: |-
-  Manages TeamCity snapshot dependencies
----
-
 # teamcity_snapshot_dependency
 
 The Snapshot Dependency resource allows managing build dependencies of "Snapshot" type.

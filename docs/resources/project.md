@@ -1,14 +1,6 @@
----
-subcategory: "Projects"
-layout: teamcity
-page_title: "TeamCity: Resource - teamcity_project"
-description: |-
-  Manages a Project
----
-
 # teamcity_project
 
-The Project resource allows managing a Projects. It is the base resource needed for provisioning Build Configurations, since they to be associated with a project that is not the `Root` project.
+The Project resource allows managing Projects. It is the base resource needed for provisioning Build Configurations, since they to be associated with a project that is not the `Root` project.
 
 ~> **WARNING:** Deleting a project resource will delete everything underneath it.
 
