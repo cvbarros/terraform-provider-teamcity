@@ -1,11 +1,3 @@
----
-subcategory: "Projects"
-layout: "teamcity"
-page_title: "TeamCity: Data Source - teamcity_project"
-description: |-
-  Retrieves information about an existing TeamCity Project
----
-
 # Data Source: teamcity_project
 
 Retrieves information about an existing TeamCity Project

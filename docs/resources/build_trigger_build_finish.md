@@ -1,11 +1,3 @@
----
-subcategory: "Build Configurations"
-layout: teamcity
-page_title: "TeamCity: Resource - teamcity_build_trigger_build_finish"
-description: |-
-  Manages TeamCity build configuration triggers of "Finish Build" type.
----
-
 # teamcity_build_trigger_build_finish
 
 The Build Trigger Build Finish resource allows managing build configuration triggers of type "Finish Build".

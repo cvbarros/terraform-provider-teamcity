@@ -1,11 +1,3 @@
----
-subcategory: "Agent Requirements"
-layout: teamcity
-page_title: "TeamCity: Resource - teamcity_agent_requirement"
-description: |-
-  Manages TeamCity agent requirements for build configurations.
----
-
 # teamcity_agent_requirement
 
 The Agent Requirement resource allows managing Agent Requirements for build configurations.
