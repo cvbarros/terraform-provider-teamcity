@@ -52,9 +52,9 @@ func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
 	name := d.Get("name").(string)
-	parentProjectId := d.Get("parent_id").(string)
+	parentProjectID := d.Get("parent_id").(string)
 
-	newProj, err := api.NewProject(name, "", parentProjectId)
+	newProj, err := api.NewProject(name, "", parentProjectID)
 	if err != nil {
 		return err
 	}
@@ -81,11 +81,11 @@ func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if d.HasChange("parent_id") {
-		parentId := d.Get("parent_id").(string)
-		if parentId == "" {
-			parentId = "_Root"
+		parentID := d.Get("parent_id").(string)
+		if parentID == "" {
+			parentID = "_Root"
 		}
-		dt.SetParentProject(parentId)
+		dt.SetParentProject(parentID)
 	}
 
 	dt.Parameters, err = expandParameterCollection(d)
