@@ -117,7 +117,11 @@ func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("name", dt.Name)
 	d.Set("description", dt.Description)
-	d.Set("parent_id", dt.ParentProjectID)
+	parentProjectID := dt.ParentProjectID
+	if parentProjectID == "_Root" {
+		parentProjectID = ""
+	}
+	d.Set("parent_id", parentProjectID)
 
 	return flattenParameterCollection(d, dt.Parameters)
 }
