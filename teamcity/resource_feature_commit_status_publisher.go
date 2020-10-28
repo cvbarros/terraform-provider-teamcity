@@ -3,6 +3,7 @@ package teamcity
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"strings"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
@@ -115,6 +116,13 @@ func resourceFeatureCommitStatusPublisherRead(d *schema.ResourceData, meta inter
 
 	dt, err := getBuildFeatureCommitPublisher(client, d.Id())
 	if err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] Build Feature Commit Status Publisher was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 

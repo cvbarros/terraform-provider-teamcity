@@ -14,9 +14,9 @@ import (
 
 func resourceVcsRootGit() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceVcsRootGitCreate,
+		Create: resourceVcsRootGitCreateUpdate,
 		Read:   resourceVcsRootGitRead,
-		Update: resourceVcsRootGitUpdate,
+		Update: resourceVcsRootGitCreateUpdate,
 		Delete: resourceVcsRootGitDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -182,12 +182,7 @@ var expandCleanFilesPolicyMap = map[string]string{
 
 var flattenCleanFilesPolicyMap = reverseMap(expandCleanFilesPolicyMap)
 
-func resourceVcsRootGitCreate(d *schema.ResourceData, meta interface{}) error {
-	d.MarkNewResource()
-	return resourceVcsRootGitUpdate(d, meta)
-}
-
-func resourceVcsRootGitUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceVcsRootGitCreateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	projectID := d.Get("project_id").(string)
 	var gitVcs *api.GitVcsRoot
@@ -296,6 +291,13 @@ func resourceVcsRootGitRead(d *schema.ResourceData, meta interface{}) error {
 
 	vcs, err := client.VcsRoots.GetByID(vcsID)
 	if err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] VCS Root was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 

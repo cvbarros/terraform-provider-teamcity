@@ -2,6 +2,7 @@ package teamcity
 
 import (
 	"fmt"
+	"log"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -62,6 +63,13 @@ func resourceSnapshotDependencyRead(d *schema.ResourceData, meta interface{}) er
 
 	dt, err := getSnapshotDependency(client, d.Id())
 	if err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] Snapshot Dependency was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 
