@@ -1,6 +1,7 @@
 package teamcity
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -27,6 +28,26 @@ func resourceProjectFeatureVaultConnection() *schema.Resource {
 				ForceNew: true,
 			},
 
+			"approle_auth_path": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "approle",
+				ValidateFunc: validation.StringIsNotEmpty,
+			},
+
+			"approle_role_id": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
+			},
+
+			"approle_secret_id": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
+				Sensitive:    true,
+			},
+
 			"auth_method": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -35,6 +56,7 @@ func resourceProjectFeatureVaultConnection() *schema.Resource {
 					string(api.ConnectionProviderVaultAuthMethodIAM),
 					string(api.ConnectionProviderVaultAuthMethodApprole),
 				}, false),
+				Description: "Use Approle or AWS IAM Auth method",
 			},
 
 			"display_name": {
@@ -44,21 +66,15 @@ func resourceProjectFeatureVaultConnection() *schema.Resource {
 			},
 
 			"fail_on_error": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Should builds fail in the case of an error resolving parameters",
 			},
 
-			"role_id": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringIsNotEmpty,
-			},
-
-			"secret_id": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringIsNotEmpty,
-				Sensitive:    true,
+			"paramater_namespace": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Namespace for use in TeamCity parameters in case of multiple Vault connections",
 			},
 
 			"url": {
@@ -67,7 +83,11 @@ func resourceProjectFeatureVaultConnection() *schema.Resource {
 				ValidateFunc: validation.IsURLWithHTTPorHTTPS,
 			},
 
-			// TODO: Add missing params from api.ConnectionProviderVaultOptions
+			"vault_namespace": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
+			},
 		},
 	}
 }
@@ -79,15 +99,36 @@ func resourceProjectFeatureVaultConnectionCreate(d *schema.ResourceData, meta in
 	service := client.ProjectFeatureService(projectID)
 
 	feature := api.NewProjectConnectionVault(projectID, api.ConnectionProviderVaultOptions{
-		AuthMethod:  api.ConnectionProviderVaultAuthMethod(d.Get("auth_method").(string)),
-		DisplayName: d.Get("display_name").(string),
-		URL:         d.Get("url").(string),
-		// TOOO: Add full range of params here
+		AuthMethod:     api.ConnectionProviderVaultAuthMethod(d.Get("auth_method").(string)),
+		DisplayName:    d.Get("display_name").(string),
+		FailOnError:    d.Get("fail_on_error").(bool),
+		URL:            d.Get("url").(string),
+		VaultNamespace: d.Get("vault_namespace").(string),
 	})
 
 	if v := d.Get("auth_method").(string); v == string(api.ConnectionProviderVaultAuthMethodApprole) {
-		feature.Options.RoleID = d.Get("role_id").(string)
-		feature.Options.SecretID = d.Get("secret_id").(string)
+		approleAuthPath, approleAuthPathOk := d.GetOk("approle_auth_path")
+		if approleAuthPathOk {
+			feature.Options.Endpoint = approleAuthPath.(string)
+		}
+
+		approleRoleID, approleRoleIDOk := d.GetOk("approle_role_id")
+		approleSecretID, approleSecretIDOk := d.GetOk("approle_secret_id")
+
+		if !approleRoleIDOk || !approleSecretIDOk {
+			return errors.New("both approle_role_id and approle_secret_id must be supplied when using approle auth")
+		}
+
+		feature.Options.RoleID = approleRoleID.(string)
+		feature.Options.SecretID = approleSecretID.(string)
+	}
+
+	if v, ok := d.GetOk("namespace"); ok {
+		feature.Options.Namespace = v.(string)
+	}
+
+	if v, ok := d.GetOk("vault_namespace"); ok {
+		feature.Options.VaultNamespace = v.(string)
 	}
 
 	// however the ID returned eventually gets overwritten
@@ -101,56 +142,60 @@ func resourceProjectFeatureVaultConnectionCreate(d *schema.ResourceData, meta in
 	return resourceProjectFeatureVaultConnectionRead(d, meta)
 }
 
-// TODO: Support updating resources
 func resourceProjectFeatureVaultConnectionUpdate(d *schema.ResourceData, meta interface{}) error {
-	// client := meta.(*api.Client)
+	client := meta.(*api.Client)
 
-	// projectID := d.Id()
-	// service := client.ProjectFeatureService(projectID)
-	// feature, err := service.GetByType("versionedSettings")
-	// if err != nil {
-	// 	return err
-	// }
+	projectID := d.Id()
+	service := client.ProjectFeatureService(projectID)
+	feature, err := service.GetByTypeAndProvider("OAuthProvider", "teamcity-vault")
+	if err != nil {
+		return err
+	}
 
-	// vcsFeature, ok := feature.(*api.ProjectFeatureVersionedSettings)
-	// if !ok {
-	// 	return fmt.Errorf("Expected a VersionedSettings Feature but wasn't")
-	// }
+	vaultFeature, ok := feature.(*api.ConnectionProviderVault)
+	if !ok {
+		return fmt.Errorf("Expected a ConnectionProviderVault Feature but wasn't")
+	}
 
-	// if d.HasChange("build_settings") {
-	// 	vcsFeature.Options.BuildSettings = api.VersionedSettingsBuildSettings(d.Get("build_settings").(string))
-	// }
-	// if d.HasChange("context_parameters") {
-	// 	contextParametersRaw := d.Get("context_parameters").(map[string]interface{})
-	// 	vcsFeature.Options.ContextParameters = expandContextParameters(contextParametersRaw)
-	// }
-	// if d.HasChange("credentials_storage_type") {
-	// 	v := d.Get("credentials_storage_type").(string)
-	// 	if v == string(api.CredentialsStorageTypeCredentialsJSON) {
-	// 		vcsFeature.Options.CredentialsStorageType = api.CredentialsStorageTypeCredentialsJSON
-	// 	} else {
-	// 		vcsFeature.Options.CredentialsStorageType = api.CredentialsStorageTypeScrambledInVcs
-	// 	}
-	// }
-	// if d.HasChange("enabled") {
-	// 	vcsFeature.Options.Enabled = d.Get("enabled").(bool)
-	// }
-	// if d.HasChange("format") {
-	// 	vcsFeature.Options.Format = api.VersionedSettingsFormat(d.Get("format").(string))
-	// }
-	// if d.HasChange("show_changes") {
-	// 	vcsFeature.Options.ShowChanges = d.Get("show_changes").(bool)
-	// }
-	// if d.HasChange("use_relative_ids") {
-	// 	vcsFeature.Options.UseRelativeIds = d.Get("use_relative_ids").(bool)
-	// }
-	// if d.HasChange("vcs_root_id") {
-	// 	vcsFeature.Options.VcsRootID = d.Get("vcs_root_id").(string)
-	// }
+	if d.HasChange("auth_method") {
+		vaultFeature.Options.AuthMethod = api.ConnectionProviderVaultAuthMethod(d.Get("auth_method").(string))
+	}
 
-	// if _, err := service.Update(vcsFeature); err != nil {
-	// 	return err
-	// }
+	if d.HasChange("approle_auth_path") {
+		vaultFeature.Options.Endpoint = d.Get("approle_auth_path").(string)
+	}
+
+	if d.HasChange("approle_role_id") {
+		vaultFeature.Options.RoleID = d.Get("approle_role_id").(string)
+	}
+
+	if d.HasChange("approle_secret_id") {
+		vaultFeature.Options.SecretID = d.Get("approle_secret_id").(string)
+	}
+
+	if d.HasChange("fail_on_error") {
+		vaultFeature.Options.FailOnError = d.Get("fail_on_error").(bool)
+	}
+
+	if d.HasChange("display_name") {
+		vaultFeature.Options.DisplayName = d.Get("display_name").(string)
+	}
+
+	if d.HasChange("parameter_namespace") {
+		vaultFeature.Options.Namespace = d.Get("parameter_namespace").(string)
+	}
+
+	if d.HasChange("vault_namespace") {
+		vaultFeature.Options.VaultNamespace = d.Get("vault_namespace").(string)
+	}
+
+	if d.HasChange("url") {
+		vaultFeature.Options.URL = d.Get("url").(string)
+	}
+
+	if _, err := service.Update(vaultFeature); err != nil {
+		return err
+	}
 
 	return resourceProjectFeatureVaultConnectionRead(d, meta)
 }
@@ -177,8 +222,19 @@ func resourceProjectFeatureVaultConnectionRead(d *schema.ResourceData, meta inte
 	}
 
 	d.Set("project_id", projectID)
+	d.Set("auth_method", vaultFeature.Options.AuthMethod)
+	d.Set("display_name", vaultFeature.Options.DisplayName)
+	d.Set("fail_on_error", vaultFeature.Options.FailOnError)
+	d.Set("namespace", vaultFeature.Options.Namespace)
 	d.Set("url", string(vaultFeature.Options.URL))
-	// TODO: Add full set of resource params here.
+	d.Set("vault_namespace", vaultFeature.Options.VaultNamespace)
+
+	if vaultFeature.Options.AuthMethod == api.ConnectionProviderVaultAuthMethodApprole {
+		d.Set("approle_auth_path", string(api.ConnectionProviderVaultAuthMethodApprole))
+		d.Set("approle_role_id", vaultFeature.Options.RoleID)
+		// approle_secret_id is a non-readable field via API, so can only be created or updated.
+		d.Set("approle_secret_id", d.Get("approle_secret_id").(string))
+	}
 
 	return nil
 }

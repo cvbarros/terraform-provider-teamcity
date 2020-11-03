@@ -23,164 +23,197 @@ func TestAccTeamcityProjectVaultConnection_Basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckTeamCityProjectVaultConnectionExists(resName),
 					resource.TestCheckResourceAttr(resName, "auth_method", "approle"),
+					resource.TestCheckResourceAttr(resName, "approle_role_id", "123456"),
+					resource.TestCheckResourceAttr(resName, "approle_secret_id", "abcdef"),
 					resource.TestCheckResourceAttr(resName, "url", "http://vault.service:8200"),
 				),
 			},
-			// {
-			// 	ResourceName:      resName,
-			// 	ImportState:       true,
-			// 	ImportStateVerify: true,
-			// },
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"approle_secret_id",
+				},
+			},
 		},
 	})
 }
 
-// func TestAccTeamcityProjectVersionedSettings_Update(t *testing.T) {
-// 	resName := "teamcity_project_feature_versioned_settings.test"
+func TestAccTeamcityProjectVaultConnection_Update(t *testing.T) {
+	resName := "teamcity_project_feature_vault_connection.test"
 
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckTeamCityProjectVersionedSettingsDestroy,
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: testAccTeamCityProjectVersionedSettingsBasicConfig("PREFER_VCS", "kotlin"),
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
-// 					resource.TestCheckResourceAttr(resName, "build_settings", "PREFER_VCS"),
-// 					resource.TestCheckResourceAttr(resName, "format", "kotlin"),
-// 				),
-// 			},
-// 			{
-// 				ResourceName:      resName,
-// 				ImportState:       true,
-// 				ImportStateVerify: true,
-// 			},
-// 			{
-// 				Config: testAccTeamCityProjectVersionedSettingsBasicConfig("ALWAYS_USE_CURRENT", "xml"),
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
-// 					resource.TestCheckResourceAttr(resName, "build_settings", "ALWAYS_USE_CURRENT"),
-// 					resource.TestCheckResourceAttr(resName, "format", "xml"),
-// 				),
-// 			},
-// 			{
-// 				ResourceName:      resName,
-// 				ImportState:       true,
-// 				ImportStateVerify: true,
-// 			},
-// 			{
-// 				Config: testAccTeamCityProjectVersionedSettingsBasicConfig("PREFER_VCS", "xml"),
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
-// 					resource.TestCheckResourceAttr(resName, "build_settings", "PREFER_VCS"),
-// 					resource.TestCheckResourceAttr(resName, "format", "xml"),
-// 				),
-// 			},
-// 			{
-// 				ResourceName:      resName,
-// 				ImportState:       true,
-// 				ImportStateVerify: true,
-// 			},
-// 		},
-// 	})
-// }
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamCityProjectVaultConnectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccTeamCityProjectVaultConnectionBasicConfig("http://vault.service:8200"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVaultConnectionExists(resName),
+					resource.TestCheckResourceAttr(resName, "auth_method", "approle"),
+					resource.TestCheckResourceAttr(resName, "url", "http://vault.service:8200"),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"approle_secret_id",
+				},
+			},
+			{
+				Config: testAccTeamCityProjectVaultConnectionBasicConfig("http://vault.anotherservice:8200"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVaultConnectionExists(resName),
+					resource.TestCheckResourceAttr(resName, "auth_method", "approle"),
+					resource.TestCheckResourceAttr(resName, "url", "http://vault.anotherservice:8200"),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"approle_secret_id",
+				},
+			},
+		},
+	})
+}
 
-// func TestAccTeamcityProjectVersionedSettings_ContextParameters(t *testing.T) {
-// 	resName := "teamcity_project_feature_versioned_settings.test"
+func TestAccTeamcityProjectVaultConnection_UpdateApproleAuth(t *testing.T) {
+	resName := "teamcity_project_feature_vault_connection.test"
 
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckTeamCityProjectVersionedSettingsDestroy,
-// 		Steps: []resource.TestStep{
-// 			{
-// 				// single
-// 				Config: testAccTeamCityProjectVersionedSettingsContextParametersConfig("PREFER_VCS", "kotlin"),
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
-// 				),
-// 			},
-// 			{
-// 				ResourceName:      resName,
-// 				ImportState:       true,
-// 				ImportStateVerify: true,
-// 			},
-// 			{
-// 				// multiple
-// 				Config: testAccTeamCityProjectVersionedSettingsContextParametersUpdatedConfig("PREFER_VCS", "kotlin"),
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
-// 				),
-// 			},
-// 			{
-// 				ResourceName:      resName,
-// 				ImportState:       true,
-// 				ImportStateVerify: true,
-// 			},
-// 			{
-// 				// removed
-// 				Config: testAccTeamCityProjectVersionedSettingsBasicConfig("PREFER_VCS", "kotlin"),
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
-// 				),
-// 			},
-// 			{
-// 				ResourceName:      resName,
-// 				ImportState:       true,
-// 				ImportStateVerify: true,
-// 			},
-// 		},
-// 	})
-// }
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamCityProjectVaultConnectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccTeamCityProjectVaultConnectionApproleConfig("abcdef", "123456"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVaultConnectionExists(resName),
+					resource.TestCheckResourceAttr(resName, "approle_role_id", "abcdef"),
+					resource.TestCheckResourceAttr(resName, "approle_secret_id", "123456"),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"approle_secret_id",
+				},
+			},
+			{
+				Config: testAccTeamCityProjectVaultConnectionApproleConfig("zxywvu", "123456"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVaultConnectionExists(resName),
+					resource.TestCheckResourceAttr(resName, "approle_role_id", "zxywvu"),
+					resource.TestCheckResourceAttr(resName, "approle_secret_id", "123456"),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"approle_secret_id",
+				},
+			},
+			{
+				Config: testAccTeamCityProjectVaultConnectionApproleConfig("zxywvu", "987654"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVaultConnectionExists(resName),
+					resource.TestCheckResourceAttr(resName, "approle_role_id", "zxywvu"),
+					resource.TestCheckResourceAttr(resName, "approle_secret_id", "987654"),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"approle_secret_id",
+				},
+			},
+		},
+	})
+}
 
-// func TestAccTeamcityProjectVersionedSettings_CredentialsStorageTypeSettings(t *testing.T) {
-// 	resName := "teamcity_project_feature_versioned_settings.test"
+func TestAccTeamcityProjectVaultConnection_IAMAuth(t *testing.T) {
+	resName := "teamcity_project_feature_vault_connection.test"
 
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckTeamCityProjectVersionedSettingsDestroy,
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: testAccTeamCityProjectVersionedSettingsCredentialsStorageTypeConfig("scrambled"),
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
-// 					resource.TestCheckResourceAttr(resName, "credentials_storage_type", "scrambled"),
-// 				),
-// 			},
-// 			{
-// 				ResourceName:      resName,
-// 				ImportState:       true,
-// 				ImportStateVerify: true,
-// 			},
-// 			{
-// 				Config: testAccTeamCityProjectVersionedSettingsCredentialsStorageTypeConfig("credentialsJSON"),
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
-// 					resource.TestCheckResourceAttr(resName, "credentials_storage_type", "credentialsJSON"),
-// 				),
-// 			},
-// 			{
-// 				ResourceName:      resName,
-// 				ImportState:       true,
-// 				ImportStateVerify: true,
-// 			},
-// 			{
-// 				Config: testAccTeamCityProjectVersionedSettingsCredentialsStorageTypeConfig("scrambled"),
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testAccCheckTeamCityProjectVersionedSettingsExists(resName),
-// 					resource.TestCheckResourceAttr(resName, "credentials_storage_type", "scrambled"),
-// 				),
-// 			},
-// 			{
-// 				ResourceName:      resName,
-// 				ImportState:       true,
-// 				ImportStateVerify: true,
-// 			},
-// 		},
-// 	})
-// }
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamCityProjectVaultConnectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccTeamCityProjectVaultConnectionIAMAuthConfig(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVaultConnectionExists(resName),
+					resource.TestCheckResourceAttr(resName, "auth_method", "iam"),
+					resource.TestCheckNoResourceAttr(resName, "approle_role_id"),
+					resource.TestCheckNoResourceAttr(resName, "approle_secret_id"),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"approle_auth_path",
+				},
+			},
+		},
+	})
+}
+
+func TestAccTeamcityProjectVaultConnection_UpdateFailOnError(t *testing.T) {
+	resName := "teamcity_project_feature_vault_connection.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckTeamCityProjectVaultConnectionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccTeamCityProjectVaultConnectionFailOnErrorConfig(true),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVaultConnectionExists(resName),
+					resource.TestCheckResourceAttr(resName, "fail_on_error", "true"),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"approle_secret_id",
+				},
+			},
+			{
+				Config: testAccTeamCityProjectVaultConnectionFailOnErrorConfig(false),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTeamCityProjectVaultConnectionExists(resName),
+					resource.TestCheckResourceAttr(resName, "fail_on_error", "false"),
+				),
+			},
+			{
+				ResourceName:      resName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"approle_secret_id",
+				},
+			},
+		},
+	})
+}
 
 func testAccCheckTeamCityProjectVaultConnectionExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
@@ -230,62 +263,52 @@ func testAccTeamCityProjectVaultConnectionBasicConfig(vault_url string) string {
 %s
 
 resource "teamcity_project_feature_vault_connection" "test" {
-	project_id = teamcity_project.test.id
-	role_id    = "123456"
-	secret_id  = "abcdef"
-  url        = "%s"
+	project_id         = teamcity_project.test.id
+	approle_role_id    = "123456"
+	approle_secret_id  = "abcdef"
+  url                = "%s"
 }
 `, testAccTeamCityProjectVaultConnectionTemplate, vault_url)
 }
 
-// func testAccTeamCityProjectVersionedSettingsContextParametersConfig(buildSettings string, format string) string {
-// 	return fmt.Sprintf(`
-// %s
+func testAccTeamCityProjectVaultConnectionApproleConfig(approle_role_id, approle_secret_id string) string {
+	return fmt.Sprintf(`
+%s
 
-// resource "teamcity_project_feature_versioned_settings" "test" {
-//   project_id     = teamcity_project.test.id
-//   vcs_root_id    = teamcity_vcs_root_git.test.id
-//   build_settings = "%s"
-//   format         = "%s"
+resource "teamcity_project_feature_vault_connection" "test" {
+	project_id         = teamcity_project.test.id
+	approle_role_id    = "%s"
+	approle_secret_id  = "%s"
+  url                = "https://vault.service:8200"
+}
+`, testAccTeamCityProjectVaultConnectionTemplate, approle_role_id, approle_secret_id)
+}
 
-//   context_parameters = {
-//     Hello = "World"
-//   }
-// }
-// `, testAccTeamCityProjectVersionedSettingsTemplate, buildSettings, format)
-// }
+func testAccTeamCityProjectVaultConnectionIAMAuthConfig() string {
+	return fmt.Sprintf(`
+%s
 
-// func testAccTeamCityProjectVersionedSettingsContextParametersUpdatedConfig(buildSettings string, format string) string {
-// 	return fmt.Sprintf(`
-// %s
+resource "teamcity_project_feature_vault_connection" "test" {
+	project_id         = teamcity_project.test.id
+	auth_method				 = "iam"
+  url                = "https://vault.service:8200"
+}
+`, testAccTeamCityProjectVaultConnectionTemplate)
+}
 
-// resource "teamcity_project_feature_versioned_settings" "test" {
-//   project_id     = teamcity_project.test.id
-//   vcs_root_id    = teamcity_vcs_root_git.test.id
-//   build_settings = "%s"
-//   format         = "%s"
+func testAccTeamCityProjectVaultConnectionFailOnErrorConfig(fail_on_error bool) string {
+	return fmt.Sprintf(`
+%s
 
-//   context_parameters = {
-//     Hello = "World"
-//     abc   = 123
-//   }
-// }
-// `, testAccTeamCityProjectVersionedSettingsTemplate, buildSettings, format)
-// }
-
-// func testAccTeamCityProjectVersionedSettingsCredentialsStorageTypeConfig(credentialsStorageType string) string {
-// 	return fmt.Sprintf(`
-// %s
-
-// resource "teamcity_project_feature_versioned_settings" "test" {
-//   project_id               = teamcity_project.test.id
-//   vcs_root_id              = teamcity_vcs_root_git.test.id
-//   build_settings           = "PREFER_VCS"
-//   format                   = "kotlin"
-//   credentials_storage_type = "%s"
-// }
-// `, testAccTeamCityProjectVersionedSettingsTemplate, credentialsStorageType)
-// }
+resource "teamcity_project_feature_vault_connection" "test" {
+	project_id         = teamcity_project.test.id
+	approle_role_id    = "123456"
+	approle_secret_id  = "abcdef"
+	fail_on_error      = "%t"
+	url                = "https://vault.service:8200"
+}
+`, testAccTeamCityProjectVaultConnectionTemplate, fail_on_error)
+}
 
 const testAccTeamCityProjectVaultConnectionTemplate = `
 resource "teamcity_project" "test" {
