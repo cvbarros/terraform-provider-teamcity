@@ -11,20 +11,20 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		ResourcesMap: map[string]*schema.Resource{
-			"teamcity_project":                         resourceProject(),
-			"teamcity_vcs_root_git":                    resourceVcsRootGit(),
-			"teamcity_build_config":                    resourceBuildConfig(),
-			"teamcity_snapshot_dependency":             resourceSnapshotDependency(),
+			"teamcity_agent_pool":                      resourceAgentPool(),
+			"teamcity_agent_pool_project_assignment":   resourceAgentPoolProjectAssignment(),
+			"teamcity_agent_requirement":               resourceAgentRequirement(),
 			"teamcity_artifact_dependency":             resourceArtifactDependency(),
-			"teamcity_build_trigger_vcs":               resourceBuildTriggerVcs(),
+			"teamcity_build_config":                    resourceBuildConfig(),
 			"teamcity_build_trigger_build_finish":      resourceBuildTriggerBuildFinish(),
 			"teamcity_build_trigger_schedule":          resourceBuildTriggerSchedule(),
-			"teamcity_agent_pool":                      resourceAgentPool(),
-			"teamcity_agent_requirement":               resourceAgentRequirement(),
+			"teamcity_build_trigger_vcs":               resourceBuildTriggerVcs(),
 			"teamcity_feature_commit_status_publisher": resourceFeatureCommitStatusPublisher(),
 			"teamcity_group":                           resourceGroup(),
 			"teamcity_group_role_assignment":           resourceGroupRoleAssignment(),
-			"teamcity_agent_pool_project_assignment":   resourceAgentPoolProjectAssignment(),
+			"teamcity_project":                         resourceProject(),
+			"teamcity_snapshot_dependency":             resourceSnapshotDependency(),
+			"teamcity_vcs_root_git":                    resourceVcsRootGit(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"teamcity_agent_pool": dataSourceAgentPool(),
