@@ -3,9 +3,10 @@ package teamcity
 import (
 	"fmt"
 
-	api "github.com/yext/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
+	"github.com/robfig/cron"
+	api "github.com/yext/go-teamcity/teamcity"
 )
 
 func resourceBuildTriggerSchedule() *schema.Resource {
@@ -27,12 +28,12 @@ func resourceBuildTriggerSchedule() *schema.Resource {
 				Type:         schema.TypeString,
 				ForceNew:     true,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"daily", "weekly"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"daily", "weekly", "cron"}, false),
 			},
 			"hour": {
 				Type:     schema.TypeInt,
 				ForceNew: true,
-				Required: true,
+				Optional: true,
 			},
 			"minute": {
 				Type:     schema.TypeInt,
@@ -64,6 +65,44 @@ func resourceBuildTriggerSchedule() *schema.Resource {
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
+			},
+			"cron_schedule": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"seconds": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"minutes": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"hours": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"day_of_month": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"month": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"day_of_week": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"year": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
 			},
 			"enforce_clean_checkout": {
 				Type:     schema.TypeBool,
@@ -155,8 +194,16 @@ func resourceBuildTriggerScheduleCreate(d *schema.ResourceData, meta interface{}
 		return err
 	}
 
-	dt, err := api.NewTriggerSchedule(schedule, buildConfigID, weekday, uint(hour), uint(minute), timezone, rules, opt)
+	var cronSchedule *api.CronSchedule
+	v, ok := d.GetOk("cron_schedule")
+	if ok {
+		cronSchedule, err = expandCronSchedule(v.([]interface{}))
+		if err != nil {
+			return err
+		}
+	}
 
+	dt, err := api.NewTriggerSchedule(schedule, buildConfigID, weekday, uint(hour), uint(minute), timezone, rules, cronSchedule, opt)
 	if err != nil {
 		return err
 	}
@@ -190,6 +237,16 @@ func resourceBuildTriggerScheduleRead(d *schema.ResourceData, meta interface{}) 
 	if err := d.Set("schedule", dt.SchedulingPolicy); err != nil {
 		return err
 	}
+	if dt.SchedulingPolicy == api.TriggerSchedulingCron {
+		if dt.CronExpression == nil {
+			return fmt.Errorf("cron expression was not specified")
+		}
+		err := d.Set("cron_schedule", []map[string]interface{}{flattenCronSchedule(dt.CronExpression)})
+		if err != nil {
+			return err
+		}
+	}
+
 	if err := d.Set("hour", dt.Hour); err != nil {
 		return err
 	}
@@ -260,6 +317,51 @@ func expandTriggerScheduleOptions(d *schema.ResourceData) (*api.TriggerScheduleO
 	return opt, nil
 }
 
+func expandCronSchedule(v []interface{}) (*api.CronSchedule, error) {
+	raw := v[0].(map[string]interface{})
+	var cronSchedule api.CronSchedule
+
+	if v, ok := raw["seconds"]; ok {
+		cronSchedule.Seconds = v.(string)
+	}
+	if v, ok := raw["minutes"]; ok {
+		cronSchedule.Minutes = v.(string)
+	}
+	if v, ok := raw["hours"]; ok {
+		cronSchedule.Hours = v.(string)
+	}
+	if v, ok := raw["day_of_month"]; ok {
+		cronSchedule.DayOfMonth = v.(string)
+	}
+	if v, ok := raw["month"]; ok {
+		cronSchedule.Month = v.(string)
+	}
+	if v, ok := raw["day_of_week"]; ok {
+		cronSchedule.DayOfWeek = v.(string)
+	}
+	if v, ok := raw["year"]; ok {
+		cronSchedule.Year = v.(string)
+	}
+	// Validate the cron expression
+	cronParser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+	_, err := cronParser.Parse(
+		fmt.Sprintf(
+			"%v %v %v %v %v %v",
+			cronSchedule.Seconds,
+			cronSchedule.Minutes,
+			cronSchedule.Hours,
+			cronSchedule.DayOfMonth,
+			cronSchedule.Month,
+			cronSchedule.DayOfWeek,
+		),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("parsing cron expression: %v", err)
+	}
+
+	return &cronSchedule, nil
+}
+
 func flattenTriggerScheduleOptions(dt *api.TriggerScheduleOptions) map[string]interface{} {
 	out := make(map[string]interface{})
 	out["queue_optimization"] = dt.QueueOptimization
@@ -285,4 +387,18 @@ func flattenTriggerScheduleOptions(dt *api.TriggerScheduleOptions) map[string]in
 	}
 
 	return out
+}
+
+func flattenCronSchedule(dt *api.CronSchedule) map[string]interface{} {
+	m := make(map[string]interface{})
+
+	m["seconds"] = dt.Seconds
+	m["minutes"] = dt.Minutes
+	m["hours"] = dt.Hours
+	m["day_of_month"] = dt.DayOfMonth
+	m["day_of_week"] = dt.DayOfWeek
+	m["month"] = dt.Month
+	m["year"] = dt.Year
+
+	return m
 }
