@@ -28,6 +28,9 @@ resource "teamcity_build_config" "nocode_config" {
     #Positive int
     build_counter = 1
 
+    #Delete all files in the checkout directory before the build. Default: false
+    clean_build = false
+
     #Set to false to disable personal builds. Default: true
     allow_personal_builds = true
 
