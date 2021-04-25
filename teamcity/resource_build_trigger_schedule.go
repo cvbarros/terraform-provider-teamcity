@@ -2,6 +2,7 @@ package teamcity
 
 import (
 	"fmt"
+	"log"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -177,6 +178,13 @@ func resourceBuildTriggerScheduleRead(d *schema.ResourceData, meta interface{}) 
 
 	ret, err := getTrigger(client, d.Id())
 	if err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] Build Trigger Schedule was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 	dt, ok := ret.(*api.TriggerSchedule)

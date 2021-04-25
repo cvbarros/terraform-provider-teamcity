@@ -285,14 +285,12 @@ func resourceBuildConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	created, err := client.BuildTypes.Create(projectID, bt)
-
 	if err != nil {
 		return err
 	}
 
 	log.Printf("[DEBUG] resourceBuildConfigCreate: sucessfully created build configuration with id = '%v'. Marking new resource.", created.ID)
 
-	d.MarkNewResource()
 	d.SetId(created.ID)
 
 	log.Printf("[DEBUG] resourceBuildConfigCreate: initial creation finished. Calling resourceBuildConfigUpdate to update the rest of resource.")
@@ -433,6 +431,13 @@ func resourceBuildConfigRead(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[DEBUG] resourceBuildConfigRead started for resouceId: %v", d.Id())
 	dt, err := getBuildConfiguration(client, d.Id())
 	if err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] Build Configuration was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 	log.Printf("[DEBUG] BuildConfiguration '%v' retrieved successfully", dt.Name)
@@ -556,23 +561,21 @@ func flattenTemplates(d *schema.ResourceData, templates *api.Templates) error {
 }
 
 func flattenParameterCollection(d *schema.ResourceData, params *api.Parameters) error {
-	var configParams, sysParams, envParams = flattenParameters(params)
+	configParams := flattenParameters(params, api.ParameterTypes.Configuration)
+	if err := d.Set("config_params", configParams); err != nil {
+		return err
+	}
 
-	if len(envParams) > 0 {
-		if err := d.Set("env_params", envParams); err != nil {
-			return err
-		}
+	envParams := flattenParameters(params, api.ParameterTypes.EnvironmentVariable)
+	if err := d.Set("env_params", envParams); err != nil {
+		return err
 	}
-	if len(sysParams) > 0 {
-		if err := d.Set("sys_params", sysParams); err != nil {
-			return err
-		}
+
+	systemParams := flattenParameters(params, api.ParameterTypes.System)
+	if err := d.Set("sys_params", systemParams); err != nil {
+		return err
 	}
-	if len(configParams) > 0 {
-		if err := d.Set("config_params", configParams); err != nil {
-			return err
-		}
-	}
+
 	return nil
 }
 
@@ -616,19 +619,21 @@ func expandParameterCollection(d *schema.ResourceData) (*api.Parameters, error) 
 	return out, nil
 }
 
-func flattenParameters(dt *api.Parameters) (config map[string]string, sys map[string]string, env map[string]string) {
-	env, sys, config = make(map[string]string), make(map[string]string), make(map[string]string)
-	for _, p := range dt.Items {
-		switch p.Type {
-		case api.ParameterTypes.Configuration:
-			config[p.Name] = p.Value
-		case api.ParameterTypes.EnvironmentVariable:
-			env[p.Name] = p.Value
-		case api.ParameterTypes.System:
-			sys[p.Name] = p.Value
-		}
+func flattenParameters(input *api.Parameters, paramType string) map[string]string {
+	output := make(map[string]string)
+	if input == nil {
+		return output
 	}
-	return config, sys, env
+
+	for _, p := range input.Items {
+		if p.Type != paramType {
+			continue
+		}
+
+		output[p.Name] = p.Value
+	}
+
+	return output
 }
 
 func expandParameters(raw map[string]interface{}, paramType string) (*api.Parameters, error) {

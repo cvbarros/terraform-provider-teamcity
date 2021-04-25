@@ -50,19 +50,11 @@ func resourceProject() *schema.Resource {
 
 func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
-	var name, parentID string
 
-	if v, ok := d.GetOk("name"); ok {
-		name = v.(string)
-	}
+	name := d.Get("name").(string)
+	parentProjectID := d.Get("parent_id").(string)
 
-	if v, ok := d.GetOk("parent_id"); ok {
-		if v != "" {
-			parentID = v.(string)
-		}
-	}
-
-	newProj, err := api.NewProject(name, "", parentID)
+	newProj, err := api.NewProject(name, "", parentProjectID)
 	if err != nil {
 		return err
 	}
@@ -72,7 +64,6 @@ func resourceProjectCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.MarkNewResource()
 	d.SetId(created.ID)
 
 	return resourceProjectUpdate(d, client)
@@ -90,11 +81,11 @@ func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if d.HasChange("parent_id") {
-		parentId := d.Get("parent_id").(string)
-		if parentId == "" {
-			parentId = "_Root"
+		parentID := d.Get("parent_id").(string)
+		if parentID == "" {
+			parentID = "_Root"
 		}
-		dt.SetParentProject(parentId)
+		dt.SetParentProject(parentID)
 	}
 
 	dt.Parameters, err = expandParameterCollection(d)
@@ -112,27 +103,25 @@ func resourceProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceProjectRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 
-	dt, err := getProject(client, d.Id())
+	dt, err := client.Projects.GetByID(d.Id())
 	if err != nil {
-		return err
-	}
-	if err := d.Set("name", dt.Name); err != nil {
-		return err
-	}
-	if err := d.Set("description", dt.Description); err != nil {
-		return err
-	}
-	if err := d.Set("parent_id", dt.ParentProject.ID); err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] Project was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 
 	d.Set("name", dt.Name)
 	d.Set("description", dt.Description)
-	parentProjectId := dt.ParentProjectID
-	if parentProjectId == "_Root" {
-		parentProjectId = ""
+	parentProjectID := dt.ParentProjectID
+	if parentProjectID == "_Root" {
+		parentProjectID = ""
 	}
-	d.Set("parent_id", parentProjectId)
+	d.Set("parent_id", parentProjectID)
 
 	return flattenParameterCollection(d, dt.Parameters)
 }
@@ -150,13 +139,4 @@ func resourceProjectImport(d *schema.ResourceData, meta interface{}) ([]*schema.
 		return nil, err
 	}
 	return []*schema.ResourceData{d}, nil
-}
-
-func getProject(c *api.Client, id string) (*api.Project, error) {
-	dt, err := c.Projects.GetByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return dt, nil
 }

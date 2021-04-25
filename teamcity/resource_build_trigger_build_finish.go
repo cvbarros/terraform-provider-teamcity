@@ -96,6 +96,13 @@ func resourceBuildTriggerBuildFinishRead(d *schema.ResourceData, meta interface{
 
 	ret, err := getTrigger(client, d.Id())
 	if err != nil {
+		// handles this being deleted outside of TF
+		if isNotFoundError(err) {
+			log.Printf("[DEBUG] Build Trigger Build Finish was not found - removing from state!")
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 	dt, ok := ret.(*api.TriggerBuildFinish)
