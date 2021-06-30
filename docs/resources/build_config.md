@@ -23,6 +23,17 @@ resource "teamcity_build_config" "build" {
     name = "build_script"
     file = "./build.sh"
     args = "default_target --verbose"
+    mode = "execute_if_success"
+    condition {
+        parameter_name = "teamcity.build.branch"
+        operator = "DOES_NOT_EQUAL"
+        value = "release"
+    }
+    condition {
+        parameter_name = "teamcity.build.id"
+        operator = "EQUALS"
+        value = "123"
+    }
   }
 }
 ```
@@ -125,6 +136,16 @@ The `step` block supports the following arguments:
 * `code` - (Optional) Inline script code to call. Do not use this with `file`.
 
 * `args` - (Optional) Arguments to pass to external script specified in `file`.
+
+* `mode` - (Optional) Execution policy, represents how a build configuration step will execute regarding others.
+
+  * `condition` - (Optional) Parameter-based execution conditions blocks support following arguments:
+    
+    * `parameter_name` - (Required) The name of the parameter to be compared.
+
+    * `operator` - (Required) operator name. Supported operators - `EXISTS`, `NOT_EXISTS`, `EQUALS`, `DOES_NOT_EQUAL`, `MORE_THAN`, `NO_MORE_THAN`, `LESS_THAN`, `NO_LESS_THAN`, `STARTS_WITH`, `CONTAINS`, `DOES_NOT_CONTAIN`, `ENDS_WITH`, `MATCHES`, `DOES_NOT_MATCH`, `VER_MORE_THAN`, `VER_NO_MORE_THAN`, `VER_LESS_THAN`, `VER_NO_LESS_THAN`.
+
+    * `value` - (Optional) Value for comparison.
 
 ---
 
