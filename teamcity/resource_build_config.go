@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"regexp"
 	"strings"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
@@ -131,6 +132,31 @@ func resourceBuildConfig() *schema.Resource {
 						"code": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+						"mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"condition": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"operator": {
+										Type:         schema.TypeString,
+										ValidateFunc: validation.StringInSlice(api.OperatorStrings, false),
+										Required:     true,
+									},
+									"parameter_name": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"value": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -733,6 +759,24 @@ func flattenBuildStepPowershell(s *api.StepPowershell) map[string]interface{} {
 	if s.Name != "" {
 		m["name"] = s.Name
 	}
+	if s.ExecuteMode != "" {
+		m["mode"] = s.ExecuteMode
+	}
+
+	if s.Conditions != "" {
+		re := regexp.MustCompile(`\["([^"]+)","([^"]+)"."([^"]*)"]`)
+		cn := re.FindAllStringSubmatch(s.Conditions, -1)
+		var conditions []interface{}
+		for _, expr := range cn {
+			cs := map[string]string{
+				"operator":       expr[1],
+				"parameter_name": expr[2],
+				"value":          expr[3],
+			}
+			conditions = append(conditions, cs)
+		}
+		m["condition"] = conditions
+	}
 	m["type"] = "powershell"
 
 	return m
@@ -751,6 +795,24 @@ func flattenBuildStepCmdLine(s *api.StepCommandLine) map[string]interface{} {
 	}
 	if s.Name != "" {
 		m["name"] = s.Name
+	}
+	if s.ExecuteMode != "" {
+		m["mode"] = s.ExecuteMode
+	}
+
+	if s.Conditions != "" {
+		re := regexp.MustCompile(`\["([^"]+)","([^"]+)"."([^"]*)"]`)
+		cn := re.FindAllStringSubmatch(s.Conditions, -1)
+		var conditions []interface{}
+		for _, expr := range cn {
+			cs := map[string]string{
+				"operator":       expr[1],
+				"parameter_name": expr[2],
+				"value":          expr[3],
+			}
+			conditions = append(conditions, cs)
+		}
+		m["condition"] = conditions
 	}
 	m["type"] = "cmd_line"
 
@@ -785,7 +847,7 @@ func expandBuildStep(raw interface{}) (api.Step, error) {
 }
 
 func expandStepCmdLine(dt map[string]interface{}) (*api.StepCommandLine, error) {
-	var file, args, name, code string
+	var file, args, name, code, mode, serializedConditions string
 
 	if v, ok := dt["file"]; ok {
 		file = v.(string)
@@ -799,13 +861,42 @@ func expandStepCmdLine(dt map[string]interface{}) (*api.StepCommandLine, error) 
 	if v, ok := dt["code"]; ok {
 		code = v.(string)
 	}
+	if v, ok := dt["mode"]; ok {
+		mode = v.(string)
+	}
+	if v, ok := dt["condition"]; ok {
+		conditions := v.([]interface{})
+
+		serializedConditions += `[`
+		for i, cs := range conditions {
+			var operator, parameterName, value string
+
+			condition := cs.(map[string]interface{})
+
+			if v, ok := condition["operator"]; ok {
+				operator = v.(string)
+			}
+			if v, ok := condition["parameter_name"]; ok {
+				parameterName = v.(string)
+			}
+			if v, ok := condition["value"]; ok {
+				value = v.(string)
+			}
+
+			serializedConditions += `["` + operator + `","` + parameterName + `","` + value + `"]`
+			if i != len(conditions)-1 {
+				serializedConditions += `,`
+			}
+		}
+		serializedConditions += `]`
+	}
 
 	var s *api.StepCommandLine
 	var err error
 	if file != "" {
-		s, err = api.NewStepCommandLineExecutable(name, file, args)
+		s, err = api.NewStepCommandLineExecutable(name, file, args, mode, serializedConditions)
 	} else {
-		s, err = api.NewStepCommandLineScript(name, code)
+		s, err = api.NewStepCommandLineScript(name, code, mode, serializedConditions)
 	}
 	if err != nil {
 		return nil, err
@@ -818,7 +909,7 @@ func expandStepCmdLine(dt map[string]interface{}) (*api.StepCommandLine, error) 
 }
 
 func expandStepPowershell(dt map[string]interface{}) (*api.StepPowershell, error) {
-	var file, args, name, code string
+	var file, args, name, code, mode, serializedConditions string
 
 	if v, ok := dt["file"]; ok {
 		file = v.(string)
@@ -832,13 +923,41 @@ func expandStepPowershell(dt map[string]interface{}) (*api.StepPowershell, error
 	if v, ok := dt["code"]; ok {
 		code = v.(string)
 	}
+	if v, ok := dt["mode"]; ok {
+		mode = v.(string)
+	}
+	if v, ok := dt["condition"]; ok {
+		conditions := v.([]interface{})
+
+		serializedConditions += `[`
+		for i, cs := range conditions {
+			var operator, parameterName, value string
+			condition := cs.(map[string]interface{})
+
+			if v, ok := condition["operator"]; ok {
+				operator = v.(string)
+			}
+			if v, ok := condition["parameter_name"]; ok {
+				parameterName = v.(string)
+			}
+			if v, ok := condition["value"]; ok {
+				value = v.(string)
+			}
+
+			serializedConditions += `["` + operator + `","` + parameterName + `","` + value + `"]`
+			if i != len(conditions)-1 {
+				serializedConditions += `,`
+			}
+		}
+		serializedConditions += `]`
+	}
 
 	var s *api.StepPowershell
 	var err error
 	if file != "" {
-		s, err = api.NewStepPowershellScriptFile(name, file, args)
+		s, err = api.NewStepPowershellScriptFile(name, file, args, mode, serializedConditions)
 	} else {
-		s, err = api.NewStepPowershellCode(name, code)
+		s, err = api.NewStepPowershellCode(name, code, mode, serializedConditions)
 	}
 	if err != nil {
 		return nil, err
@@ -888,6 +1007,14 @@ func stepSetHash(v interface{}) int {
 	}
 
 	if v, ok := m["code"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+
+	if v, ok := m["mode"]; ok {
+		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
+	}
+
+	if v, ok := m["condition"]; ok {
 		buf.WriteString(fmt.Sprintf("%s-", v.(string)))
 	}
 
@@ -963,6 +1090,31 @@ func resourceBuildConfigInstanceResourceV0() *schema.Resource {
 						"code": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+						"mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"condition": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"operator": {
+										Type:         schema.TypeString,
+										ValidateFunc: validation.StringInSlice(api.OperatorStrings, false),
+										Required:     true,
+									},
+									"parameter_name": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+									"value": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
 						},
 					},
 				},
