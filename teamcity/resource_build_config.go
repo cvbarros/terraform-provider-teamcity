@@ -932,22 +932,29 @@ func expandStepPowershell(dt map[string]interface{}) (*api.StepPowershell, error
 	return s, nil
 }
 
-func buildVcsRootEntry(raw interface{}) *api.VcsRootEntry {
-	localVcs := raw.(map[string]interface{})
-	rawRules := localVcs["checkout_rules"].([]interface{})
-	var toAttachRules string
-	if len(rawRules) > 0 {
-		stringRules := make([]string, len(rawRules))
-		for i, el := range rawRules {
-			stringRules[i] = el.(string)
-		}
-		toAttachRules = strings.Join(stringRules, "\\n")
+func buildVcsRootCheckoutRulesToAttach(rawVcs map[string]interface{}) string {
+	rawRules := rawVcs["checkout_rules"].([]interface{})
+	if len(rawRules) == 0 {
+		return ""
 	}
 
-	return api.NewVcsRootEntryWithRules(&api.VcsRootReference{ID: localVcs["id"].(string)}, toAttachRules)
+	stringRules := make([]string, len(rawRules))
+	for i, el := range rawRules {
+		stringRules[i] = el.(string)
+	}
+	return strings.Join(stringRules, "\\n")
+}
+
+func buildVcsRootEntry(raw interface{}) *api.VcsRootEntry {
+	var (
+		localVcs      = raw.(map[string]interface{})
+		vcsRootId     = localVcs["id"].(string)
+		toAttachRules = buildVcsRootCheckoutRulesToAttach(localVcs)
+	)
+	return api.NewVcsRootEntryWithRules(&api.VcsRootReference{ID: vcsRootId}, toAttachRules)
 }
 
 func vcsRootHash(v interface{}) int {
 	raw := v.(map[string]interface{})
-	return schema.HashString(raw["id"].(string))
+	return schema.HashString(raw["id"].(string) + buildVcsRootCheckoutRulesToAttach(raw))
 }
