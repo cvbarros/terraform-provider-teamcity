@@ -715,6 +715,19 @@ func flattenBuildStep(s api.Step) (map[string]interface{}, error) {
 	default:
 		return nil, fmt.Errorf("build step type '%s' not supported", s.Type())
 	}
+
+	if s != nil {
+		mapType := stepTypeMap[s.Type()]
+		switch mapType {
+		case "powershell":
+			out, err = flattenBuildStepPowershell(s.(*api.StepPowershell)), nil
+		case "cmd_line":
+			out, err = flattenBuildStepCmdLine(s.(*api.StepCommandLine)), nil
+		default:
+			return nil, fmt.Errorf("build step type '%s' not supported", s.Type())
+		}
+		out["step_id"] = s.GetID()
+	}
 	out["step_id"] = s.GetID()
 	return out, err
 }
