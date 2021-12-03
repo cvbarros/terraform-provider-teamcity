@@ -526,6 +526,7 @@ func validateBuildConfig(d *schema.ResourceData) error {
 }
 
 func getBuildConfiguration(c *api.Client, id string) (*api.BuildType, error) {
+	log.Printf("[DEBUG] getting build configuration")
 	dt, err := c.BuildTypes.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -704,20 +705,11 @@ func flattenBuildConfigOptionsRaw(dt *api.BuildTypeOptions) map[string]interface
 }
 
 func flattenBuildStep(s api.Step) (map[string]interface{}, error) {
-	mapType := stepTypeMap[s.Type()]
 	var out map[string]interface{}
 	var err error
-	switch mapType {
-	case "powershell":
-		out, err = flattenBuildStepPowershell(s.(*api.StepPowershell)), nil
-	case "cmd_line":
-		out, err = flattenBuildStepCmdLine(s.(*api.StepCommandLine)), nil
-	default:
-		return nil, fmt.Errorf("build step type '%s' not supported", s.Type())
-	}
-
 	if s != nil {
 		mapType := stepTypeMap[s.Type()]
+		log.Printf("[DEBUG] flattening build map type:%s",mapType)
 		switch mapType {
 		case "powershell":
 			out, err = flattenBuildStepPowershell(s.(*api.StepPowershell)), nil
@@ -728,7 +720,6 @@ func flattenBuildStep(s api.Step) (map[string]interface{}, error) {
 		}
 		out["step_id"] = s.GetID()
 	}
-	out["step_id"] = s.GetID()
 	return out, err
 }
 
