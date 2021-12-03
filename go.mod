@@ -1,4 +1,4 @@
-module github.com/cvbarros/terraform-provider-teamcity
+module github.com/foreflight/terraform-provider-teamcity
 
 go 1.13
 

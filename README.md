@@ -9,14 +9,12 @@ Motivation:
 
 ## LOOKING FOR MAINTAINTERS ##
 
-This project is in need of new maintainers, please see here:  
-https://github.com/cvbarros/go-teamcity/issues/94.  
-https://github.com/cvbarros/terraform-provider-teamcity/issues/113
+https://github.com/foreflight/terraform-provider-teamcity/issues/113
 
 Installation
 ------------
 ## Terraform Registry - Terraform 0.13+ (Recommended)
-Teamcity Provider [is listed on the Terraform Registry](https://registry.terraform.io/providers/cvbarros/teamcity/latest).  
+Teamcity Provider [is listed on the Terraform Registry](https://registry.terraform.io/providers/foreflight/teamcity/latest).  
 The easiest to get started way is to follow [instructions for requiring
 providers](https://www.terraform.io/docs/configuration/provider-requirements.html#requiring-providers).  
 
@@ -25,8 +23,8 @@ Example:
 terraform {
   required_providers {
     teamcity = {
-      source  = "cvbarros/teamcity"
-      version = ">= 1.0.1"
+      source  = "foreflight/teamcity"
+      version = ">= 0.1.3"
     }
   }
 }
@@ -40,7 +38,7 @@ Once configured, running `terraform init` will download the provider automatical
 
 ## Binaries (Recommended for Terraform up to 0.12.x)
 Another way to install this provider is to use one of the binary distributions available as 
-[Releases](https://github.com/cvbarros/terraform-provider-teamcity/releases). 
+[Releases](https://github.com/foreflight/terraform-provider-teamcity/releases). 
 It contains pre-compiled bundles for Linux, MacOS and Windows.
 
 Download and unpack the version for your OS/arch.  
@@ -48,7 +46,7 @@ In the example below, we use MacOS (darwin_amd64) and version `v1.0.1`:
 
 ```bash
 VERSION=v1.0.1
-wget https://github.com/cvbarros/terraform-provider-teamcity/releases/download/$VERSION/terraform-provider-teamcity_darwin_amd64_$VERSION.zip
+wget https://github.com/foreflight/terraform-provider-teamcity/releases/download/$VERSION/terraform-provider-teamcity_darwin_amd64_$VERSION.zip
 tar -xvf terraform-provider-teamcity_darwin_amd64_$VERSION.zip 
 ```
 
