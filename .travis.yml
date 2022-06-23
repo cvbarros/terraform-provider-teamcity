@@ -6,7 +6,7 @@ services:
   - docker
 language: go
 go:
- - "1.16.x"
+ - "1.17.x"
 env:
   global:
     - GO111MODULE=on
