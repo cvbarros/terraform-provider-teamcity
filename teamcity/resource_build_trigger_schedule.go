@@ -76,30 +76,37 @@ func resourceBuildTriggerSchedule() *schema.Resource {
 						"seconds": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"minutes": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"hours": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"day_of_month": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"month": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"day_of_week": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"year": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 					},
 				},
