@@ -2,6 +2,7 @@ package teamcity
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -9,12 +10,12 @@ var daysOfWeek = map[string]time.Weekday{}
 
 func init() {
 	for d := time.Sunday; d <= time.Saturday; d++ {
-		daysOfWeek[d.String()] = d
+		daysOfWeek[strings.ToLower(d.String())] = d
 	}
 }
 
 func parseWeekday(v string) (time.Weekday, error) {
-	if d, ok := daysOfWeek[v]; ok {
+	if d, ok := daysOfWeek[strings.ToLower(v)]; ok {
 		return d, nil
 	}
 
