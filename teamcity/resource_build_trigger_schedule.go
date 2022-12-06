@@ -215,7 +215,7 @@ func resourceBuildTriggerScheduleCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	if strings.EqualFold(schedule, "weekly") {
-		triggerWeekday, ok := d.GetOk("weekday")
+		_, ok := d.GetOk("weekday")
 		if !ok {
 			return fmt.Errorf("weekday is required if a schedule of weekly is chosen")
 		}
